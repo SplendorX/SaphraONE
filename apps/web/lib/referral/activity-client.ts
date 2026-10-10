@@ -92,6 +92,8 @@ export async function recordPlatformTransactionActivity(
         txHash,
         transactionId,
         activityType,
+        // Categorizes the transaction in the ledger (checkout, recurepay…).
+        source: activity?.source,
       }),
     });
 

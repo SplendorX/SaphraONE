@@ -8,6 +8,7 @@ import {
   referralContribution,
 } from "@/lib/referral/qualification-service";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
+import { recordLedgerTransaction } from "@/lib/ledger/transactions";
 
 /**
  * OnePoints for a finished RecurePay payment: the payer's transaction
@@ -35,6 +36,12 @@ export async function awardRecurringCompletionRewards(input: {
   const amountUsd = await stablecoinUsdValue(amount, input.tokenSymbol);
 
   await Promise.allSettled([
+    recordLedgerTransaction({
+      metadata: { occurrenceId: input.occurrenceId },
+      source: "recurepay",
+      txHash: input.txHash,
+      wallet: input.ownerWallet,
+    }),
     processTransactionCashback({
       amount,
       token: input.tokenSymbol ?? "USDC",

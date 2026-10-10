@@ -43,6 +43,7 @@ import type {
 } from "@/lib/swift-circle/types";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 import { processTransactionCashback } from "@/lib/referral/cashback-service";
+import { recordLedgerTransaction } from "@/lib/ledger/transactions";
 
 function isPaymentMode(value: unknown): value is CirclePaymentMode {
   return (
@@ -565,6 +566,13 @@ export async function submitPaymentExecution(input: {
     extra: { executionMethod: rail, recipientCount: recipients.length },
   });
 
+  await recordLedgerTransaction({
+    metadata: { circleId: intent.circle_id, paymentIntentId: intent.id },
+    source: "circle",
+    txHash: typeof input.txHash === "string" ? input.txHash : null,
+    wallet: input.actorWallet,
+  });
+
   // Credit general transaction cashback server-side (>= 20 USDC/EURC earns OnePoints)
   try {
     const totalAmount = intent.total_amount ?? "0";
@@ -661,6 +669,15 @@ export async function confirmPaymentFromWebhook(input: {
 
   if (paymentStatus === "confirmed" && hash) {
     await confirmLedgerEntry(`pay:${intent.idempotency_key}`, hash);
+  }
+
+  if (paymentStatus === "confirmed" && intent.sender_user_wallet && hash) {
+    await recordLedgerTransaction({
+      metadata: { circleId: intent.circle_id, paymentIntentId: intent.id },
+      source: "circle",
+      txHash: hash,
+      wallet: intent.sender_user_wallet,
+    });
   }
 
   if (paymentStatus === "confirmed" && intent.sender_user_wallet && intent.total_amount) {

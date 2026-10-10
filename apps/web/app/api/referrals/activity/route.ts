@@ -1,4 +1,4 @@
-import { type NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { getAddress, isAddress } from "viem";
 import {
   evaluateReferralProgressAndQualify,
@@ -8,6 +8,7 @@ import { processReferralActivityCashback } from "@/lib/referral/activity-service
 import { processTransactionCashback } from "@/lib/referral/cashback-service";
 import { getReferralForUser } from "@/lib/referral/attribution-service";
 import { readJsonRecord, jsonError, jsonOk } from "@/lib/http";
+import { ledgerSourceFor, recordLedgerTransaction } from "@/lib/ledger/transactions";
 import { assertRecurringAccess } from "@/lib/recurring-auth";
 import { stablecoinUsdValue } from "@/lib/referral/fx";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
@@ -27,6 +28,8 @@ type ReferralActivityBody = {
   token?: unknown;
   activityType?: unknown;
   accountType?: unknown;
+  /** The feature that made the transaction (checkout, recurepay…), for the ledger. */
+  source?: unknown;
 };
 
 export async function POST(request: NextRequest) {
@@ -91,6 +94,16 @@ export async function POST(request: NextRequest) {
         : "TRANSFER";
 
     const effectiveId = txHash;
+
+    // The verified transaction ledger (campaigns, leaderboards), after the response.
+    after(() =>
+      recordLedgerTransaction({
+        source: ledgerSourceFor(activityType, body.source),
+        txHash,
+        verified,
+        wallet,
+      }),
+    );
 
     // Always process general transaction cashback for all SaphraONE accounts (>= 20 USDC/EURC)
     const userGeneralCashback = await processTransactionCashback({

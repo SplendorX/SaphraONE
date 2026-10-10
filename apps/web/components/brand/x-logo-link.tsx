@@ -15,3 +15,21 @@ export function XLogoLink({ className }: { className?: string }) {
     </a>
   );
 }
+
+export function InstagramLogoLink({ className }: { className?: string }) {
+  return (
+    <a
+      aria-label="SaphraONE on Instagram"
+      className={cn("marketing-x-link", className)}
+      href="https://www.instagram.com/saphraone"
+      rel="noreferrer"
+      target="_blank"
+    >
+      <svg aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <rect height="18" rx="5" width="18" x="3" y="3" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" fill="currentColor" r="1" stroke="none" />
+      </svg>
+    </a>
+  );
+}

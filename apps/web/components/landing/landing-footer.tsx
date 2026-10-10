@@ -2,7 +2,7 @@
 
 import { arcExplorerUrl, arcChain } from "@/lib/chains";
 import { PlatformBrand } from "@/components/brand/platform-brand";
-import { XLogoLink } from "@/components/brand/x-logo-link";
+import { InstagramLogoLink, XLogoLink } from "@/components/brand/x-logo-link";
 import { circleFaucetUrl } from "@/components/circle-faucet-link";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { useT } from "@/components/locale-provider";
@@ -14,6 +14,7 @@ const resourceLinks = [
     ? [{ href: circleFaucetUrl, label: "Circle testnet faucet" }]
     : []),
   { href: "https://x.com/saphraone", label: "X / Twitter" },
+  { href: "https://www.instagram.com/saphraone", label: "Instagram" },
 ];
 
 function FooterColumn({
@@ -67,7 +68,10 @@ export function LandingFooter() {
         <div className="marketing-footer-brand">
           <PlatformBrand />
           <p>{t("landing.footerTagline")}</p>
-          <XLogoLink />
+          <div className="flex items-center gap-2">
+            <XLogoLink />
+            <InstagramLogoLink />
+          </div>
         </div>
         <FooterColumn heading={t("landing.footerSite")} links={siteLinks} />
         <div className="marketing-footer-col">

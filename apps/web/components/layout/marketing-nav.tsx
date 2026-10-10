@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { PlatformWordmark } from "@/components/brand/platform-wordmark";
-import { XLogoLink } from "@/components/brand/x-logo-link";
+import { InstagramLogoLink, XLogoLink } from "@/components/brand/x-logo-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { useT } from "@/components/locale-provider";
@@ -42,6 +42,7 @@ export function MarketingNav() {
 
         <div className="flex items-center gap-2">
           <XLogoLink />
+          <InstagramLogoLink />
           <ThemeToggle />
           <LaunchAppLink className="hero-launch-btn marketing-nav-launch">
             {t("common.openSaphra")}

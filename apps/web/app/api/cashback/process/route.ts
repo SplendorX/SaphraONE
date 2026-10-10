@@ -1,7 +1,8 @@
-import { type NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { getAddress, isAddress } from "viem";
 import { processTransactionCashback } from "@/lib/referral/cashback-service";
 import { readJsonRecord, jsonError, jsonOk } from "@/lib/http";
+import { ledgerSourceFor, recordLedgerTransaction } from "@/lib/ledger/transactions";
 import { assertRecurringAccess } from "@/lib/recurring-auth";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
 
@@ -11,6 +12,9 @@ type ProcessCashbackBody = {
   circleSocialUuid?: unknown;
   walletAddress?: unknown;
   txHash?: unknown;
+  /** Labels the transaction in the ledger; never affects what it earns. */
+  activityType?: unknown;
+  source?: unknown;
 };
 
 /**
@@ -53,6 +57,18 @@ export async function POST(request: NextRequest) {
         422,
       );
     }
+
+    after(() =>
+      recordLedgerTransaction({
+        source: ledgerSourceFor(
+          typeof body.activityType === "string" ? body.activityType : "TRANSFER",
+          body.source,
+        ),
+        txHash,
+        verified,
+        wallet,
+      }),
+    );
 
     const result = await processTransactionCashback({
       walletAddress: wallet,

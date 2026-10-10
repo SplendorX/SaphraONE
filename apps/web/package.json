@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run typecheck && pnpm run test:save && pnpm run test:save-activity && pnpm run test:recurring && pnpm run test:circle && pnpm run test:payroll && pnpm run test:referral && pnpm run test:activity && pnpm run test:payment-engine && pnpm run test:account && pnpm run test:business-verification && pnpm run test:support && pnpm run test:allie && pnpm run test:checkout && pnpm run test:recurepay && pnpm run test:multichain && pnpm run test:tx-approval && pnpm run test:rewards",
+    "test": "pnpm run typecheck && pnpm run test:save && pnpm run test:save-activity && pnpm run test:recurring && pnpm run test:circle && pnpm run test:payroll && pnpm run test:referral && pnpm run test:activity && pnpm run test:payment-engine && pnpm run test:account && pnpm run test:business-verification && pnpm run test:support && pnpm run test:allie && pnpm run test:checkout && pnpm run test:recurepay && pnpm run test:multichain && pnpm run test:tx-approval && pnpm run test:rewards && pnpm run test:ledger",
     "test:save": "node --test lib/save/__tests__/decimal-target.test.mjs lib/save/__tests__/security-integration.test.mjs lib/save/__tests__/lock.test.mjs",
     "test:save-activity": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/save/__tests__/activity.test.mjs",
     "test:recurring": "node --test lib/recurring/__tests__/autonomous-autopay.test.mjs",
@@ -29,6 +29,7 @@
     "test:multichain": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/multichain/__tests__/rules.test.mjs lib/multichain/__tests__/chains.test.mjs",
     "test:tx-approval": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/tx-approval/__tests__/approval-rules.test.mjs",
     "test:rewards": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/rewards/__tests__/rewards.test.mjs",
+    "test:ledger": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/ledger/__tests__/classify.test.mjs",
     "test:allie": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/allie/__tests__/classifier.test.mjs lib/allie/__tests__/capabilities.test.mjs lib/allie/__tests__/agent-fees.test.mjs lib/allie/__tests__/business.test.mjs"
   },
   "dependencies": {

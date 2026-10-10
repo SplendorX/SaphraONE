@@ -8,6 +8,7 @@ import {
   referralContribution,
 } from "@/lib/referral/qualification-service";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
+import { recordLedgerTransaction } from "@/lib/ledger/transactions";
 
 /**
  * OnePoints for a settled payroll transaction, matching what every other
@@ -35,6 +36,7 @@ export async function awardPayrollPaymentRewards(
     const amountUsd = await stablecoinUsdValue(outflow.amount, outflow.token);
 
     await Promise.allSettled([
+      recordLedgerTransaction({ source: "payroll", txHash: hash, verified: outflow, wallet }),
       processTransactionCashback({
         amount: outflow.amount,
         feePaid: outflow.feePaid,
