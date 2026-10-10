@@ -290,9 +290,9 @@ function ReceiveSheet({ children, onClose, open }: { children: ReactNode; onClos
       >
         {side === "bottom" ? <SheetGrabber /> : null}
         <div className="dep-sheet">
-          <SheetTitle className="text-center text-lg font-bold">Receive money</SheetTitle>
+          <SheetTitle className="text-center text-xl font-bold">Receive USDC</SheetTitle>
           <SheetDescription className="text-center text-sm text-muted-foreground">
-            Share your username, address or QR code.
+            Share your QR code, username or address.
           </SheetDescription>
           {children}
         </div>

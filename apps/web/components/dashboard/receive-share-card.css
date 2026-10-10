@@ -1,0 +1,237 @@
+/* Receive sheet: a bold QR board, tiles to copy from, one share button. */
+.rx {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.rx-empty {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+/* The board: brushed graphite with a notch in the top and bottom edges. */
+.rx-board {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  gap: 0.85rem;
+  width: min(100%, 21rem);
+  margin: 0.35rem auto 0;
+  padding: 2.1rem 1.4rem 1.15rem;
+  border: 0;
+  border-radius: 1.6rem;
+  cursor: pointer;
+  color: #f5f5f7;
+  background:
+    radial-gradient(120% 70% at 30% 0%, rgb(255 255 255 / 0.22), transparent 55%),
+    linear-gradient(160deg, #6b6b72 0%, #45454c 38%, #2c2c31 72%, #3a3a40 100%);
+  box-shadow:
+    0 26px 48px -26px rgb(0 0 0 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
+  /* Only the notches are cut; the rounded corners come from border-radius. */
+  clip-path: polygon(
+    0 0, 30% 0, 35% 0.8rem, 65% 0.8rem, 70% 0, 100% 0,
+    100% 100%, 70% 100%, 65% calc(100% - 0.8rem), 35% calc(100% - 0.8rem), 30% 100%, 0 100%
+  );
+  transition: transform 160ms ease;
+}
+
+.rx-board:active {
+  transform: scale(0.985);
+}
+
+.rx-board:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.rx-board-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: repeating-linear-gradient(100deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 4px);
+  pointer-events: none;
+}
+
+.rx-qr {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 14.5rem);
+  aspect-ratio: 1;
+}
+
+.rx-qr > svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Sits over the code's centre; error correction H keeps it scannable. */
+.rx-qr-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.45rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.5);
+}
+
+.rx-qr-token {
+  height: 1.75rem;
+  width: 1.75rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.rx-qr-token + .rx-qr-token {
+  margin-left: -0.45rem;
+}
+
+.rx-board-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.72);
+}
+
+.rx-printable {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* "USDC · EURC on Arc" pill under the board. */
+.rx-network {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.2rem 0 0.15rem;
+  padding: 0.45rem 0.95rem 0.45rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--foreground);
+  background: color-mix(in oklch, var(--muted), transparent 20%);
+}
+
+.rx-network-icons {
+  display: inline-flex;
+}
+
+.rx-network-token {
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--card);
+}
+
+.rx-network-token + .rx-network-token {
+  margin-left: -0.4rem;
+}
+
+/* Tiles: big rounded rows, like the rest of the sheet's money surfaces. */
+.rx-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 3.6rem;
+  padding: 0.95rem 1.15rem;
+  border-radius: 1.4rem;
+  color: var(--foreground);
+  background: color-mix(in oklch, var(--muted), transparent 25%);
+  text-decoration: none;
+}
+
+.rx-tile-link {
+  transition: background 150ms ease;
+}
+
+.rx-tile-link:hover {
+  background: color-mix(in oklch, var(--muted), var(--foreground) 4%);
+}
+
+.rx-tile-main {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.rx-label {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.rx-value {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.rx-address {
+  font-family: var(--font-sora), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.rx-label-strong {
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.rx-value-strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.rx-copy {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  height: 2.5rem;
+  width: 2.5rem;
+  border-radius: 0.8rem;
+  color: var(--primary);
+  transition: background 150ms ease;
+}
+
+.rx-copy:hover {
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+/* The platform's primary button, full width, in its bubble shape. */
+.rx-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.4rem;
+  margin-top: 0.35rem;
+  border-radius: var(--swift-bubble-radius);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  box-shadow: 0 14px 30px -16px rgb(91 33 182 / 0.6);
+  transition: background 150ms ease, transform 120ms ease;
+}
+
+.rx-share:hover {
+  background: var(--primary-hover, var(--primary));
+}
+
+.rx-share:active {
+  transform: scale(0.98);
+}
