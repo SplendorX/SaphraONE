@@ -204,3 +204,21 @@ describe("records saved under another hash", () => {
     assert.equal(items.length, 2);
   });
 });
+
+describe("unique rows", () => {
+  it("shows a transfer that arrives twice once", () => {
+    const items = mergeAccountActivity([], [transfer({ logIndex: 37 }), transfer({ logIndex: 37 })]);
+
+    assert.equal(items.length, 1);
+  });
+
+  it("keeps both sides of a transfer between your own wallets, with distinct ids", () => {
+    const items = mergeAccountActivity(
+      [],
+      [transfer({ logIndex: 37 }), transfer({ direction: "in", logIndex: 37 })],
+    );
+
+    assert.equal(items.length, 2);
+    assert.equal(new Set(items.map((item) => item.id)).size, 2);
+  });
+});

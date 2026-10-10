@@ -18,7 +18,9 @@ export function shortAddress(value: string) {
 function walletEntry(transfer: WalletTransfer): AccountActivityItem {
   const other = shortAddress(transfer.counterparty);
   return {
-    id: `wallet:${transfer.hash}:${transfer.logIndex}`,
+    // Direction too: a transfer between your own wallets is one log seen both
+    // as money out and money in, and each side is its own row.
+    id: `wallet:${transfer.hash}:${transfer.logIndex}:${transfer.direction}`,
     // The ALLIE Agent Wallet only moves money on ALLIE's instruction.
     source: transfer.viaAgentWallet ? "agent" : "wallet",
     direction: transfer.direction,
@@ -117,8 +119,15 @@ export function mergeAccountActivity(
     });
   }
 
+  // The same log can arrive twice (the RPC store and Circle's history, or an
+  // overlapping page); count it once.
+  const seenTransfers = new Set<string>();
+
   for (const transfer of transfers) {
     const hash = transfer.hash.toLowerCase();
+    const transferKey = `${hash}:${transfer.logIndex}:${transfer.direction}`;
+    if (seenTransfers.has(transferKey)) continue;
+    seenTransfers.add(transferKey);
     const candidates = byHash.get(hash);
     let item = candidates ? claimantFor(candidates, transfer) : null;
 
