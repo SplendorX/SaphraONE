@@ -1,0 +1,204 @@
+/* USDC campaign cards on the Rewards page. */
+.cb-card {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 0.7rem;
+  overflow: hidden;
+  padding: 1.2rem 1.25rem 1.25rem;
+  border-radius: 1.6rem;
+  color: #ffffff;
+  background: linear-gradient(150deg, #1d1236 0%, #2b1a5c 45%, #3b2cf6 100%);
+  box-shadow: 0 22px 46px -26px rgb(59 44 246 / 0.65);
+}
+
+.cb-glow {
+  position: absolute;
+  z-index: -1;
+  top: -5rem;
+  right: -4rem;
+  width: 15rem;
+  height: 15rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(245 200 66 / 0.35), transparent 65%);
+  pointer-events: none;
+}
+
+.cb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cb-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #f5c842;
+}
+
+.cb-chip {
+  flex-shrink: 0;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.cb-chip.is-live {
+  color: #0b2b16;
+  background: #6ee7a0;
+}
+
+.cb-title {
+  font-family: var(--font-sora), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cb-pool {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-sora), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.8rem, 8vw, 2.3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f5c842;
+}
+
+.cb-pool span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.cb-description {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.82);
+}
+
+.cb-rules {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  color: rgb(255 255 255 / 0.78);
+}
+
+.cb-rules strong {
+  color: #ffffff;
+}
+
+.cb-empty {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+  color: rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.08);
+}
+
+.cb-board {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.cb-row {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.95rem;
+  background: rgb(255 255 255 / 0.07);
+}
+
+.cb-row.is-me {
+  background: rgb(245 200 66 / 0.2);
+  box-shadow: inset 0 0 0 1px rgb(245 200 66 / 0.55);
+}
+
+.cb-rank-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.cb-rank-icon.is-gold { color: #f5c842; }
+.cb-rank-icon.is-silver { color: #d6dbe3; }
+.cb-rank-icon.is-bronze { color: #e0a36b; }
+
+.cb-rank-number {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.65);
+}
+
+.cb-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.cb-name em {
+  flex-shrink: 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 700;
+  color: #1d1236;
+  background: #f5c842;
+}
+
+.cb-score {
+  display: grid;
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.cb-score small {
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.cb-prize {
+  grid-column: 2 / -1;
+  justify-self: end;
+  margin-top: -0.2rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #f5c842;
+}
+
+.cb-me {
+  font-size: 0.84rem;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.cb-won {
+  padding: 0.7rem 0.9rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1d1236;
+  background: #f5c842;
+}

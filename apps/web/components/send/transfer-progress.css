@@ -1,7 +1,9 @@
 /* The moving-money animation (components/send/transfer-progress.tsx). */
 .tp {
-  --tp-blue: #2775ca;
-  --tp-blue-light: #d6e8fb;
+  /* The SaphraONE logo gradient, so the animation matches the brand. */
+  --tp-blue: #3b2cf6;
+  --tp-blue-light: #ece6ff;
+  --tp-brand: linear-gradient(135deg, #6a0ef4 0%, #3b2cf6 50%, #0078ff 100%);
   --tp-coin: 4.25rem;
   display: grid;
   justify-items: center;
@@ -49,9 +51,9 @@
   place-items: center;
   flex-shrink: 0;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #8ec5f5 0%, var(--tp-blue) 55%, #1d5fae 100%);
+  background: var(--tp-brand);
   color: #ffffff;
-  box-shadow: 0 8px 24px rgb(39 117 202 / 0.28);
+  box-shadow: 0 8px 24px rgb(59 44 246 / 0.3);
 }
 
 .tp-coin svg {
@@ -153,7 +155,7 @@
   /* From the coin's own width at 0 to the whole track at 1. */
   width: calc(var(--tp-coin) + (100% - 0.6rem - var(--tp-coin)) * var(--tp-progress, 0));
   border-radius: 9999px;
-  background: linear-gradient(90deg, var(--tp-blue-light) 0%, #9fcbf3 45%, var(--tp-blue) 100%);
+  background: linear-gradient(90deg, var(--tp-blue-light) 0%, #a98bfa 30%, #6a0ef4 55%, #3b2cf6 78%, #0078ff 100%);
   transition: width 900ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
@@ -324,7 +326,8 @@
 }
 
 .tp-result.is-done {
-  background: linear-gradient(90deg, var(--tp-blue-light) 0%, #8ec5f5 45%, var(--tp-blue) 100%);
+  background: var(--tp-brand);
+  box-shadow: 0 18px 40px -14px rgb(59 44 246 / 0.55);
 }
 
 .tp-result.is-hold {

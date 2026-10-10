@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 
 import { OnePointsMark } from "@/components/brand/one-points-mark";
 import { GiftPointsModal } from "@/components/referral/gift-points-modal";
+import { CampaignsBoard } from "@/components/rewards/campaigns-board";
 import { ClaimDiscountSheet } from "@/components/rewards/claim-discount-sheet";
 import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
 import { readActivatedExternalProfile } from "@/lib/platform-access";
@@ -160,6 +161,9 @@ export function RewardsPage() {
           userWallet={wallet}
         />
       </section>
+
+      {/* USDC campaigns, when any are running */}
+      <CampaignsBoard wallet={wallet} />
 
       {/* Earning rate */}
       <section className="rw-card">

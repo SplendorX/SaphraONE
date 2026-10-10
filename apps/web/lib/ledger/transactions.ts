@@ -46,29 +46,38 @@ let warnedMissingTable = false;
  * rate, and classifies it. Idempotent on (tx hash, wallet). Never throws.
  */
 export async function recordLedgerTransaction(input: {
-  /** The account's wallet — the one the money left. */
+  /** The account the transaction belongs to (its owner wallet). */
   wallet: string;
+  /**
+   * The wallet the money actually left, when it isn't the account's own —
+   * ALLIE pays from the owner's Agent Wallet.
+   */
+  sender?: string;
   txHash: string | null | undefined;
   source: string;
   verified?: VerifiedOutflow | null;
   metadata?: Record<string, unknown>;
-}) {
-  if (!ledgerEnabled()) return;
+  /** When it happened, for backfilled rows; defaults to now. */
+  occurredAt?: string | null;
+}): Promise<"recorded" | "skipped" | "failed"> {
+  if (!ledgerEnabled()) return "skipped";
   const txHash = input.txHash?.trim().toLowerCase();
-  if (!txHash || !/^0x[0-9a-f]{64}$/.test(txHash) || !isAddress(input.wallet)) return;
+  if (!txHash || !/^0x[0-9a-f]{64}$/.test(txHash) || !isAddress(input.wallet)) return "skipped";
+  if (input.sender && !isAddress(input.sender)) return "skipped";
   const wallet = input.wallet.toLowerCase();
+  const sender = (input.sender ?? input.wallet).toLowerCase();
 
   try {
-    const verified = input.verified ?? (await verifyWalletOutflow(txHash as `0x${string}`, wallet));
+    const verified = input.verified ?? (await verifyWalletOutflow(txHash as `0x${string}`, sender));
     // Not mined, failed, or moved none of this wallet's stablecoins.
-    if (!verified) return;
+    if (!verified) return "skipped";
 
     const [agent, eurRate] = await Promise.all([
       loadAgentWalletConfig(wallet).catch(() => null),
       usdPerEur(),
     ]);
     const rate = verified.token === "EURC" ? eurRate : 1;
-    const ownWallets = [wallet, ...(agent?.walletAddress ? [agent.walletAddress] : [])];
+    const ownWallets = [wallet, sender, ...(agent?.walletAddress ? [agent.walletAddress] : [])];
     const { eligible, reason } = classifyLedgerEntry({
       amount: verified.amount,
       ownWallets,
@@ -87,7 +96,8 @@ export async function recordLedgerTransaction(input: {
           fee_amount: verified.feePaid,
           fee_usd: verified.feePaid * rate,
           ineligible_reason: reason,
-          metadata: input.metadata ?? {},
+          ...(input.occurredAt ? { occurred_at: input.occurredAt } : {}),
+          metadata: sender === wallet ? (input.metadata ?? {}) : { ...input.metadata, sender },
           payee_count: Object.keys(verified.payees).length,
           payees: verified.payees,
           source: input.source,
@@ -104,8 +114,11 @@ export async function recordLedgerTransaction(input: {
         warnedMissingTable = true;
         console.warn("[ledger] could not record a transaction:", error.message);
       }
+      return "failed";
     }
+    return "recorded";
   } catch (error) {
     console.warn("[ledger]", error instanceof Error ? error.message : error);
+    return "failed";
   }
 }
