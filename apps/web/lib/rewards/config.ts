@@ -3,9 +3,9 @@
  * the browser (to explain the rules) and the server (to apply them).
  */
 
-/** Off unless NEXT_PUBLIC_REWARDS_V2 is "true". Testnet first. */
+/** Live everywhere. NEXT_PUBLIC_REWARDS_V2=false is only an emergency off switch. */
 export function rewardsV2Enabled() {
-  return process.env.NEXT_PUBLIC_REWARDS_V2?.trim() === "true";
+  return process.env.NEXT_PUBLIC_REWARDS_V2?.trim() !== "false";
 }
 
 /** What a point is worth, in USD, for display ("Worth ~$0.00"). */

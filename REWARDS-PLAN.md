@@ -1,7 +1,7 @@
 # Rewards & Invite-and-Earn redesign
 
-Two separate reward systems, behind `NEXT_PUBLIC_REWARDS_V2` (off by default,
-testnet first, like Checkout and multichain):
+Two separate reward systems, live by default (`NEXT_PUBLIC_REWARDS_V2=false` switches them off;
+like Checkout):
 
 | | **Rewards** (new page `/rewards`) | **Invite & Earn** (`/referral`) |
 |---|---|---|
@@ -124,7 +124,7 @@ before claims and discounts can pay out.
 
 ## Build status (2026-10-09)
 
-All four phases are built, behind `NEXT_PUBLIC_REWARDS_V2` (off):
+All four phases are built and live by default since 2026-10-10 (`NEXT_PUBLIC_REWARDS_V2=false` turns them off):
 
 - SQL: `packages/database/supabase/rewards-v2.sql` (not run yet).
 - Rewards: `lib/rewards/*` (config, earning, overview, premium, discounts),
@@ -139,7 +139,7 @@ All four phases are built, behind `NEXT_PUBLIC_REWARDS_V2` (off):
 - Tests: `pnpm run test:rewards` (tier math, streaks, discount pricing).
 
 Done 2026-10-09 (second pass):
-- Flag on locally (root .env). Production needs NEXT_PUBLIC_REWARDS_V2=true in Vercel.
+- Live in production by default; no env var needed.
 - Allie overage stays 0.2 points per extra request; with no points ALLIE pauses.
 - Quests: automatic rules (payments / volume / streak, inside the quest dates)
   checked after every rewarded payment, paid once; manual quests awarded by an

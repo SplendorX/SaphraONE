@@ -58,7 +58,7 @@ function cashbackFor(tier: ReferralDashboardData["currentTier"]) {
         : "1.0 pt per transaction over 10 USDC";
 }
 
-/** Invite & Earn v2 (USDC) when NEXT_PUBLIC_REWARDS_V2 is on; the points version otherwise. */
+/** Invite & Earn v2 (USDC); the points version only when NEXT_PUBLIC_REWARDS_V2=false. */
 export default function ReferralRoute() {
   if (!rewardsV2Enabled()) return <ReferralPage />;
   return (

@@ -52,7 +52,7 @@ export const platformNavItems = [
   { href: "/save", label: "Save", icon: PiggyBank },
   { href: "/earn", label: "Invest", icon: TrendingUp },
   { href: "/insights", label: "Insights", icon: ChartNoAxesColumn },
-  // Rewards (OnePoints) appears once NEXT_PUBLIC_REWARDS_V2 is on.
+  // Rewards (ONE Points) is hidden only when NEXT_PUBLIC_REWARDS_V2=false.
   ...(rewardsV2Enabled() ? [{ href: "/rewards", label: "Rewards", icon: Trophy }] : []),
   { href: "/referral", label: "Invite & Earn", icon: Gift },
   { href: "/settings", label: "Settings", icon: Settings },

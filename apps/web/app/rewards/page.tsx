@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 export default function Rewards() {
-  // Behind NEXT_PUBLIC_REWARDS_V2 until it's rolled out (REWARDS-PLAN.md).
+  // Off only when NEXT_PUBLIC_REWARDS_V2=false (REWARDS-PLAN.md).
   if (!rewardsV2Enabled()) notFound();
   return (
     <PlatformAccessGate>
