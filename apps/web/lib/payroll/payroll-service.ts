@@ -2,7 +2,6 @@ import { payrollDb, payrollTables, readPayrollDbError } from "@/lib/payroll/db";
 import { payrollErrors } from "@/lib/payroll/errors";
 import { calculateItemAmounts, calculateRunTotals } from "@/lib/payroll/calculation-service";
 import { logPayrollAudit } from "@/lib/payroll/audit-service";
-import { listTeamMembers } from "@/lib/payroll/team-service";
 import type {
   PayrollAdjustmentRecord,
   PayrollAdjustmentType,

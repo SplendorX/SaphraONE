@@ -1,4 +1,3 @@
-import type { Address } from "viem";
 
 import {
   arcNetworkTarget,
@@ -50,6 +49,3 @@ export function explorerAddressUrl(address: string): string {
   return `${onchainFacts.explorerUrl.replace(/\/$/, "")}/address/${value}`;
 }
 
-export function isHexAddress(value: string): value is Address {
-  return /^0x[a-fA-F0-9]{40}$/.test(value.trim());
-}

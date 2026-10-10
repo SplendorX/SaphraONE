@@ -62,18 +62,3 @@ export async function loadProfilesByWallets(wallets: string[]) {
   return map;
 }
 
-export function decorateWithProfile<T extends { user_wallet?: string | null }>(
-  row: T,
-  field: keyof T,
-  profiles: Map<string, CircleProfile>,
-  prefix: string,
-) {
-  const wallet = String(row[field] ?? "").toLowerCase();
-  const profile = profiles.get(wallet);
-  return {
-    ...row,
-    [`${prefix}_username`]: profile?.username ?? null,
-    [`${prefix}_display_name`]: profile?.display_name ?? null,
-    [`${prefix}_avatar_url`]: profile?.avatar_url ?? null,
-  };
-}

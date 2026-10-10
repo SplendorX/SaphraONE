@@ -23,6 +23,7 @@ import {
   autoDepositAllowanceUsdc,
 } from "@/lib/earn/auto-deposit-approval";
 import { useAutoDeposit } from "@/lib/earn/use-auto-deposit";
+import { FEATURE_UNLOCK_TERM_LABEL } from "@/lib/referral/types";
 import { useSigningWallet } from "@/lib/use-signing-wallet";
 import { rewardsV2Enabled, USD_PER_POINT } from "@/lib/rewards/config";
 import { usePremiumPayment } from "@/lib/rewards/use-premium-payment";
@@ -54,7 +55,7 @@ export function AutoDepositPanel({
   async function payAndUnlock() {
     const txHash =
       usdcPrice !== null
-        ? await premium.pay({ amountUsdc: usdcPrice, title: "Automatic deposits, 6 months" })
+        ? await premium.pay({ amountUsdc: usdcPrice, title: `Automatic deposits, ${FEATURE_UNLOCK_TERM_LABEL.EARN_AUTO_DEPOSIT}` })
         : undefined;
     await state.unlock(txHash);
   }
@@ -144,7 +145,7 @@ export function AutoDepositPanel({
         </p>
         <div className="earn-auto-lock-price">
           <span className="earn-auto-lock-points">{usdcPrice !== null ? usdcPrice.toFixed(2) : state.unlockCost}</span>
-          <span className="earn-auto-lock-unit">{usdcPrice !== null ? "USDC" : "OnePoints"} / 6 months</span>
+          <span className="earn-auto-lock-unit">{usdcPrice !== null ? "USDC" : "OnePoints"} / {FEATURE_UNLOCK_TERM_LABEL.EARN_AUTO_DEPOSIT}</span>
         </div>
         {approvalError ? (
         <p className="earn-error mt-3">

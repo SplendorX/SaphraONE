@@ -78,9 +78,6 @@ export function isValidUsdcAmount(value: string): boolean {
   }
 }
 
-export function usdcDecimals(): number {
-  return USDC_DECIMALS;
-}
 
 /** Display helper for UI amounts such as `100.00`. */
 export function formatUsdcDisplay(value: string | bigint): string {

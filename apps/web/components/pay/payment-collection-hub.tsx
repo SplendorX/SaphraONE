@@ -27,11 +27,7 @@ import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from 
 import {
   fetchPaymentRequestStatus,
 } from "@/lib/payment-request-client";
-import {
-  buildPaymentRequestPath,
-  buildPaymentRequestUrl,
-  readPaymentRequestIdFromLink,
-} from "@/lib/payment-request-url";
+import { buildPaymentRequestUrl, readPaymentRequestIdFromLink } from "@/lib/payment-request-url";
 import { fetchProfile, formatUsernameLabel } from "@/lib/profile";
 import { normalizeUsername, validateUsername } from "@/lib/profile-utils";
 import {
@@ -272,30 +268,6 @@ export function PaymentCollectionHub({
     canGenerateLink,
     origin,
     requestId,
-    requesterUsername,
-    token,
-    trimmedAmount,
-    trimmedNote,
-    trimmedWalletAddress,
-  ]);
-
-  const dashboardHref = useMemo(() => {
-    return buildPaymentRequestPath({
-      amount: isAmountValid ? trimmedAmount : undefined,
-      memo: trimmedNote,
-      path: "/send",
-      requestId: requestId || undefined,
-      token,
-      username: requesterUsername ?? undefined,
-      walletAddress: requesterUsername
-        ? undefined
-        : isWalletValid
-          ? trimmedWalletAddress
-          : undefined,
-    });
-  }, [
-    isAmountValid,
-    isWalletValid,
     requesterUsername,
     token,
     trimmedAmount,
@@ -564,9 +536,7 @@ export function PaymentCollectionHub({
       }),
     [savedRequests],
   );
-  const activeCount = savedRequests.filter(
-    (r) => deriveLocalRequestStatus(r) === "active",
-  ).length;
+
   const recipientSummary = requesterUsername
     ? formatUsernameLabel(requesterUsername)
     : isWalletValid

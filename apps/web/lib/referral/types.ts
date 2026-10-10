@@ -61,15 +61,18 @@ export const FEATURE_UNLOCK_COST: Record<OnePointsFeature, number> = {
   PAYROLL_AUTO_SCHEDULE: 1_500,
 };
 
-/** Human labels for the unlock UI. */
-export const FEATURE_LABELS: Record<OnePointsFeature, string> = {
-  EARN_AUTO_DEPOSIT: "Automatic deposits",
-  PAYROLL_AUTO_SCHEDULE: "Automatic payroll",
+
+
+/** How long one paid unlock lasts, per feature. */
+export const FEATURE_UNLOCK_TERM_MONTHS: Record<OnePointsFeature, number> = {
+  EARN_AUTO_DEPOSIT: 2,
+  PAYROLL_AUTO_SCHEDULE: 3,
 };
 
-/** How long a paid unlock lasts. */
-export const FEATURE_UNLOCK_TERM_MONTHS = 6;
-export const FEATURE_UNLOCK_TERM_LABEL = "6 months";
+export const FEATURE_UNLOCK_TERM_LABEL: Record<OnePointsFeature, string> = {
+  EARN_AUTO_DEPOSIT: "2 months",
+  PAYROLL_AUTO_SCHEDULE: "3 months",
+};
 
 export type OnePointsEntitlementRecord = {
   id: string;
@@ -113,12 +116,10 @@ export type RedemptionStatus =
 
 export const ONE_POINTS_UNITS_PER_POINT = 100n; // 100 internal units = 1 ONE Point
 export const ONE_POINTS_USD_PER_POINT = 0.01; // 1 ONE Point = 0.01 USDC
-export const MINIMUM_REDEMPTION_ONE_POINTS = 100; // 100 OnePoints = 1 USDC
-export const MINIMUM_REDEMPTION_UNITS = 10_000n;
+export const MINIMUM_REDEMPTION_ONE_POINTS = 100;
 
 // Double-sided Welcome Reward for referred account upon qualification
-export const REFERRED_QUALIFICATION_REWARD_POINTS = 20; // 20 OnePoints
-export const REFERRED_QUALIFICATION_REWARD_UNITS = 2_000n;
+export const REFERRED_QUALIFICATION_REWARD_POINTS = 20;
 
 export type ReferralProfileRecord = {
   id: string;

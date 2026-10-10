@@ -139,19 +139,9 @@ export function isRecurringScheduleStatus(
   return recurringScheduleStatuses.includes(value as RecurringScheduleStatus);
 }
 
-export function isRecurringExecutionStatus(
-  value: string,
-): value is RecurringExecutionStatus {
-  return recurringExecutionStatuses.includes(value as RecurringExecutionStatus);
-}
 
-export function isRecurringAuthorizationStatus(
-  value: string,
-): value is RecurringAuthorizationStatus {
-  return recurringAuthorizationStatuses.includes(
-    value as RecurringAuthorizationStatus,
-  );
-}
+
+
 
 export function isArcTokenSymbol(value: string): value is ArcTokenSymbol {
   return arcTokenSymbols.includes(value as ArcTokenSymbol);
@@ -253,16 +243,7 @@ export function buildAutopayExecutionId(executionId: string) {
   return keccak256(stringToBytes(executionId));
 }
 
-/** @deprecated Prefer buildOccurrenceIdempotencyKey. Kept for legacy rows. */
-export function buildExecutionIdempotencyKey(
-  scheduleId: string,
-  dueAt: string | Date,
-) {
-  const due =
-    typeof dueAt === "string" ? new Date(dueAt) : new Date(dueAt.getTime());
 
-  return `${scheduleId}:${due.toISOString()}`;
-}
 
 export function buildOccurrenceIdempotencyKey(
   scheduleId: string,
@@ -289,14 +270,7 @@ export function retryDelayMsForAttempt(attemptCount: number) {
   return RECURRING_RETRY_BACKOFF_MS[2];
 }
 
-export function isTerminalExecutionStatus(status: RecurringExecutionStatus) {
-  return (
-    status === "COMPLETED" ||
-    status === "FAILED_PERMANENTLY" ||
-    status === "confirmed" ||
-    status === "skipped"
-  );
-}
+
 
 export function isOpenAutopayExecutionStatus(status: RecurringExecutionStatus) {
   return (

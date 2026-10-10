@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Check,
-  Copy,
-  Download,
-  MessageCircle,
-  QrCode,
-  Share2,
-  Smartphone,
-} from "lucide-react";
+import { Check, Copy, Download, MessageCircle, Share2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -34,9 +26,9 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"link" | "qr">("link");
 
-  const shareTitle = "Join me on SaphraONE!";
-  // Rewards v2 has no OnePoints welcome bonus.
-  const shareText = rewardsV2Enabled()
+  // Rewards v2 pays the referrer USDC commission; there is no welcome bonus.
+  const v2 = rewardsV2Enabled();
+  const shareText = v2
     ? `Join me on SaphraONE, the easiest way to send and receive stablecoins: ${referralLink}`
     : `Use my invite link to join SaphraONE and claim a 20 ONE Point welcome bonus: ${referralLink}`;
 
@@ -58,14 +50,18 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
 
   const handleShareTwitter = () => {
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      "Join me on SaphraONE for instant zero-fee USDC payments, yield, and rewards! Get a 20 OnePoints bonus with my link:",
+      v2
+        ? "Join me on SaphraONE, the easiest way to send and receive stablecoins:"
+        : "Join me on SaphraONE for instant USDC payments, yield, and rewards! Get a 20 ONE Point bonus with my link:",
     )}&url=${encodeURIComponent(referralLink)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleShareTelegram = () => {
     const url = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(
-      "Join me on SaphraONE! Claim your 20 OnePoints welcome reward.",
+      v2
+        ? "Join me on SaphraONE, the easiest way to send and receive stablecoins."
+        : "Join me on SaphraONE! Claim your 20 ONE Point welcome reward.",
     )}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -104,9 +100,13 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
       </DialogTrigger>
       <DialogContent className="max-w-md p-6">
         <DialogHeader className="space-y-1 text-left">
-          <DialogTitle className="text-xl font-bold">Invite Friends & Businesses</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {v2 ? "Invite friends & earn USDC" : "Invite Friends & Businesses"}
+          </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Share your personal link to earn OnePoints and lifelong transaction cashback.
+            {v2
+              ? "Share your link. When friends pay with SaphraONE, you earn a share of their fees in USDC."
+              : "Share your personal link to earn ONE Points and lifelong transaction cashback."}
           </DialogDescription>
         </DialogHeader>
 
@@ -208,8 +208,19 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
             </div>
 
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-              🎁 <strong className="text-foreground">Double-Sided Reward:</strong> Your invited friend gets{" "}
-              <strong className="text-primary">20 OnePoints</strong> upon qualified activation, and you earn full points matching your tier!
+              {v2 ? (
+                <>
+                  💸 <strong className="text-foreground">How you earn:</strong> you get{" "}
+                  <strong className="text-primary">10% of the fees</strong> on every payment your
+                  direct referrals make, rising to <strong className="text-primary">25%</strong> as
+                  you grow. It builds up in USDC; claim it to your wallet from $1.
+                </>
+              ) : (
+                <>
+                  🎁 <strong className="text-foreground">Double-Sided Reward:</strong> Your invited friend gets{" "}
+                  <strong className="text-primary">20 ONE Points</strong> upon qualified activation, and you earn full points matching your tier!
+                </>
+              )}
             </div>
           </div>
         ) : (

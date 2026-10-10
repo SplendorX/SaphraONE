@@ -3,14 +3,7 @@
 // page says about it.
 import crypto from "node:crypto";
 
-import {
-  decodeFunctionData,
-  erc20Abi,
-  formatUnits,
-  isAddress,
-  parseAbi,
-  type Hex,
-} from "viem";
+import { decodeFunctionData, erc20Abi, formatUnits, parseAbi, type Hex } from "viem";
 
 import { swiftBatchAbi, swiftPaySendAbi } from "@/lib/contracts";
 import { arcTokens } from "@/lib/tokens";
@@ -233,6 +226,3 @@ export function describeCall(decoded: DecodedCall) {
   }
 }
 
-export function isAddressLike(value: string | undefined) {
-  return Boolean(value && isAddress(value));
-}

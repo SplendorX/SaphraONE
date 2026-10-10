@@ -25,6 +25,7 @@ import {
   vaultName,
 } from "@/lib/earn/display";
 import type { EarnPosition, EarnVault } from "@/lib/earn/types";
+import { FEATURE_UNLOCK_TERM_LABEL } from "@/lib/referral/types";
 import { useSheetSide } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -331,7 +332,7 @@ export function AutomateCard({
   const status = loading
     ? "Checking…"
     : !unlocked
-      ? `${unlockCost} OnePoints for 6 months`
+      ? `${unlockCost} OnePoints for ${FEATURE_UNLOCK_TERM_LABEL.EARN_AUTO_DEPOSIT}`
       : rule?.enabled
         ? `${rule.frequency[0].toUpperCase()}${rule.frequency.slice(1)} · ${Number(rule.amount_usdc).toFixed(2)} USDC · ${rule.mode === "UNATTENDED" ? "Fully automatic" : "Sweep on visit"}`
         : "Unlocked · not set up yet";

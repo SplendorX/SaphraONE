@@ -39,9 +39,8 @@ export function useOnePoints(): OnePointsState {
   const {
     address: platformAddress,
     circleSocialUuid,
-    isConnected: isPlatformConnected,
   } = usePlatformWallet();
-  const { address: wagmiAddress, isConnected: isWagmiConnected } = useAccount();
+  const { address: wagmiAddress } = useAccount();
   const [activatedExternalAddress, setActivatedExternalAddress] = useState("");
 
   const refreshExternal = useCallback(() => {

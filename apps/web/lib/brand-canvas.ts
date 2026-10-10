@@ -80,3 +80,38 @@ export async function drawSaphraBrand(
     options?.onDark,
   );
 }
+
+/** The ONE ribbon's strokes, in the 1024-unit space of public/brand/saphra-mark.svg. */
+const oneRibbonPaths = [
+  "M317,632 A120,120 0 0 0 437,512 A120,120 0 0 0 317,392 A120,120 0 0 0 197,512 A120,120 0 0 0 317,632",
+  "M317,632 L462,632 Q517,632 517,577 L517,392 L667,632 L667,392 L827,392",
+  "M667,512 L797,512",
+  "M667,632 L827,632",
+];
+
+/**
+ * Draws the ONE ribbon (the SaphraONE mark without its gradient tile),
+ * centred on (cx, cy) and `width` wide — a faint watermark on shared receipts.
+ */
+export function drawOneRibbon(
+  context: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  width: number,
+  options: { alpha?: number; color?: string | CanvasGradient } = {},
+) {
+  // The ribbon spans x 168–856 and y 363–661 once its stroke width is included.
+  const scale = width / 688;
+  context.save();
+  context.globalAlpha = options.alpha ?? 0.08;
+  context.translate(cx - 512 * scale, cy - 512 * scale);
+  context.scale(scale, scale);
+  context.strokeStyle = options.color ?? "#5f15f4";
+  context.lineWidth = 58;
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  for (const path of oneRibbonPaths) {
+    context.stroke(new Path2D(path));
+  }
+  context.restore();
+}

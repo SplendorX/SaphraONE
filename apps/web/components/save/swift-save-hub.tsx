@@ -1,15 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Info,
-  KeyRound,
-  Loader2,
-  PiggyBank,
-  Plus,
-  Wallet,
-  ArrowLeft,
-} from "lucide-react";
+import { Info, KeyRound, Loader2, PiggyBank, Plus, ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useAccount,
@@ -169,7 +161,6 @@ export function SwiftSaveHub() {
 
   const vault = swiftSaveVaultAddress();
   const token = arcTokens[currency];
-  const walletAddress = address?.toLowerCase() ?? "";
 
   const { data: walletTokenBalance, refetch: refetchBalance } = useReadContract({
     address: token.address,
@@ -718,8 +709,6 @@ export function SwiftSaveHub() {
     }
   }
 
-  const spendSaveActive = Boolean(spendSave?.enabled);
-  const spendSavePct = spendSave ? Number(spendSave.percentage) : null;
   const spendSavePocket = pockets.find((p) => p.id === spendSave?.pocket_id);
 
   const openCreate = (kind: "flexible" | "fixed") => {

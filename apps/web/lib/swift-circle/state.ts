@@ -108,15 +108,6 @@ export function assertWithdrawalTransition(
   }
 }
 
-export function isTerminalWithdrawal(status: CircleWithdrawalStatus) {
-  return (
-    status === "confirmed" ||
-    status === "rejected" ||
-    status === "cancelled" ||
-    status === "expired" ||
-    status === "failed"
-  );
-}
 
 export function isOpenWithdrawal(status: CircleWithdrawalStatus) {
   return (

@@ -1276,17 +1276,7 @@ export async function confirmInvoicePayment(input: {
   return getPublicInvoice(input.publicId, { markViewed: false });
 }
 
-export function profileCompletion(profile: BusinessAccountProfile | null) {
-  if (!profile) return { missing: ["profile"], percent: 0 };
-  const checks = [
-    ["logo", profile.logo_url],
-    ["website", profile.website],
-    ["description", profile.description],
-  ] as const;
-  const missing = checks.filter(([, value]) => !value).map(([key]) => key);
-  const percent = Math.round(((checks.length - missing.length) / checks.length) * 100);
-  return { missing, percent };
-}
+
 
 /** One of `bands`, null when cleared; anything else is rejected. */
 function readBand(value: unknown, bands: readonly string[], label: string) {

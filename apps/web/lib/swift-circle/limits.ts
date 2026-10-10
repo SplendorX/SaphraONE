@@ -52,9 +52,6 @@ export async function loadPlatformLimits(): Promise<CirclePlatformLimits> {
   }
 }
 
-export function memberLimitMessage(maxMembers: number) {
-  return `Circle has reached its ${maxMembers}-member limit.`;
-}
 
 export function assertUnderLimit(units: bigint, maxUnits: string, label: string) {
   const max = parseUnits(maxUnits);

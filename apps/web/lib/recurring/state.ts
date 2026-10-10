@@ -1,49 +1,3 @@
-import type { RecurringExecutionStatus } from "@/lib/recurring-utils";
-
-const ALLOWED_TRANSITIONS: Record<
-  RecurringExecutionStatus,
-  RecurringExecutionStatus[]
-> = {
-  SCHEDULED: ["DUE", "FAILED_PERMANENTLY"],
-  DUE: ["PROCESSING", "FAILED_PERMANENTLY"],
-  PROCESSING: [
-    "SUBMITTED",
-    "CONFIRMING",
-    "FAILED",
-    "FAILED_PERMANENTLY",
-    "COMPLETED",
-  ],
-  SUBMITTED: ["CONFIRMING", "COMPLETED", "FAILED", "FAILED_PERMANENTLY"],
-  CONFIRMING: ["COMPLETED", "FAILED", "FAILED_PERMANENTLY"],
-  COMPLETED: [],
-  FAILED: ["RETRYING", "FAILED_PERMANENTLY"],
-  RETRYING: ["PROCESSING", "FAILED_PERMANENTLY"],
-  FAILED_PERMANENTLY: [],
-  awaiting_wallet: ["PROCESSING", "submitted", "confirmed", "failed", "DUE"],
-  submitted: ["CONFIRMING", "COMPLETED", "confirmed", "failed"],
-  confirmed: [],
-  failed: ["RETRYING", "FAILED_PERMANENTLY"],
-  skipped: [],
-};
-
-export function canTransitionExecution(
-  from: RecurringExecutionStatus,
-  to: RecurringExecutionStatus,
-) {
-  if (from === to) {
-    return true;
-  }
-  return ALLOWED_TRANSITIONS[from]?.includes(to) === true;
-}
-
-export function assertExecutionTransition(
-  from: RecurringExecutionStatus,
-  to: RecurringExecutionStatus,
-) {
-  if (!canTransitionExecution(from, to)) {
-    throw new Error(`Invalid recurring execution transition: ${from} → ${to}.`);
-  }
-}
 
 export const PERMANENT_FAILURE_CODES = [
   "AUTHORIZATION_REVOKED",
@@ -77,6 +31,3 @@ export const TRANSIENT_FAILURE_CODES = [
 
 export type TransientFailureCode = (typeof TRANSIENT_FAILURE_CODES)[number];
 
-export function isTransientFailureCode(code: string): code is TransientFailureCode {
-  return (TRANSIENT_FAILURE_CODES as readonly string[]).includes(code);
-}

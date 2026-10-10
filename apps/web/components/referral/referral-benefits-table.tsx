@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Coins, Info, Layers, Zap } from "lucide-react";
+import { Check, Coins, Layers, Zap } from "lucide-react";
 import { TierBadge } from "@/components/referral/tier-badge";
 import type { ReferralTier } from "@/lib/referral/types";
 

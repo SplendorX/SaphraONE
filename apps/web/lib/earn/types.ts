@@ -1,9 +1,3 @@
-export type EarnTab =
-  | "vaults"
-  | "position"
-  | "deposit"
-  | "withdraw"
-  | "automate";
 
 export type EarnVault = {
   vaultAddress: string;

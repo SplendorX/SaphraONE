@@ -400,51 +400,6 @@ export async function submitPayment(input: {
   return update.data as BusinessPaymentRecord;
 }
 
-export async function recordIncomingPayment(input: {
-  amount: string;
-  asset: BusinessAsset;
-  circleSocialUuid?: unknown;
-  counterpartyName?: string;
-  counterpartyUsername?: string;
-  counterpartyWallet?: string;
-  ownerWallet: unknown;
-  txHash?: string;
-  workspaceId: string;
-}) {
-  const { actorWallet, workspace } = await requireWorkspaceContext({
-    ...input,
-    permission: "payments.create",
-  });
-  const amountDisplay = parseDisplayAmount(input.amount);
-  const supabase = businessDb();
-  const created = await supabase
-    .from(businessTables.payments)
-    .insert({
-      amount_display: amountDisplay,
-      amount_units: displayToUnits(amountDisplay),
-      approval_status: "NOT_REQUIRED",
-      asset: input.asset,
-      completed_at: nowIso(),
-      counterparty_name: input.counterpartyName ?? null,
-      counterparty_username: input.counterpartyUsername ?? null,
-      counterparty_wallet: input.counterpartyWallet ?? null,
-      created_by_wallet: actorWallet,
-      direction: "incoming",
-      network: "arc",
-      transaction_status: "COMPLETED",
-      tx_hash: input.txHash ?? null,
-      updated_at: nowIso(),
-      workspace_id: workspace.id,
-    })
-    .select("*")
-    .single();
-
-  if (created.error) {
-    throw new Error(readBusinessDbError(created.error, "Could not record the payment."));
-  }
-
-  return created.data as BusinessPaymentRecord;
-}
 
 export async function paymentAnalytics(input: {
   circleSocialUuid?: unknown;

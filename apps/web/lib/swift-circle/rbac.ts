@@ -78,6 +78,3 @@ export function canRemoveMember(actor: CircleRole, target: CircleRole) {
   return false;
 }
 
-export function isCircleRole(value: unknown): value is CircleRole {
-  return value === "host" || value === "admin" || value === "member";
-}

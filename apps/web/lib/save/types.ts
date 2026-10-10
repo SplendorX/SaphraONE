@@ -167,13 +167,7 @@ export function isSavingsTransactionType(
   return savingsTransactionTypes.includes(value as SavingsTransactionType);
 }
 
-export function isSavingsTransactionStatus(
-  value: string,
-): value is SavingsTransactionStatus {
-  return savingsTransactionStatuses.includes(
-    value as SavingsTransactionStatus,
-  );
-}
+
 
 export function isSpendSaveEligibleType(
   value: string,

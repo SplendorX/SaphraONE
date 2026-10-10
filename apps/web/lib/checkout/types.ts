@@ -16,12 +16,7 @@ export type ChargePaymentSource = "SWIFTPAY" | "WALLET" | "ONRAMP" | "BRIDGE" | 
 
 export type ChargeMatchedBy = "RECEIPT" | "SCAN";
 
-export const chargeIntentMethods: readonly ChargeIntentMethod[] = [
-  "WALLET",
-  "SWIFTPAY",
-  "ONRAMP",
-  "BRIDGE",
-];
+
 
 export type ChargeRecord = {
   id: string;

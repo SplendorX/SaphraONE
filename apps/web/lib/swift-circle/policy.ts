@@ -45,12 +45,3 @@ export function canInitiateWithdrawal(input: {
   return input.policy.eligible_roles.includes(input.role);
 }
 
-export function requiredApprovalsFor(input: {
-  eligibleApproverCount: number;
-  policy: CircleWithdrawalPolicyRecord;
-}) {
-  return Math.min(
-    input.policy.required_approvals,
-    Math.max(0, input.eligibleApproverCount),
-  );
-}

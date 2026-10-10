@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { PlatformLogoMark } from "@/components/brand/platform-logo-mark";
 import { PlatformWordmark } from "@/components/brand/platform-wordmark";
 import { TokenIcon } from "@/components/token-icon";
@@ -139,9 +140,7 @@ export function BatchReceiptModal<T extends BatchReceiptData>({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <span aria-hidden className="tx-receipt-watermark">
-          SaphraONE
-        </span>
+        <OneWatermark className="one-watermark-center one-watermark-behind tx-receipt-one" />
 
         <header className="tx-receipt-head">
           <span className="tx-receipt-brand">

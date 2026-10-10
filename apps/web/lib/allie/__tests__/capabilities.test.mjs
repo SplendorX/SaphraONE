@@ -252,3 +252,63 @@ describe("parseAllieAction — new shapes", () => {
     assert.equal(action.legs.length, 20);
   });
 });
+
+describe("Tier 1 — swap quotes", () => {
+  it("reads a quote request without starting a swap", () => {
+    const result = classifyMessage("quote 100 usdc to eurc");
+
+    assert.equal(result?.action.type, "SwapQuote");
+    assert.equal(result.action.amountUsdc, 100);
+    assert.equal(result.action.fromAsset, "USDC");
+    assert.equal(result.action.toAsset, "EURC");
+  });
+
+  it("reads 'how much X for N Y' the right way round", () => {
+    const result = classifyMessage("how much eurc for 50 usdc");
+
+    assert.equal(result?.action.type, "SwapQuote");
+    assert.equal(result.action.fromAsset, "USDC");
+    assert.equal(result.action.toAsset, "EURC");
+    assert.equal(result.action.amountUsdc, 50);
+  });
+
+  it("treats a price question as a 1-unit quote", () => {
+    const result = classifyMessage("what's the eurc price");
+
+    assert.equal(result?.action.type, "SwapQuote");
+    assert.equal(result.action.fromAsset, "EURC");
+    assert.equal(result.action.amountUsdc, 1);
+  });
+
+  it("still swaps when asked to swap", () => {
+    assert.equal(type("swap 25 usdc for eurc"), "Swap");
+  });
+});
+
+describe("Tier 1 — activity summary", () => {
+  const period = (message) => classifyMessage(message)?.action.period;
+
+  it("reads the window", () => {
+    assert.equal(type("how much did I spend this week"), "ActivitySummary");
+    assert.equal(period("how much did I spend this week"), "7d");
+    assert.equal(period("my portfolio today"), "24h");
+    assert.equal(period("activity summary for 30 days"), "30d");
+    assert.equal(period("total volume all time"), "all");
+  });
+
+  it("defaults to 30 days", () => {
+    assert.equal(period("show my spending breakdown"), "30d");
+  });
+
+  it("leaves balance questions alone", () => {
+    assert.equal(type("what's my balance"), "QueryBalance");
+  });
+
+  it("parses model output and defaults a bad period", () => {
+    assert.deepEqual(parseAllieAction('{"type":"ActivitySummary","period":"7d"}'), {
+      type: "ActivitySummary",
+      period: "7d",
+    });
+    assert.equal(parseAllieAction('{"type":"ActivitySummary","period":"1y"}')?.period, "30d");
+  });
+});

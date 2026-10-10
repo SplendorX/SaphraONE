@@ -37,7 +37,7 @@ const instrumentSerif = localFont({
   variable: "--font-display",
 });
 
-const siteTitle = "SaphraONE | Do more with USDC";
+const siteTitle = "SaphraONE | Powering possibilities with USDC";
 const siteDescription =
   `Money movement infrastructure for the internet. Send, batch, request, swap, and settle stablecoins on ${arcChain.name}.`;
 const brandMark = "/brand/saphra-mark.png";
@@ -99,12 +99,12 @@ export const metadata: Metadata = {
 /** Browser and status-bar colour, matching the app's light and dark surfaces. */
 export const viewport: Viewport = {
   themeColor: [
-    { color: "#f4ebdd", media: "(prefers-color-scheme: light)" },
+    { color: "#ffffff", media: "(prefers-color-scheme: light)" },
     { color: "#080609", media: "(prefers-color-scheme: dark)" },
   ],
 };
 
-const themeInitScript = `(function(){try{var pref=localStorage.getItem("saphra.theme")||"dark";var resolved=pref;if(pref==="system"){resolved=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var dark=resolved==="dark";document.documentElement.dataset.theme=dark?"dark":"light";document.documentElement.dataset.themePref=pref;document.documentElement.style.colorScheme=dark?"dark":"light";document.documentElement.classList.toggle("dark",dark);var surface=localStorage.getItem("saphra.light-surface");document.documentElement.dataset.lightSurface=surface==="glass"?"glass":"cream";var loc=localStorage.getItem("saphra.locale");var locales=["en","es","fr","de","pt","ar","zh","ja","ko"];if(loc&&locales.indexOf(loc)!==-1){document.documentElement.lang=loc;document.documentElement.dir=loc==="ar"?"rtl":"ltr";}}catch(error){document.documentElement.classList.add("dark");document.documentElement.dataset.theme="dark";document.documentElement.style.colorScheme="dark";document.documentElement.dataset.lightSurface="cream";}})();`;
+const themeInitScript = `(function(){try{var pref=localStorage.getItem("saphra.theme")||"dark";var resolved=pref;if(pref==="system"){resolved=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var dark=resolved==="dark";document.documentElement.dataset.theme=dark?"dark":"light";document.documentElement.dataset.themePref=pref;document.documentElement.style.colorScheme=dark?"dark":"light";document.documentElement.classList.toggle("dark",dark);var surface=localStorage.getItem("saphra.light-surface");document.documentElement.dataset.lightSurface=surface==="cream"?"cream":"glass";var loc=localStorage.getItem("saphra.locale");var locales=["en","es","fr","de","pt","ar","zh","ja","ko"];if(loc&&locales.indexOf(loc)!==-1){document.documentElement.lang=loc;document.documentElement.dir=loc==="ar"?"rtl":"ltr";}}catch(error){document.documentElement.classList.add("dark");document.documentElement.dataset.theme="dark";document.documentElement.style.colorScheme="dark";document.documentElement.dataset.lightSurface="glass";}})();`;
 
 export default async function RootLayout({
   children,

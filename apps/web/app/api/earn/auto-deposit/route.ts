@@ -16,7 +16,10 @@ import {
   getEntitlement,
   isEntitlementActive,
 } from "@/lib/referral/entitlement-service";
-import { FEATURE_UNLOCK_COST } from "@/lib/referral/types";
+import {
+  FEATURE_UNLOCK_COST,
+  FEATURE_UNLOCK_TERM_LABEL,
+} from "@/lib/referral/types";
 
 export const runtime = "nodejs";
 
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest) {
       )
     ) {
       return jsonError(
-        `Auto-deposit is a premium feature. ${FEATURE_UNLOCK_COST.EARN_AUTO_DEPOSIT} OnePoints covers 6 months.`,
+        `Auto-deposit is a premium feature. ${FEATURE_UNLOCK_COST.EARN_AUTO_DEPOSIT} OnePoints covers ${FEATURE_UNLOCK_TERM_LABEL.EARN_AUTO_DEPOSIT}.`,
         402,
       );
     }

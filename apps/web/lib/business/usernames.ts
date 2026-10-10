@@ -1,5 +1,4 @@
 const businessUsernamePattern = /^[a-z][a-z0-9_-]{2,29}$/;
-const recipientUsernamePattern = /^[a-z][a-z0-9_-]{2,29}$/;
 
 const reservedUsernames = new Set([
   "admin",
@@ -44,20 +43,6 @@ export function validateBusinessUsername(value: string) {
   return null;
 }
 
-export function validateRecipientHandle(value: string) {
-  const username = normalizeHandle(value);
-
-  if (!recipientUsernamePattern.test(username)) {
-    return "Enter a SaphraONE username or a valid wallet address.";
-  }
-
-  if (reservedUsernames.has(username)) {
-    return "That username is reserved.";
-  }
-
-  return null;
-}
-
 export function slugFromName(value: string) {
   const slug = value
     .toLowerCase()
@@ -71,6 +56,3 @@ export function slugFromName(value: string) {
   return slug;
 }
 
-export function isReservedUsername(value: string) {
-  return reservedUsernames.has(normalizeHandle(value));
-}

@@ -53,25 +53,3 @@ export function SendStepIndicator({
   );
 }
 
-export function deriveSendStep({
-  hasAmount,
-  hasRecipient,
-  isConfirmed,
-  isSubmitting,
-}: {
-  hasAmount: boolean;
-  hasRecipient: boolean;
-  isConfirmed: boolean;
-  isSubmitting: boolean;
-}): 1 | 2 | 3 | 4 {
-  if (isConfirmed || isSubmitting) {
-    return 4;
-  }
-  if (hasRecipient && hasAmount) {
-    return 3;
-  }
-  if (hasRecipient) {
-    return 2;
-  }
-  return 1;
-}

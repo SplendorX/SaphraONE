@@ -97,14 +97,7 @@ export function copyTargetReached(
   };
 }
 
-export function copySavingsFailed(paymentUnaffected: boolean) {
-  return {
-    title: "Savings transfer failed",
-    body: paymentUnaffected
-      ? "We couldn’t complete your savings transfer. Your payment wasn’t affected."
-      : "We couldn’t complete your savings transfer. Open Save to review.",
-  };
-}
+
 
 export function copySpendSavePaused() {
   return {
@@ -1316,31 +1309,7 @@ export function isWorkspaceInvitationNotification(
   return false;
 }
 
-export function extractWorkspaceInvitationMeta(
-  item: Pick<SavingsNotificationRecord, "metadata" | "body" | "related_tx_hash">,
-) {
-  const meta = (item.metadata && typeof item.metadata === "object"
-    ? item.metadata
-    : {}) as Record<string, unknown>;
-  const invitationId =
-    (typeof meta.invitationId === "string" ? meta.invitationId : null) ??
-    (item.related_tx_hash?.startsWith("workspace_invite:")
-      ? item.related_tx_hash.slice("workspace_invite:".length)
-      : null) ??
-    (item.body?.match(/workspace[^\w]*invite[:\s]+([0-9a-f-]{36})/i)?.[1] ?? null);
-  const workspaceId =
-    typeof meta.workspaceId === "string" ? meta.workspaceId : null;
-  const workspaceName =
-    typeof meta.workspaceName === "string" ? meta.workspaceName : "Business Workspace";
-  const role = typeof meta.role === "string" ? meta.role : "member";
 
-  return {
-    invitationId,
-    workspaceId,
-    workspaceName,
-    role,
-  };
-}
 
 export function isCircleNotification(
   item: Pick<SavingsNotificationRecord, "kind" | "metadata"> & {

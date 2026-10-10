@@ -3,18 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Coins,
-  Gift,
-  Loader2,
-  ShieldCheck,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Coins, Gift, Loader2, ShieldCheck, TrendingUp, Zap } from "lucide-react";
 import { PlatformBrand } from "@/components/brand/platform-brand";
 import { Button } from "@/components/ui/button";
+import { rewardsV2Enabled } from "@/lib/rewards/config";
 
 export default function ReferralLandingPage() {
   const params = useParams<{ username: string }>();
@@ -23,7 +15,6 @@ export default function ReferralLandingPage() {
 
   const [loading, setLoading] = useState(true);
   const [resolvedUsername, setResolvedUsername] = useState<string | null>(null);
-  const [referrerWallet, setReferrerWallet] = useState<string | null>(null);
 
   useEffect(() => {
     if (!rawIdentifier) {
@@ -55,7 +46,6 @@ export default function ReferralLandingPage() {
           const username = json.referrerUsername || json.resolvedUsername || rawIdentifier;
 
           setResolvedUsername(username);
-          setReferrerWallet(wallet);
 
           // Store in localStorage & cookies for signup attribution
           if (typeof window !== "undefined") {
@@ -134,47 +124,64 @@ export default function ReferralLandingPage() {
               </p>
             </div>
 
-            {/* Welcome Reward Highlight Box */}
-            <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 p-6 sm:p-7 shadow-sm text-left relative overflow-hidden">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-base sm:text-lg">
-                    <Coins className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    20 OnePoints Welcome Reward
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Automatically credited once your payments add up to 250+ USDC.
-                  </p>
+            {rewardsV2Enabled() ? (
+              // Rewards v2 has no welcome bonus: new members earn ONE Points
+              // on their own payments and streaks (REWARDS-PLAN.md).
+              <div className="rounded-2xl border-2 border-primary/25 bg-primary/5 p-6 sm:p-7 shadow-sm text-left">
+                <div className="flex items-center gap-2 font-bold text-base sm:text-lg text-foreground">
+                  <Coins className="h-5 w-5 text-primary" />
+                  Earn ONE Points as you pay
                 </div>
-                <div className="shrink-0 rounded-xl bg-background/90 px-4 py-2 text-center border shadow-xs">
-                  <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                    +0.20 USDC
-                  </div>
-                  <div className="text-[10px] font-semibold text-muted-foreground uppercase">
-                    Free Bonus
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* General Cashback Notice for New Users */}
-            <div className="rounded-xl border border-primary/25 bg-card/70 p-4 text-left shadow-xs flex items-start gap-3.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
-                <Coins className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <div className="text-xs font-bold text-foreground">
-                  Everyday Transaction Cashback on All Sends
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Earn automatic OnePoints cashback on every platform send or payment from 20 USDC/EURC up:{" "}
-                  <strong className="text-foreground">1 pt (20+)</strong>,{" "}
-                  <strong className="text-foreground">5 pts (100+)</strong>,{" "}
-                  <strong className="text-foreground">20 pts (500+)</strong>, and{" "}
-                  <strong className="text-foreground">50 pts (1,000+ USDC/EURC)</strong>.
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Every eligible payment earns ONE Points, plus bonuses for daily streaks. Use
+                  them for discounts on premium features like ALLIE Pro and automations.
                 </p>
               </div>
-            </div>
+            ) : (
+              <>
+              {/* Welcome Reward Highlight Box */}
+              <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/10 p-6 sm:p-7 shadow-sm text-left relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold text-base sm:text-lg">
+                      <Coins className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      20 ONE Points Welcome Reward
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                      Automatically credited once your payments add up to 250+ USDC.
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-xl bg-background/90 px-4 py-2 text-center border shadow-xs">
+                    <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                      +0.20 USDC
+                    </div>
+                    <div className="text-[10px] font-semibold text-muted-foreground uppercase">
+                      Free Bonus
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* General Cashback Notice for New Users */}
+              <div className="rounded-xl border border-primary/25 bg-card/70 p-4 text-left shadow-xs flex items-start gap-3.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                  <Coins className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold text-foreground">
+                    Everyday Transaction Cashback on All Sends
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Earn automatic ONE Points cashback on every platform send or payment from 20 USDC/EURC up:{" "}
+                    <strong className="text-foreground">1 pt (20+)</strong>,{" "}
+                    <strong className="text-foreground">5 pts (100+)</strong>,{" "}
+                    <strong className="text-foreground">20 pts (500+)</strong>, and{" "}
+                    <strong className="text-foreground">50 pts (1,000+ USDC/EURC)</strong>.
+                  </p>
+                </div>
+              </div>
+              </>
+            )}
 
             {/* Features Checklist */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
@@ -216,7 +223,7 @@ export default function ReferralLandingPage() {
                 onClick={handleGetStarted}
                 className="w-full sm:w-auto min-w-[280px] h-12 text-base font-bold gap-2 shadow-md hover:shadow-lg transition-all"
               >
-                Claim 20 OnePoints & Get Started
+                {rewardsV2Enabled() ? "Get started" : "Claim 20 ONE Points & Get Started"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <p className="text-xs text-muted-foreground">

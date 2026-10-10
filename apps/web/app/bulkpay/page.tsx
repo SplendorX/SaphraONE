@@ -39,19 +39,18 @@ import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { ProfileMenu } from "@/components/profile-menu";
 import {
   currentCircleAuth,
- callCircleWalletApi,
- circleStorageKeys,
- findCircleTokenBalance,
- userFacingErrorMessage,
- getCircleLoginIdentity,
- readCircleLogin,
- readCircleSessionStorage,
- readCircleWallets,
- type CircleClientErrorPayload,
- type CircleLoginResult,
- type CircleTokenBalance,
- type CircleWallet,
- writeCircleWallets,
+  callCircleWalletApi,
+  circleStorageKeys,
+  findCircleTokenBalance,
+  userFacingErrorMessage,
+  getCircleLoginIdentity,
+  readCircleLogin,
+  readCircleSessionStorage,
+  readCircleWallets,
+  type CircleLoginResult,
+  type CircleTokenBalance,
+  type CircleWallet,
+  writeCircleWallets,
 } from "@/lib/circle-session";
 import { recoverCircleTxHash } from "@/lib/circle-tx";
 import {
@@ -189,7 +188,6 @@ function formatTokenAmount(
  })} ${symbol}`;
 }
 
-
 function getCircleChallengeId(challenge: CircleContractChallenge) {
  return (
  challenge.challengeId ??
@@ -208,7 +206,7 @@ export default function BulkPayPage() {
  const circleSdkRef = useRef<W3SSdk | null>(null);
  const composerRef = useRef<BatchPeopleComposerHandle | null>(null);
  const fileInputRef = useRef<HTMLInputElement | null>(null);
- const { address: externalAddress, isConnected } = useAccount();
+ const { address: externalAddress } = useAccount();
  const chainId = useChainId();
  const { switchChainAsync } = useSwitchChain();
  const { writeContractAsync } = useWriteContract();

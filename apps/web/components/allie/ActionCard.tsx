@@ -3,15 +3,14 @@
 import {
   AlertTriangle,
   ArrowUpRight,
-  Clock,
   ShieldAlert,
 } from "lucide-react";
 
 import { AllieMark } from "@/components/allie/AllieMark";
 import { AllieProcessing, AllieSettledCheck } from "@/components/allie/AllieProcessing";
 import { ProTierBadge, isProTier } from "@/components/allie/ProTierBadge";
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   explorerTxUrl,
   shortenAddress,
@@ -20,6 +19,8 @@ import {
   type AllieExecutionResponse,
 } from "@/lib/allie/client";
 import { cn } from "@/lib/utils";
+
+import "./allie-confirm.css";
 
 const railLabels: Record<string, string> = {
   "arc-native": "Arc native",
@@ -42,13 +43,26 @@ function formatSeconds(seconds?: number) {
   return `~${Math.round(seconds / 60)} min`;
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Line({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+}) {
   return (
-    <div className="flex items-baseline justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="min-w-0 truncate font-semibold">{value}</span>
+    <div className={cn("allie-confirm-line", muted && "allie-confirm-line-muted")}>
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="shrink-0 font-semibold tabular-nums">{value}</span>
     </div>
   );
+}
+
+/** "20 USDC": amounts are in the token itself, never dollars. */
+export function allieMoney(units: string | null | undefined, asset: string) {
+  return units ? `${unitsToDisplay(units)} ${asset}` : `— ${asset}`;
 }
 
 export type ActionCardState =
@@ -64,6 +78,7 @@ export function ActionCard({
   executionError,
   onCancel,
   onConfirm,
+  onEdit,
   response,
   state,
 }: {
@@ -72,6 +87,8 @@ export function ActionCard({
   executionError?: string | null;
   onCancel: () => void;
   onConfirm: () => void;
+  /** Withdraws the card and hands the request back to the composer. */
+  onEdit?: () => void;
   response: AllieChatResponse;
   state: ActionCardState;
 }) {
@@ -103,23 +120,39 @@ export function ActionCard({
         ? shortenAddress(response.resolvedRecipient)
         : action.recipient);
 
+  const confirmLabel = busy
+    ? "Paying…"
+    : isBatch
+      ? legs.length === 2
+        ? "Confirm both"
+        : `Confirm all ${legs.length}`
+      : "Confirm";
+  const footnote = [
+    !isBatch &&
+    response.resolvedRecipient &&
+    response.recipientLabel !== response.resolvedRecipient
+      ? shortenAddress(response.resolvedRecipient)
+      : null,
+    railLabels[response.rail ?? ""] ?? null,
+    response.estimatedSeconds ? formatSeconds(response.estimatedSeconds) : null,
+    action.note ? `“${action.note}”` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div
       className={cn(
-        "w-full max-w-[min(34rem,85%)] rounded-2xl border bg-card p-4 shadow-sm transition-opacity",
-        blocked ? "border-destructive/40" : "border-border",
+        "allie-confirm-card one-watermark-host",
+        blocked && "allie-confirm-card-blocked",
         state === "cancelled" && "opacity-60",
       )}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <AllieMark size={18} />
-        <p className="text-sm font-semibold">
-          {blocked
-            ? "Payment blocked"
-            : isBatch
-              ? `Confirm ${legs.length} payments`
-              : "Confirm this payment"}
-        </p>
+      <OneWatermark />
+
+      <div className="mb-1 flex items-center gap-2.5">
+        <AllieMark className="allie-confirm-avatar" size={36} />
+        <p className="allie-confirm-name">Allie</p>
         {isProTier(response.tier) ? (
           <ProTierBadge
             className="ml-auto"
@@ -132,8 +165,15 @@ export function ActionCard({
         )}
       </div>
 
+      {blocked ? (
+        <div className="my-2 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+          <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{response.reason ?? "Your policy blocked this payment."}</span>
+        </div>
+      ) : null}
+
       {response.requiresApproval && !blocked && state === "idle" ? (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+        <div className="my-2 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
             Above your auto-approve threshold — confirming here opens one more
@@ -142,83 +182,46 @@ export function ActionCard({
         </div>
       ) : null}
 
-      {blocked ? (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
-          <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{response.reason ?? "Your policy blocked this payment."}</span>
-        </div>
-      ) : null}
-
-      <div className="grid gap-2 rounded-xl border border-border bg-background p-3">
+      <div className="allie-confirm-lines">
         {isBatch ? (
-          <div className="grid gap-1.5 border-b border-border pb-2">
-            {legs.map((leg, index) => (
-              <div
-                className="flex items-baseline justify-between gap-3 text-sm"
-                key={`${index}-${leg.address}`}
-              >
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {leg.label}
-                </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {unitsToDisplay(leg.amountUnits)} {action.asset}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <>
-            <Row
-              label="Recipient"
-              value={
-                response.recipientLabel ??
-                (response.resolvedRecipient
-                  ? shortenAddress(response.resolvedRecipient)
-                  : action.recipient)
-              }
+          legs.map((leg, index) => (
+            <Line
+              key={`${index}-${leg.address}`}
+              label={`Send to ${leg.label}`}
+              value={allieMoney(leg.amountUnits, action.asset)}
             />
-            {response.resolvedRecipient &&
-            response.recipientLabel !== response.resolvedRecipient ? (
-              <Row
-                label="Address"
-                value={shortenAddress(response.resolvedRecipient)}
-              />
-            ) : null}
-          </>
+          ))
+        ) : (
+          <Line
+            label={`Send to ${recipientLabel}`}
+            value={allieMoney(response.amountUnits, action.asset)}
+          />
         )}
-        <Row
-          label={isBatch ? "Total" : "Amount"}
-          value={`${
-            response.amountUnits ? unitsToDisplay(response.amountUnits) : "—"
-          } ${action.asset}`}
-        />
-        <Row label="Rail" value={railLabels[response.rail ?? ""] ?? "—"} />
 
         {(response.fees?.fees ?? []).map((fee) => (
-          <Row
+          <Line
             key={fee.kind}
             label={fee.label}
-            value={`${unitsToDisplay(fee.units)} ${action.asset}`}
+            muted
+            value={allieMoney(fee.units, action.asset)}
           />
         ))}
 
-        {response.totalDebitUnits ? (
-          <div className="mt-0.5 flex items-baseline justify-between gap-3 border-t border-border pt-2 text-sm">
-            <span className="font-medium">Total from your Agent Wallet</span>
-            <span className="shrink-0 font-semibold tabular-nums">
-              {unitsToDisplay(response.totalDebitUnits)} {action.asset}
-            </span>
-          </div>
+        {response.plan === "pro" &&
+        !(response.fees?.fees ?? []).some((fee) => fee.kind === "allie") ? (
+          <Line label="ALLIE fee" muted value="Included with Pro" />
         ) : null}
-        <div className="flex items-baseline justify-between gap-3 text-sm">
-          <span className="text-muted-foreground">Estimated time</span>
-          <span className="inline-flex items-center gap-1.5 font-semibold">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            {formatSeconds(response.estimatedSeconds)}
-          </span>
-        </div>
-        {action.note ? <Row label="Note" value={action.note} /> : null}
+
+        {response.totalDebitUnits &&
+        response.totalDebitUnits !== response.amountUnits ? (
+          <Line
+            label="Total from your Agent Wallet"
+            value={allieMoney(response.totalDebitUnits, action.asset)}
+          />
+        ) : null}
       </div>
+
+      {footnote ? <p className="allie-confirm-foot">{footnote}</p> : null}
 
       {state === "settled" && execution ? (
         <div className="mt-3 min-w-0 overflow-hidden rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5">
@@ -269,28 +272,33 @@ export function ActionCard({
       ) : null}
 
       {blocked || state === "settled" || state === "cancelled" || state === "executing" ? null : (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            className="flex-1"
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          <button
+            className="allie-confirm-primary"
             disabled={busy || !response.intentId}
             onClick={onConfirm}
             type="button"
           >
-            {busy
-            ? "Paying…"
-            : isBatch
-              ? `Confirm & Pay ${legs.length}`
-              : "Confirm & Pay"}
-          </Button>
-          <Button
-            className="flex-1"
+            {confirmLabel}
+          </button>
+          <button
+            className="allie-confirm-secondary"
             disabled={busy}
-            onClick={onCancel}
+            onClick={onEdit ?? onCancel}
             type="button"
-            variant="outline"
           >
-            Cancel
-          </Button>
+            {onEdit ? "Edit" : "Cancel"}
+          </button>
+          {onEdit ? (
+            <button
+              className="allie-confirm-ghost"
+              disabled={busy}
+              onClick={onCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+          ) : null}
         </div>
       )}
     </div>

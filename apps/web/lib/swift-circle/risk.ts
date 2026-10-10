@@ -1,5 +1,4 @@
 import type { CircleRecord, CircleRiskDecision } from "@/lib/swift-circle/types";
-import { parseUnits } from "@/lib/swift-circle/money";
 
 export type CircleRiskInput = {
   amountUnits: bigint;
@@ -60,6 +59,3 @@ export function evaluateCircleRisk(input: CircleRiskInput): CircleRiskResult {
   return { decision, reasons };
 }
 
-export function riskUnits(value: string | null | undefined) {
-  return parseUnits(value);
-}

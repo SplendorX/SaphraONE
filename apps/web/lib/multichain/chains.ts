@@ -261,6 +261,4 @@ export function multichainChainByCircleBlockchain(blockchain: unknown) {
   return MULTICHAIN_CHAINS.find((chain) => chain.circleBlockchain === blockchain) ?? null;
 }
 
-export function multichainChainById(chainId: number) {
-  return MULTICHAIN_CHAINS.find((chain) => chain.chainId === chainId) ?? null;
-}
+

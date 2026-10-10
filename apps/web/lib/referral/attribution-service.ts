@@ -1,6 +1,5 @@
 import crypto from "node:crypto";
 import { referralDb, referralTables, readReferralDbError } from "@/lib/referral/db";
-import { getTier } from "@/lib/referral/tier-service";
 import type {
   ReferralProfileRecord,
   ReferralRecord,
@@ -248,5 +247,5 @@ export async function getReferralForUser(referredWallet: string): Promise<Referr
   return (data as ReferralRecord | null) ?? null;
 }
 
-export const attributeReferral = attachReferral;
+
 

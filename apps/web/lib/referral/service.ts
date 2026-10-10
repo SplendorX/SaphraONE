@@ -1,7 +1,7 @@
 import { referralDb, referralTables, readReferralDbError } from "@/lib/referral/db";
 import { getOrCreateReferralProfile } from "@/lib/referral/attribution-service";
 import { getOnePointsSummary } from "@/lib/referral/ledger-service";
-import { getTier, getTierProgress } from "@/lib/referral/tier-service";
+import { getTierProgress } from "@/lib/referral/tier-service";
 import { getReferralRewardPolicy } from "@/lib/referral/policy-service";
 import { needsReferralSync, syncReferralProgressFromChain } from "@/lib/referral/progress-sync";
 import { loadReferralVolumes, readLastSyncedAt } from "@/lib/referral/qualification-service";

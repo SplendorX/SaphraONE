@@ -1,0 +1,57 @@
+/* Faint ONE ribbon behind receipts, statements, balance boards and ALLIE. */
+.one-watermark {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  color: var(--primary);
+  opacity: 0.05;
+  width: min(62%, 22rem);
+  height: auto;
+  right: -4%;
+  bottom: -6%;
+}
+
+.dark .one-watermark {
+  color: #ffffff;
+  opacity: 0.045;
+}
+
+/* Centred variant for long documents and chat backgrounds. */
+.one-watermark.one-watermark-center {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(70%, 26rem);
+}
+
+/* Keep real content above the mark. */
+.one-watermark-host {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Under the host's content, for hosts that set `isolation: isolate`. */
+.one-watermark.one-watermark-behind {
+  z-index: -1;
+}
+
+/* Receipts: a touch stronger, slightly below centre, like a paper stamp. */
+.one-watermark.tx-receipt-one {
+  top: 56%;
+  width: min(78%, 20rem);
+  opacity: 0.075;
+}
+
+.dark .one-watermark.tx-receipt-one {
+  opacity: 0.06;
+}
+
+/* On a coloured board (white text on the brand gradient): a white mark. */
+.one-watermark.one-watermark-on-color,
+.dark .one-watermark.one-watermark-on-color {
+  color: #ffffff;
+  opacity: 0.09;
+}

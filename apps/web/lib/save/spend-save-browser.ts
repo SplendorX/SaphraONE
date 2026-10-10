@@ -13,7 +13,6 @@ import {
 import {
   completeSpendSave,
   prepareSpendSave,
-  confirmDeposit,
   createSavingsRefund,
   confirmSavingsRefund,
 } from "@/lib/save/client";
@@ -250,81 +249,3 @@ export async function executeSavingsReversal(input: {
   };
 }
 
-/** Manual deposit helper supporting Circle + external. */
-export async function executeVaultDeposit(input: {
-  pocketId: string;
-  ownerWallet: string;
-  amount: string;
-  circleSocialUuid?: string;
-  mode: "external" | "circle";
-  chainId: number;
-  writeContractAsync?: ExternalWrite;
-  circleExecutor?: CircleVaultExecutor;
-  initiate: (body: Record<string, unknown>) => Promise<{
-    transaction: { id: string };
-    vaultAddress: string | null;
-    pocketIdBytes32: string;
-    tokenAddress: string;
-    amountUnits: string;
-  }>;
-}) {
-  const prepared = await input.initiate({
-    ownerWallet: input.ownerWallet,
-    circleSocialUuid: input.circleSocialUuid,
-    amount: input.amount,
-  });
-
-  if (!prepared.vaultAddress) {
-    throw new Error("SwiftSaveVault is not configured.");
-  }
-
-  const vault = prepared.vaultAddress as Address;
-  const amountUnits = BigInt(prepared.amountUnits);
-  const tokenAddress = prepared.tokenAddress as Address;
-  const pocketIdBytes32 = prepared.pocketIdBytes32 as Hex;
-
-  let txHash: Hash | undefined;
-
-  if (input.mode === "circle") {
-    if (!input.circleExecutor) {
-      throw new Error("Circle wallet is not ready.");
-    }
-    const result = await circleVaultDeposit({
-      executor: input.circleExecutor,
-      vault,
-      token: tokenAddress,
-      pocketIdBytes32,
-      amountUnits,
-    });
-    txHash = result.txHash;
-  } else {
-    if (!input.writeContractAsync) {
-      throw new Error("External wallet writer is not available.");
-    }
-    await input.writeContractAsync({
-      address: tokenAddress,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [vault, maxUint256],
-      chainId: input.chainId,
-    });
-    txHash = await input.writeContractAsync({
-      address: vault,
-      abi: swiftSaveVaultAbi,
-      functionName: "deposit",
-      args: [pocketIdBytes32, tokenAddress, amountUnits],
-      chainId: input.chainId,
-    });
-  }
-
-  if (!txHash) {
-    throw new Error("Deposit submitted; waiting for transaction hash.");
-  }
-
-  return confirmDeposit(input.pocketId, {
-    ownerWallet: input.ownerWallet,
-    circleSocialUuid: input.circleSocialUuid,
-    transactionId: prepared.transaction.id,
-    txHash,
-  });
-}

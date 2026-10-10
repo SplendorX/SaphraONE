@@ -1065,39 +1065,4 @@ async function expireProposal(proposal: CircleWithdrawalProposalRecord) {
     .in("status", ["draft", "pending_policy", "pending_approval", "approved"]);
 }
 
-export async function invalidateProposalForMutation(input: {
-  proposalId: string;
-  amountUnits?: string;
-  destinationAddress?: string;
-}) {
-  const supabase = circleDb();
-  const { data } = await supabase
-    .from(circleTables.withdrawals)
-    .select("*")
-    .eq("id", input.proposalId)
-    .maybeSingle();
-  if (!data) return null;
-  const proposal = data as CircleWithdrawalProposalRecord;
-  const amountChanged =
-    input.amountUnits && input.amountUnits !== proposal.amount_units;
-  const destChanged =
-    input.destinationAddress &&
-    input.destinationAddress.toLowerCase() !== proposal.destination_address;
-  if (!amountChanged && !destChanged) return proposal;
-  const nextEpoch = proposal.approval_epoch + 1;
-  const { data: updated } = await supabase
-    .from(circleTables.withdrawals)
-    .update({
-      amount_units: input.amountUnits ?? proposal.amount_units,
-      destination_address:
-        input.destinationAddress?.toLowerCase() ?? proposal.destination_address,
-      approval_epoch: nextEpoch,
-      status: "pending_approval",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", proposal.id)
-    .in("status", ["pending_approval", "approved"])
-    .select("*")
-    .maybeSingle();
-  return updated;
-}
+

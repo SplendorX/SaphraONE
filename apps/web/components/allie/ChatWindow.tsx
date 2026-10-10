@@ -13,9 +13,14 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ActionCard, type ActionCardState } from "@/components/allie/ActionCard";
+import {
+  ActionCard,
+  allieMoney,
+  type ActionCardState,
+} from "@/components/allie/ActionCard";
 import { AllieMark } from "@/components/allie/AllieMark";
 import { OutcomeCard } from "@/components/allie/OutcomeCard";
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { isProTier, ProTierBadge } from "@/components/allie/ProTierBadge";
 import { ConfirmationModal } from "@/components/allie/ConfirmationModal";
 import {
@@ -73,7 +78,15 @@ type ProMark = { overagePoints?: number };
 
 type ChatEntry =
   | { id: string; kind: "user"; text: string; at: string }
-  | { id: string; kind: "allie"; text: string; at: string; pro?: ProMark }
+  | {
+      id: string;
+      kind: "allie";
+      text: string;
+      at: string;
+      pro?: ProMark;
+      /** Labels the bubble "Allie:" — used for the note after a payment lands. */
+      speaker?: boolean;
+    }
   | {
       id: string;
       kind: "action";
@@ -91,6 +104,49 @@ type ChatEntry =
       outcome: NonNullable<AllieChatResponse["outcome"]>;
       pro?: ProMark;
     };
+
+function joinNames(names: string[]) {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** ALLIE's one-line wrap-up once a confirmed payment reaches Arc. */
+function doneMessage(
+  response: AllieChatResponse,
+  execution: AllieExecutionResponse,
+): string {
+  const asset =
+    response.action.type === "BatchPay" || response.action.type === "PaymentIntent"
+      ? response.action.asset
+      : "USDC";
+  const total = response.amountUnits ? allieMoney(response.amountUnits, asset) : asset;
+  const legs = response.legs ?? [];
+
+  if (response.action.type === "BatchPay") {
+    const paymentLegs =
+      execution.batch?.legs.filter((leg) => leg.kind === "payment").length ??
+      legs.length;
+    const submitted = execution.batch?.submitted ?? paymentLegs;
+
+    if (submitted < paymentLegs) {
+      return `Partly done. ${submitted} of ${paymentLegs} payments went through — the card above shows which.`;
+    }
+
+    return legs.length > 0 && legs.length <= 3
+      ? `Done. ${total} sent to ${joinNames(legs.map((leg) => leg.label))}.`
+      : `Done. ${total} sent to ${legs.length || paymentLegs} recipients.`;
+  }
+
+  const recipient =
+    response.recipientLabel ??
+    (response.resolvedRecipient
+      ? shortenAddress(response.resolvedRecipient)
+      : response.action.type === "PaymentIntent"
+        ? response.action.recipient
+        : "");
+
+  return recipient ? `Done. ${total} sent to ${recipient}.` : `Done. ${total} sent.`;
+}
 
 function now() {
   return new Date().toLocaleTimeString([], {
@@ -578,12 +634,23 @@ export function ChatWindow({
 
       try {
         const execution = await confirmAlliePayment({ ...context, intentId });
+        const failed = execution.result.status === "failed";
 
         updateAction(entry.id, {
-          state: execution.result.status === "failed" ? "error" : "settled",
+          state: failed ? "error" : "settled",
           execution,
           executionError: execution.result.error ?? null,
         });
+
+        if (!failed) {
+          appendEntry({
+            id: newId(),
+            kind: "allie",
+            at: now(),
+            speaker: true,
+            text: doneMessage(entry.response, execution),
+          });
+        }
       } catch (executeError) {
         updateAction(entry.id, {
           state: "error",
@@ -596,7 +663,29 @@ export function ChatWindow({
         setConfirmTarget(null);
       }
     },
-    [context, entries, updateAction],
+    [appendEntry, context, entries, updateAction],
+  );
+
+  /**
+   * "Edit" on a card: call the payment off, then put the request that made it
+   * back in the composer so the user can fix the amount or payee and resend.
+   */
+  const editAction = useCallback(
+    async (entryId: string) => {
+      const index = entries.findIndex((entry) => entry.id === entryId);
+      const request = entries
+        .slice(0, Math.max(index, 0))
+        .reverse()
+        .find(
+          (entry): entry is Extract<ChatEntry, { kind: "user" }> =>
+            entry.kind === "user",
+        );
+
+      await cancelAction(entryId);
+      if (request) setDraft(request.text);
+      inputRef.current?.focus();
+    },
+    [cancelAction, entries],
   );
 
   const confirmRevoke = useCallback(async () => {
@@ -753,8 +842,10 @@ export function ChatWindow({
         ) : null}
       </header>
 
+      <div className="one-watermark-host flex min-h-0 flex-1 flex-col">
+      <OneWatermark className="one-watermark-center" />
       <div
-        className="allie-scroll min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"
+        className="allie-scroll relative z-[1] min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4"
         ref={scrollRef}
       >
         {showIntro ? (
@@ -794,6 +885,7 @@ export function ChatWindow({
                   execution={entry.execution}
                   executionError={entry.executionError}
                   onCancel={() => void cancelAction(entry.id)}
+                  onEdit={() => void editAction(entry.id)}
                   onConfirm={() => {
                     // Above the auto-approve threshold the card is only the
                     // first gate — the modal is the explicit go-ahead. Below
@@ -864,12 +956,16 @@ export function ChatWindow({
                 ) : undefined
               }
             >
+              {entry.kind === "allie" && entry.speaker ? (
+                <span className="allie-done-speaker">Allie:</span>
+              ) : null}
               <span className="whitespace-pre-line">{entry.text}</span>
             </MessageBubble>
           );
         })}
 
         {pending ? <AllieThinking /> : null}
+      </div>
       </div>
 
       <div className="shrink-0 border-t border-border/70 px-3 pt-3 pb-3">

@@ -7,17 +7,27 @@ import { useT } from "@/components/locale-provider";
 export const lightSurfaceStorageKey = "saphra.light-surface";
 export type LightSurface = "cream" | "glass";
 
+/** Liquid White is the default light surface; Cashmere is opt-in. */
+export function readLightSurface(): LightSurface {
+  try {
+    return window.localStorage.getItem(lightSurfaceStorageKey) === "cream"
+      ? "cream"
+      : "glass";
+  } catch {
+    return "glass";
+  }
+}
+
 export function applyLightSurface(surface: LightSurface) {
   document.documentElement.dataset.lightSurface = surface;
 }
 
 export function LightSurfacePicker() {
   const t = useT();
-  const [surface, setSurface] = useState<LightSurface>("cream");
+  const [surface, setSurface] = useState<LightSurface>("glass");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(lightSurfaceStorageKey);
-    const next: LightSurface = stored === "glass" ? "glass" : "cream";
+    const next = readLightSurface();
     setSurface(next);
     applyLightSurface(next);
   }, []);
@@ -33,18 +43,18 @@ export function LightSurfacePicker() {
       {(
         [
           {
-            value: "cream" as const,
-            title: t("settings.cashmere"),
-            body: t("settings.cashmereBody"),
-            swatch: "#f4ebdd",
-            inset: "#fff9f0",
-          },
-          {
             value: "glass" as const,
             title: t("settings.liquidGlass"),
             body: t("settings.liquidGlassBody"),
             swatch: "#ffffff",
             inset: "#f2f4f7",
+          },
+          {
+            value: "cream" as const,
+            title: t("settings.cashmere"),
+            body: t("settings.cashmereBody"),
+            swatch: "#f4ebdd",
+            inset: "#fff9f0",
           },
         ] as const
       ).map((option) => {

@@ -36,7 +36,6 @@ import {
   useChainId,
   usePublicClient,
   useSendTransaction,
-  useSignMessage,
   useSwitchChain,
   useWriteContract,
 } from "wagmi";
@@ -52,7 +51,6 @@ import {
 import { CreateCirclePocketDialog } from "@/components/swift-circle/create-circle-pocket-dialog";
 import {
   CircleAvatar,
-  CircleAvatarStack,
   clockLabel,
   dayLabel,
   payModeLabel,
@@ -127,10 +125,7 @@ import type {
 } from "@/lib/swift-circle/types";
 import { arcTokens } from "@/lib/tokens";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
-import {
-  fetchWalletSessionForAddress,
-  signInWalletSession,
-} from "@/lib/wallet-auth-client";
+import { fetchWalletSessionForAddress } from "@/lib/wallet-auth-client";
 import { arcChain } from "@/lib/chains";
 
 import "./circle-room.css";
@@ -217,8 +212,6 @@ const activityFilterOptions: Array<{
   { label: "People", value: "member" },
 ];
 
-const roomGroupOrder = ["Conversation", "Money", "Group"];
-
 /** The room's sections, grouped like Settings. Ids are the room's tab values. */
 const roomSections: HubSection[] = [
   {
@@ -291,7 +284,7 @@ export function SwiftCircleHub() {
   const address = (platformAddress ?? wagmiAddress)?.toLowerCase() ?? "";
   const chainId = useChainId();
   const publicClient = usePublicClient();
-  const { signMessageAsync, isPending: isSigning } = useSignMessage();
+
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
   const { sendTransactionAsync } = useSendTransaction();
@@ -471,19 +464,6 @@ export function SwiftCircleHub() {
   const isCircleMode = Boolean(
     circleLogin && circleWallet?.id && circleSdkReady && circleSdkRef.current,
   );
-
-  async function authorize() {
-    if (!address) return;
-    if (social) {
-      await load();
-      return;
-    }
-    await signInWalletSession({
-      ownerWallet: address,
-      signMessage: async (message) => signMessageAsync({ message }),
-    });
-    await load();
-  }
 
   async function executeCircleCall(
     callData: `0x${string}`,
@@ -922,7 +902,6 @@ export function SwiftCircleHub() {
     );
   }
 
-  const activeMembers = members.filter((member) => member.status === "active");
   const searchableMembers = others.filter((member) => {
     const query = memberQuery.trim().toLowerCase();
     if (!query) return true;

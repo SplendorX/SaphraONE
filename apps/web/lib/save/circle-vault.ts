@@ -36,16 +36,6 @@ type CircleContractChallenge = {
   };
 };
 
-type CircleChallengeResult = {
-  data?: {
-    id?: string;
-    transactionId?: string;
-    txHash?: string;
-  };
-  id?: string;
-  transactionId?: string;
-};
-
 export type CircleVaultExecutor = {
   login: CircleLoginResult;
   walletId: string;
@@ -85,18 +75,7 @@ export function encodeVaultDeposit(input: {
   });
 }
 
-export function encodeVaultDepositFor(input: {
-  owner: Address;
-  pocketIdBytes32: Hex;
-  token: Address;
-  amountUnits: bigint;
-}) {
-  return encodeFunctionData({
-    abi: swiftSaveVaultAbi,
-    functionName: "depositFor",
-    args: [input.owner, input.pocketIdBytes32, input.token, input.amountUnits],
-  });
-}
+
 
 export function encodeVaultWithdraw(input: {
   pocketIdBytes32: Hex;
@@ -233,7 +212,6 @@ async function depositToVault(input: Parameters<typeof circleVaultDeposit>[0]) {
     skipHashes: approvalTxHash ? [approvalTxHash] : undefined,
   });
 }
-
 
 /**
  * Withdraw from SwiftSaveVault back to the Circle wallet (refund/reversal leg).

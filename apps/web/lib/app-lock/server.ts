@@ -90,14 +90,7 @@ export async function findAppLock(wallets: string[]) {
   return lower.map((w) => rows.find((row) => row.owner_wallet === w)).find(Boolean) ?? null;
 }
 
-/** Whether any of these wallets has a lock. Fails open only if the table is missing. */
-export async function hasAppLock(wallets: string[]) {
-  try {
-    return Boolean(await findAppLock(wallets));
-  } catch {
-    return false;
-  }
-}
+
 
 export async function saveAppLock(wallet: string, pin: string, timeoutMinutes: AppLockTimeout) {
   const { error } = await createSupabaseAdminClient()

@@ -387,17 +387,6 @@ export type CircleActivityRecord = {
   created_at: string;
 };
 
-export type CircleAuditLogRecord = {
-  id: string;
-  circle_id: string | null;
-  actor_user_wallet: string | null;
-  action: string;
-  entity_type: string;
-  entity_id: string | null;
-  metadata: Record<string, unknown>;
-  request_id: string | null;
-  created_at: string;
-};
 
 export type CirclePlatformLimits = {
   id: string;

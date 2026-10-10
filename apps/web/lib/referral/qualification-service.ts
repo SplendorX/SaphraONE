@@ -173,27 +173,10 @@ export async function qualifyReferral(input: {
     policyVersion: policy.policyVersion,
   });
 
-  // 7. Increment Referrer Counters & Check for Tier Upgrade
-  const isBusiness = referral.referred_account_type === "BUSINESS";
   const nextTotal = currentCount + 1;
-  const nextPersonal = referrerProfile.successful_personal_referrals + (isBusiness ? 0 : 1);
-  const nextBusiness = referrerProfile.successful_business_referrals + (isBusiness ? 1 : 0);
+
   const newTier = getTier(nextTotal);
   const tierUpgraded = newTier !== referrerProfile.current_tier;
-
-  const profileUpdate = await supabase
-    .from(referralTables.profiles)
-    .update({
-      total_successful_referrals: nextTotal,
-      successful_personal_referrals: nextPersonal,
-      successful_business_referrals: nextBusiness,
-      current_tier: newTier,
-      tier_upgraded_at: tierUpgraded ? new Date().toISOString() : referrerProfile.tier_upgraded_at,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", referrerProfile.id)
-    .select("*")
-    .single();
 
   if (tierUpgraded) {
     // Log tier crossing

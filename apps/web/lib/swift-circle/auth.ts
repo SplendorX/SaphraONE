@@ -83,16 +83,6 @@ export async function requireActiveMember(circleId: string, userWallet: string) 
   return member;
 }
 
-export async function requireCircleContext(input: {
-  circleId: string;
-  circleSocialUuid?: unknown;
-  ownerWallet: unknown;
-}) {
-  const actorWallet = await requireActorWallet(input);
-  const circle = await loadCircle(input.circleId);
-  const member = await requireActiveMember(circle.id, actorWallet);
-  return { actorWallet, circle, member };
-}
 
 export function assertCircleActive(circle: CircleRecord) {
   if (circle.status !== "active") {

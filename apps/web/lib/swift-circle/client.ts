@@ -12,7 +12,6 @@ import type {
   CircleSaveAccountRecord,
   CircleSaveContributionRecord,
   CircleSavePocketRecord,
-  CircleWithdrawalPolicyRecord,
   CircleWithdrawalProposalRecord,
 } from "@/lib/swift-circle/types";
 
@@ -209,21 +208,6 @@ export async function sendMessage(
       body: JSON.stringify(
         authBody(ownerWallet, circleSocialUuid, { content, replyToMessageId }),
       ),
-    }),
-  );
-}
-
-export async function postMessageAction(
-  circleId: string,
-  ownerWallet: string,
-  body: Record<string, unknown>,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ ok: boolean }>(
-    await fetch(`/api/circles/${circleId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
     }),
   );
 }
@@ -461,36 +445,6 @@ export async function archiveCircleSavePocket(
         authBody(ownerWallet, circleSocialUuid, { action: "archivePocket", pocketId }),
       ),
     }),
-  );
-}
-
-export async function updateSaveGoalClient(
-  circleId: string,
-  ownerWallet: string,
-  body: Record<string, unknown>,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ account: CircleSaveAccountRecord }>(
-    await fetch(`/api/circles/${circleId}/save`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
-    }),
-  );
-}
-
-export async function fetchPolicies(
-  circleId: string,
-  ownerWallet: string,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ policies: CircleWithdrawalPolicyRecord[] }>(
-    await fetch(
-      withWallet(`/api/circles/${circleId}/withdrawal-policy`, ownerWallet, {
-        circleSocialUuid,
-      }),
-      { cache: "no-store" },
-    ),
   );
 }
 

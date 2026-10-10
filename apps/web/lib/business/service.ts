@@ -15,7 +15,6 @@ import type {
   DirectoryHit,
   PaymentIdentityRecord,
   VerificationStatus,
-  WorkspaceMemberRecord,
   WorkspaceRecord,
   WorkspaceSettingsRecord,
   WorkspaceSummary,
@@ -952,20 +951,9 @@ export async function loadBusinessDetail(workspaceId: string) {
   };
 }
 
-export async function suggestedBusinessUsername(name: string) {
-  const base = slugFromName(name);
-  if (!base) return "";
-  if (!(await usernameTaken(base))) return base;
-  for (let i = 1; i < 20; i += 1) {
-    const candidate = `${base}${i}`.slice(0, 30);
-    if (!(await usernameTaken(candidate))) return candidate;
-  }
-  return base;
-}
 
-export function normalizeBusinessWallet(value: string) {
-  return normalizeWallet(value);
-}
+
+
 
 /**
  * Map wallets to their public SaphraONE @usernames. A business identity wins

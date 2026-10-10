@@ -4,7 +4,6 @@ import {
   ArrowDownLeft,
   Ban,
   Bell,
-  Check,
   CheckCheck,
   ExternalLink,
   Loader2,

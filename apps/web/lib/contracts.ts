@@ -1,15 +1,10 @@
-import type { Abi, Address } from "viem";
+import type { Abi } from "viem";
 
 /**
  * @deprecated Legacy merchant treasury stub ABI (apps/web/abi.json).
  * Earn uses `lib/earn/*` — Circle App Kit Earn vaults.
  */
 import legacyTreasuryAbiJson from "@/abi.json";
-
-/** @deprecated Use earnConfig.vaultAddress from @/lib/earn/config */
-export const swiftPayVaultAddress = (process.env
-  .NEXT_PUBLIC_EARN_VAULT_ADDRESS?.trim() ||
-  "0x0000000000000000000000000000000000000000") as Address;
 
 /** @deprecated Prefer swiftPayVaultAbi from @/lib/earn/abis */
 export const swiftPayVaultAbi = legacyTreasuryAbiJson as Abi;
@@ -94,10 +89,6 @@ export function getSaphraSendAddress() {
     ""
   );
 }
-
-export const swiftPaySendAddress = getSaphraSendAddress();
-
-export const sendPlatformFeeBasisPoints = 10;
 
 export const swiftPaySendAbi = [
   {

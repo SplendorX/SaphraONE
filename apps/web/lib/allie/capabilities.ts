@@ -17,7 +17,15 @@ import { loadIntentsForWallet } from "@/lib/payment-engine/ledger";
 import { createRecurringPublicClient } from "@/lib/recurring/circle-adapter";
 import { arcTokens } from "@/lib/tokens";
 
-import type { AllieAction } from "@/lib/allie/actions";
+import type { AllieAction, AllieAsset } from "@/lib/allie/actions";
+import {
+  activityPeriodLabels,
+  formatUsd,
+  quoteSwap,
+  stablecoinPrices,
+  summarizeActivity,
+  type SwapQuote,
+} from "@/lib/allie/market";
 import { resolveInvoices, resolvePayroll } from "@/lib/allie/business";
 
 export type AllieOutcomeRow = { label: string; value: string };
@@ -209,6 +217,43 @@ async function readRecentIntents(ownerWallet: string, limit: number) {
     .slice(0, limit);
 }
 
+/** 12.3456 → "12.35"; small amounts keep enough digits to mean something. */
+function amount(value: number, digits = 2) {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: value > 0 && value < 0.01 ? 6 : digits,
+    minimumFractionDigits: Math.min(2, digits),
+  });
+}
+
+/** Units → a plain number of tokens (6 decimals). */
+function unitsToNumber(units: bigint | string) {
+  return Number(formatAmountUnits(typeof units === "bigint" ? units : BigInt(units || "0")));
+}
+
+function quoteRows(quote: SwapQuote): AllieOutcomeRow[] {
+  return [
+    { label: "You pay", value: `${amount(quote.amountIn)} ${quote.fromAsset}` },
+    { label: "You receive (est.)", value: `${amount(quote.estimatedOut, 4)} ${quote.toAsset}` },
+    {
+      label: `Minimum (${quote.slippageBps / 100}% slippage)`,
+      value: `${amount(quote.minimumOut, 4)} ${quote.toAsset}`,
+    },
+    { label: "Rate", value: `1 ${quote.fromAsset} = ${amount(quote.rate, 4)} ${quote.toAsset}` },
+    { label: "Route", value: quote.route },
+    { label: "Network gas (est.)", value: quote.gasUsd === null ? "Shown at signing" : formatUsd(quote.gasUsd) },
+    ...(quote.serviceFeeBps
+      ? [{
+          label: `SaphraONE fee (${quote.serviceFeeBps / 100}%)`,
+          value: `${amount(quote.serviceFee, 4)} ${quote.fromAsset}`,
+        }]
+      : []),
+  ];
+}
+
+function swapHref(amountIn: number, fromAsset: AllieAsset, toAsset: AllieAsset) {
+  return `/swap${query({ amount: amountIn, from: fromAsset, to: toAsset })}`;
+}
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
 export async function resolveAllieAction(
@@ -227,10 +272,12 @@ export async function resolveAllieAction(
 
     // ── Balance ────────────────────────────────────────────────────────────
     case "QueryBalance": {
-      // Both wallets, read in parallel — either may be unavailable on its own.
-      const [agent, personal] = await Promise.all([
+      // Both wallets and today's prices, read in parallel — either wallet may
+      // be unavailable on its own.
+      const [agent, personal, prices] = await Promise.all([
         readAgentBalances(ownerWallet),
         readPersonalBalances(ownerWallet),
+        stablecoinPrices(),
       ]);
 
       if (!agent && !personal) {
@@ -240,60 +287,127 @@ export async function resolveAllieAction(
         };
       }
 
-      // One row per wallet in the main asset, so the card reads as two
-      // holdings rather than four. EURC earns a row only when there is some —
-      // a list of zeroes is noise, and labelling them "USDC" was wrong twice.
+      const assets: AllieAsset[] = ["USDC", "EURC"];
+      const wallets = [
+        { label: "Your wallet", balances: personal },
+        ...(agent ? [{ label: "Agent Wallet", balances: agent.balances }] : []),
+      ];
       const rows: AllieOutcomeRow[] = [];
+      let totalUsd = 0;
 
-      rows.push({
-        label: "Your wallet",
-        value: personal ? money(personal.USDC, "USDC") : "Unavailable",
-      });
-
-      if (agent) {
-        rows.push({
-          label: "Agent Wallet",
-          value: agent.balances
-            ? money(agent.balances.USDC, "USDC")
-            : "Unavailable",
-        });
+      for (const wallet of wallets) {
+        if (!wallet.balances) {
+          rows.push({ label: wallet.label, value: "Unavailable" });
+          continue;
+        }
+        for (const asset of assets) {
+          const units = wallet.balances[asset];
+          // USDC always shows; EURC only when there is some — a row of zeroes is noise.
+          if (asset !== "USDC" && isZero(units)) continue;
+          const usdValue = unitsToNumber(units) * prices[asset];
+          totalUsd += usdValue;
+          rows.push({
+            label: `${wallet.label} · ${asset}`,
+            value: asset === "USDC" ? money(units, asset) : `${money(units, asset)} (${formatUsd(usdValue)})`,
+          });
+        }
       }
 
-      if (personal && !isZero(personal.EURC)) {
-        rows.push({
-          label: "Your wallet · EURC",
-          value: money(personal.EURC, "EURC"),
-        });
+      // Combined only when every wallet was read — a total that quietly omits
+      // an unreachable wallet is worse than no total.
+      if (wallets.every((wallet) => wallet.balances)) {
+        rows.push({ label: "Total value", value: formatUsd(totalUsd) });
       }
 
-      if (agent?.balances && !isZero(agent.balances.EURC)) {
-        rows.push({
-          label: "Agent Wallet · EURC",
-          value: money(agent.balances.EURC, "EURC"),
-        });
-      }
-
-      // Combined only when both sides are real numbers — a total that quietly
-      // omits an unreachable wallet is worse than no total.
-      if (personal && agent?.balances) {
-        rows.push({
-          label: "Total",
-          value: money(
-            (BigInt(personal.USDC) + BigInt(agent.balances.USDC)).toString(),
-            "USDC",
-          ),
-        });
-      }
+      const eurcPrice = `1 EURC = ${formatUsd(prices.EURC)}`;
 
       return {
         kind: "panel",
         title: "Your balances",
         summary: agent
-          ? undefined
-          : "You don't have an Agent Wallet yet — set one up and I can pay on your behalf.",
+          ? `Live price: ${eurcPrice}.`
+          : `Live price: ${eurcPrice}. You don't have an Agent Wallet yet — set one up and I can pay on your behalf.`,
         rows,
         cta: agent ? "Add funds" : "Set up Agent Wallet",
         href: "/settings#agent-wallet",
+      };
+    }
+
+    // ── Activity summary ───────────────────────────────────────────────────
+    case "ActivitySummary": {
+      const summary = await summarizeActivity(ownerWallet, action.period).catch(() => null);
+      const label = activityPeriodLabels[action.period];
+
+      if (!summary) {
+        return { kind: "message", text: "I couldn't read your activity just now. Try again in a moment." };
+      }
+
+      if (summary.count === 0) {
+        return {
+          kind: "message",
+          text: `No money moved in or out of your account — ${label.toLowerCase()}.`,
+        };
+      }
+
+      const perAsset = (side: "in" | "out") =>
+        (["USDC", "EURC"] as const)
+          .filter((asset) => summary.byAsset[asset][side] > 0)
+          .map((asset) => `${amount(summary.byAsset[asset][side])} ${asset}`)
+          .join(" + ") || "—";
+      const net = summary.inUsd - summary.outUsd;
+
+      return {
+        kind: "panel",
+        title: `Activity · ${label}`,
+        summary: `${summary.count} payment${summary.count === 1 ? "" : "s"}, ${formatUsd(
+          summary.inUsd + summary.outUsd,
+        )} total volume. EURC is valued at today's rate.`,
+        rows: [
+          { label: "Money in", value: `${formatUsd(summary.inUsd)} · ${perAsset("in")}` },
+          { label: "Money out", value: `${formatUsd(summary.outUsd)} · ${perAsset("out")}` },
+          { label: "Net flow", value: `${net >= 0 ? "+" : "−"}${formatUsd(Math.abs(net))}` },
+          ...(summary.topOutCategory
+            ? [{ label: "Most spent on", value: `${summary.topOutCategory.label} · ${formatUsd(summary.topOutCategory.usd)}` }]
+            : []),
+          ...(summary.largestOut
+            ? [{
+                label: "Largest payment",
+                value: `${amount(summary.largestOut.amount)} ${summary.largestOut.asset} · ${summary.largestOut.title}`,
+              }]
+            : []),
+        ],
+        cta: "Open Insights",
+        href: "/insights",
+      };
+    }
+
+    // ── Swap quote ─────────────────────────────────────────────────────────
+    case "SwapQuote": {
+      const quote = await quoteSwap({
+        amount: action.amountUsdc,
+        fromAsset: action.fromAsset,
+        ownerWallet,
+        toAsset: action.toAsset,
+      });
+
+      if (!quote) {
+        return {
+          kind: "panel",
+          title: `${action.fromAsset} → ${action.toAsset} quote`,
+          summary: "I couldn't get a live quote right now. The Swap page will fetch one when you open it.",
+          rows: [],
+          href: swapHref(action.amountUsdc, action.fromAsset, action.toAsset),
+          cta: "Open Swap",
+        };
+      }
+
+      return {
+        kind: "panel",
+        title: `${action.fromAsset} → ${action.toAsset} quote`,
+        summary: "Live quote. Prices move — the Swap page refreshes it before you sign.",
+        rows: quoteRows(quote),
+        href: swapHref(quote.amountIn, quote.fromAsset, quote.toAsset),
+        cta: `Swap ${amount(quote.amountIn)} ${quote.fromAsset}`,
       };
     }
 
@@ -415,24 +529,32 @@ export async function resolveAllieAction(
       };
 
     // ── Swap ───────────────────────────────────────────────────────────────
-    case "Swap":
+    case "Swap": {
+      const quote = await quoteSwap({
+        amount: action.amountUsdc,
+        fromAsset: action.fromAsset,
+        ownerWallet,
+        toAsset: action.toAsset,
+      });
+
       return {
         kind: "prepare",
         title: `Swap ${action.fromAsset} to ${action.toAsset}`,
-        summary: "I've set up the swap — check the quote before you sign it.",
-        rows: [
-          { label: "From", value: `${action.amountUsdc} ${action.fromAsset}` },
-          { label: "To", value: action.toAsset },
-        ],
-        href: `/swap${query({
-          amount: action.amountUsdc,
-          from: action.fromAsset,
-          to: action.toAsset,
-        })}`,
-        cta: "Review the quote",
+        summary: quote
+          ? "I've quoted the swap — review it and sign from your own wallet."
+          : "I've set up the swap — check the quote before you sign it.",
+        rows: quote
+          ? quoteRows(quote)
+          : [
+              { label: "From", value: `${action.amountUsdc} ${action.fromAsset}` },
+              { label: "To", value: action.toAsset },
+            ],
+        href: swapHref(action.amountUsdc, action.fromAsset, action.toAsset),
+        cta: "Review and sign",
         handoff:
-          "Swaps route through your own wallet and need a live quote, so you confirm the rate.",
+          "Swaps run from your own wallet: the Swap page simulates and builds the transaction with the fee, and you sign it. SaphraONE never holds your keys.",
       };
+    }
 
     // ── Request ────────────────────────────────────────────────────────────
     case "RequestPayment":

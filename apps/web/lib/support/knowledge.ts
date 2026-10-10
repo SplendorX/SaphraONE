@@ -429,6 +429,4 @@ export const supportArticles: SupportArticle[] = [
   },
 ];
 
-export function articleById(id: string) {
-  return supportArticles.find((article) => article.id === id) ?? null;
-}
+

@@ -79,12 +79,3 @@ export async function requireWorkspaceContext(input: {
   return { actorWallet, member: member!, workspace };
 }
 
-export async function assertActor(input: {
-  circleSocialUuid?: unknown;
-  ownerWallet: unknown;
-}) {
-  return requireActorWallet({
-    circleSocialUuid: input.circleSocialUuid,
-    ownerWallet: input.ownerWallet,
-  });
-}

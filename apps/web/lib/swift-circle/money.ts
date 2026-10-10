@@ -48,11 +48,7 @@ export function parseUnits(value: string | null | undefined): bigint {
   }
 }
 
-export function assertPositiveUnits(units: bigint) {
-  if (units <= 0n) {
-    throw new Error("Amount must be greater than zero.");
-  }
-}
+
 
 export function sumUnits(values: readonly bigint[]) {
   return values.reduce((total, value) => total + value, 0n);

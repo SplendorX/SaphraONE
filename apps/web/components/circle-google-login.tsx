@@ -347,7 +347,7 @@ export function CircleGoogleLogin({
     "checking" | "mismatch" | "unavailable" | "verified"
   >("checking");
   const [sdkReady, setSdkReady] = useState(false);
-  const [deviceId, setDeviceId] = useState("");
+
   const [deviceToken, setDeviceToken] = useState("");
   const [deviceEncryptionKey, setDeviceEncryptionKey] = useState("");
   const [loginResult, setLoginResult] = useState<CircleLoginResult | null>(
@@ -555,7 +555,6 @@ export function CircleGoogleLogin({
         : "");
 
     if (storedDeviceId) {
-      setDeviceId(storedDeviceId);
       return storedDeviceId;
     }
 
@@ -580,7 +579,6 @@ export function CircleGoogleLogin({
             throw new Error("Circle did not return a device ID.");
           }
 
-          setDeviceId(nextDeviceId);
           writeStorage(storageKeys.deviceId, nextDeviceId);
           if (typeof window !== "undefined") {
             try {
@@ -853,14 +851,14 @@ export function CircleGoogleLogin({
           window.localStorage.removeItem("deviceId");
         } catch {}
       }
-      setDeviceId("");
+
       setDeviceToken("");
       setDeviceEncryptionKey("");
     }
 
     const request = (async () => {
       const nextDeviceId = await resolveDeviceId();
-      setDeviceId(nextDeviceId);
+
       writeStorage(storageKeys.deviceId, nextDeviceId);
 
       const tokens = await callCircleWalletApi<DeviceTokenResponse>(

@@ -79,12 +79,6 @@ export function getPocketLockState(
   };
 }
 
-export function isPocketLocked(
-  pocket: Pick<SavingsPocketRecord, "lock_kind" | "lock_until">,
-  now = new Date(),
-) {
-  return getPocketLockState(pocket, now).locked;
-}
 
 export function pocketWithdrawBlockReason(
   pocket: Pick<

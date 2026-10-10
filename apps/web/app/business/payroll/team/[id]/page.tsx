@@ -8,12 +8,10 @@ import {
   Archive,
   ArrowLeft,
   AtSign,
-  Calendar,
   ExternalLink,
   Loader2,
   Pause,
   Play,
-  UserRound,
   Wallet,
 } from "lucide-react";
 
@@ -31,6 +29,7 @@ import {
   reactivateTeamMemberClient,
 } from "@/lib/payroll/client";
 import type { TeamMemberRecord } from "@/lib/payroll/types";
+
 
 export default function TeamMemberDetailPage({
   params,

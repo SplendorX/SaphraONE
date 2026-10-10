@@ -47,6 +47,7 @@ import { InvoiceOverviewCard } from "@/components/business/overview/invoice-over
 import type { ChargeSummary } from "@/lib/checkout/types";
 import { TeamPaymentsCard } from "@/components/business/overview/team-payments-card";
 import { BusinessHealthCard } from "@/components/business/overview/business-health-card";
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { BusinessOverviewSkeleton } from "@/components/business/overview/business-overview-skeleton";
 import {
   buildRealOverviewData,
@@ -331,8 +332,9 @@ export function BusinessOverview() {
       <OverviewBar />
 
       {/* The business and its money */}
-      <section className="ov-hero">
+      <section className="ov-hero one-watermark-host">
         <span aria-hidden className="ov-hero-glow" />
+        <OneWatermark className="one-watermark-behind one-watermark-on-color" />
         <div className="ov-hero-top">
           <span className="ov-hero-name">
             <Building2 className="h-4 w-4" />

@@ -134,8 +134,8 @@ export function RewardsPage() {
         <span aria-hidden className="rw-hero-sheen" />
         <p className="rw-hero-label">ONE Points</p>
         <p className="rw-balance">
-          <OnePointsMark className="rw-mark" />
           {points(data.balance)}
+          <OnePointsMark className="rw-mark" />
         </p>
         <p className="rw-worth">
           Worth ~<strong>{usd(data.worthUsd)}</strong>

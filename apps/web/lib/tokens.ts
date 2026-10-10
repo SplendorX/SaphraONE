@@ -37,8 +37,6 @@ export const arcTokens = {
   EURC: token(officialEurcAddress(), 6, "Euro Coin", "EURC"),
 } as const satisfies Record<string, TokenInfo>;
 
-/** @deprecated Use `arcTokens`. Kept so existing imports keep working. */
-export const arcTestnetTokens = arcTokens;
 
 export type ArcTokenSymbol = keyof typeof arcTokens;
 

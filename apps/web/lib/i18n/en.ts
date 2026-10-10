@@ -109,7 +109,7 @@ export const en = {
     fullNameHint: "Shown on your profile and in the top bar. Your @username stays the way people pay you.",
     appearanceTitle: "Appearance",
     appearanceBody:
-      "Dark, light, or system. Light mode can switch between cashmere and white.",
+      "Dark, light, or system. Light mode can switch between Liquid White and Cashmere.",
     theme: "Theme",
     lightSurface: "Light surface",
     languageTitle: "Language",
@@ -136,8 +136,8 @@ export const en = {
     system: "System",
     cashmere: "Cashmere",
     cashmereBody: "Warm parchment light, the original SaphraONE surface.",
-    liquidGlass: "White",
-    liquidGlassBody: "White boards with a soft frosted lift.",
+    liquidGlass: "Liquid White",
+    liquidGlassBody: "White boards with a soft frosted lift. The default light look.",
     connectToSeeType: "Connect a wallet to see account type.",
     accountType: "Account type",
     cannotRevert: "Business accounts cannot be changed back to Personal.",
@@ -258,7 +258,7 @@ export const en = {
   },
   landing: {
     kicker: "SaphraONE on Arc",
-    heroTitleBefore: "Do more with",
+    heroTitleBefore: "Powering possibilities with",
     heroLead:
       "Welcome to SaphraONE, an all-round payment platform. Swap, send, request, batch, save, and schedule stablecoin payments from one wallet. Gas is paid in USDC, so what you see is what you spend.",
     productEyebrow: "Product",
@@ -349,10 +349,9 @@ export const en = {
     howStep3Label: "Confirm and settle",
     howStep3Detail:
       "Confirm the transaction. Gas is paid in USDC. Track status in real time and view the ArcScan receipt instantly.",
-    trustEyebrow: "Security & Trust",
-    trustTitle: "Wallet-signed. On-chain. Checkable.",
-    trustCopy:
-      "You sign every payment. Settlement is public on Arc. The claims below are true in the product today.",
+    trustEyebrow: "Security",
+    trustTitle: "Security built into every layer.",
+    trustCopy: "SaphraONE protects your account, every payment and your data with layered controls, and everything that settles is publicly verifiable on Arc.",
     trustNoncustodialTitle: "Non-custodial",
     trustNoncustodialBody:
       "Your funds are never held by SaphraONE. Every transaction is signed by your wallet and settled directly on Arc.",
@@ -363,6 +362,25 @@ export const en = {
     trustTestnetTitle: "Testnet, no real funds",
     trustTestnetBody:
       "SaphraONE currently runs on Arc Testnet. No real funds are at risk. A mainnet deployment will be announced separately.",
+    secPillarAccount: "Account protection",
+    secPillarPayments: "Payment protection",
+    secPillarTransparency: "Transparency",
+    secAppLockTitle: "App lock with PIN or passkey",
+    secAppLockBody: "Lock SaphraONE behind a PIN or a Face ID / fingerprint passkey. It relocks after inactivity, and repeated wrong attempts pause access.",
+    secTwoFactorTitle: "Two-factor authentication",
+    secTwoFactorBody: "Add an authenticator app for time-based codes, with single-use backup codes if you lose your phone.",
+    secAlertsTitle: "Sign-in alerts",
+    secAlertsBody: "Every new sign-in sends you an email with the browser, approximate location and time, so anything unusual stands out.",
+    secApprovalTitle: "Transaction approval",
+    secApprovalBody: "Approve payments with Face ID, PIN or 2FA. Sensitive payments can also need a one-time code emailed to you, showing the real amount and recipient.",
+    secAllieTitle: "ALLIE spending guardrails",
+    secAllieBody: "ALLIE's Agent Wallet works inside the daily limit you set, asks before anything above your threshold, and can be paused or revoked instantly.",
+    secOnchainTitle: "Public, final settlement",
+    secOnchainBody: "Every payment settles on Arc with a transaction hash and a receipt anyone can check on ArcScan.",
+    secCommit1: "Encrypted in transit",
+    secCommit2: "Rate-limited sign-ins and codes",
+    secCommit3: "We never ask for your PIN, codes or recovery phrase",
+    secCommit4: "Wallets secured by Circle",
     faqEyebrow: "FAQ",
     faqTitle: "Common SaphraONE questions.",
     faqCopy:

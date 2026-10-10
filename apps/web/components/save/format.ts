@@ -1,6 +1,6 @@
-import { progressPercent, formatUnitsToDecimal } from "@/lib/save/decimal";
+import { progressPercent } from "@/lib/save/decimal";
 import { getPocketEmoji, type SavingsPocketRecord } from "@/lib/save/types";
-import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
+import { type ArcTokenSymbol } from "@/lib/tokens";
 
 export function formatMoney(
   amount: string | null | undefined,
@@ -30,23 +30,3 @@ export function pocketLabel(pocket: SavingsPocketRecord) {
   return `${getPocketEmoji(pocket.icon)} ${pocket.name}`;
 }
 
-export function unitsLabel(units: string, currency: ArcTokenSymbol) {
-  const decimals = arcTokens[currency].decimals;
-  return formatUnitsToDecimal(BigInt(units || "0"), decimals);
-}
-
-export function groupByDay<T extends { created_at: string }>(items: T[]) {
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const day = new Date(item.created_at).toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    const list = groups.get(day) ?? [];
-    list.push(item);
-    groups.set(day, list);
-  }
-  return Array.from(groups.entries());
-}

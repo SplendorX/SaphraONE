@@ -15,7 +15,6 @@ import {
   normalizeAmount,
   normalizeCurrency,
   normalizeIdempotencyKey,
-  isValidTxHash,
   isValidPaymentTxRef,
 } from "@/lib/save/validation";
 import { arcTokens } from "@/lib/tokens";

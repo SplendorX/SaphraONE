@@ -422,13 +422,7 @@ export async function createDueOccurrenceForSchedule(
   return withExecutionDefaults(inserted.data as RecurringExecutionRecord);
 }
 
-/** Queue a due execution only. Settlement is the worker's job for Autopay. */
-export async function createDueExecutionForSchedule(
-  schedule: RecurringScheduleRecord,
-  dueAt = new Date(schedule.next_run_at),
-) {
-  return createDueOccurrenceForSchedule(schedule, dueAt, "autopay");
-}
+
 
 export async function createManualExecutionForSchedule(
   schedule: RecurringScheduleRecord,
@@ -618,49 +612,7 @@ export async function processSingleDueSchedule(
   return { autopay: null, execution };
 }
 
-export async function processDueRecurringSchedules(limit = 50) {
-  const supabase = createSupabaseAdminClient();
-  const now = new Date().toISOString();
-  const due = await supabase
-    .from(schedulesTable)
-    .select("*")
-    .eq("status", "active")
-    .lte("next_run_at", now)
-    .order("next_run_at", { ascending: true })
-    .limit(limit);
 
-  if (due.error) {
-    throw new Error(readRecurringSupabaseError(due.error));
-  }
-
-  const created = [];
-  const errors: Array<{ scheduleId: string; message: string }> = [];
-
-  for (const row of due.data ?? []) {
-    const schedule = withScheduleDefaults(row as RecurringScheduleRecord);
-    try {
-      const result = await processSingleDueSchedule(schedule);
-      if (result?.execution) {
-        created.push(result.execution);
-      }
-    } catch (error) {
-      errors.push({
-        message:
-          error instanceof Error
-            ? error.message
-            : "Could not process recurring schedule.",
-        scheduleId: schedule.id,
-      });
-    }
-  }
-
-  return {
-    createdCount: created.length,
-    errors,
-    executions: created,
-    scannedCount: (due.data ?? []).length,
-  };
-}
 
 export async function processDueRecurringSchedulesForOwner(
   ownerWallet: string,

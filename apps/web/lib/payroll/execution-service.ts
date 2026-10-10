@@ -3,12 +3,7 @@ import { payrollErrors } from "@/lib/payroll/errors";
 import { logPayrollAudit } from "@/lib/payroll/audit-service";
 import { getPayrollRun } from "@/lib/payroll/payroll-service";
 import { awardPayrollPaymentRewards } from "@/lib/payroll/payment-rewards";
-import type {
-  PayrollExecutionRecord,
-  PayrollItemRecord,
-  PayrollRunRecord,
-  PayrollRunStatus,
-} from "@/lib/payroll/types";
+import type { PayrollItemRecord, PayrollRunRecord, PayrollRunStatus } from "@/lib/payroll/types";
 
 export type ExecutePayrollInput = {
   accountId: string;

@@ -259,23 +259,6 @@ export async function confirmWithdraw(
   );
 }
 
-export async function fetchSavingsTransactions(
-  ownerWallet: string,
-  options: {
-    pocketId?: string;
-    type?: string;
-    circleSocialUuid?: string;
-  } = {},
-) {
-  const path = withWalletParams("/api/savings/transactions", ownerWallet, {
-    pocketId: options.pocketId,
-    type: options.type,
-    circleSocialUuid: options.circleSocialUuid,
-  });
-  return parseJson<{ transactions: SavingsTransactionRecord[] }>(
-    await fetch(path, { cache: "no-store" }),
-  );
-}
 
 export async function fetchSpendSave(
   ownerWallet: string,
@@ -301,15 +284,6 @@ export async function saveSpendSaveConfig(body: Record<string, unknown>) {
   );
 }
 
-export async function updateSpendSaveConfig(body: Record<string, unknown>) {
-  return parseJson<{ config: SpendSaveConfigRecord }>(
-    await fetch("/api/spend-save", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-  );
-}
 
 export async function pauseSpendSave(body: Record<string, unknown>) {
   return parseJson<{ config: SpendSaveConfigRecord }>(
@@ -440,42 +414,6 @@ export async function quotePayment(body: Record<string, unknown>) {
   );
 }
 
-export async function quoteSpendSave(body: Record<string, unknown>) {
-  return parseJson<{
-    active: boolean;
-    quote: {
-      paymentAmount: string;
-      saveAmount: string;
-      plannedSaveAmount?: string;
-      totalRequired: string;
-      paymentAmountUnits: string;
-      saveAmountUnits: string;
-      totalRequiredUnits: string;
-      networkFeeAmount?: string;
-      platformFeeAmount?: string;
-      percentage: string;
-      targetCapped?: boolean;
-      reachesTarget?: boolean;
-    } | null;
-    breakdown?: {
-      payment: string;
-      savings: string;
-      networkFee: string;
-      platformFee: string;
-      totalRequired: string;
-      currency: string;
-    };
-    pocket: SavingsPocketRecord | null;
-    config: SpendSaveConfigRecord | null;
-    message?: string;
-  }>(
-    await fetch("/api/spend-save/quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-  );
-}
 
 export async function prepareSpendSave(body: Record<string, unknown>) {
   return parseJson<{

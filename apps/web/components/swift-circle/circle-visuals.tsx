@@ -31,41 +31,6 @@ export function CircleAvatar({
   );
 }
 
-export function CircleAvatarStack({
-  labels,
-  people,
-  size = 28,
-}: {
-  labels?: string[];
-  people?: Array<{ label: string; src?: string | null; key?: string }>;
-  size?: number;
-}) {
-  const items =
-    people ??
-    (labels ?? []).map((label) => ({ label, src: null as string | null, key: label }));
-  const shown = items.slice(0, 6);
-  const extra = items.length - shown.length;
-  return (
-    <div className="sc-avatar-stack">
-      {shown.map((person) => (
-        <CircleAvatar
-          key={person.key ?? person.label}
-          label={person.label}
-          size={size}
-          src={person.src}
-        />
-      ))}
-      {extra > 0 ? (
-        <span
-          className="sc-avatar"
-          style={{ width: size, height: size, fontSize: size * 0.32 }}
-        >
-          +{extra}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 export function dayLabel(iso: string) {
   const date = new Date(iso);

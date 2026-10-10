@@ -23,11 +23,11 @@ import {
  * Advance by whole months rather than a fixed day count, so a term always
  * lands on the same day of the month regardless of month lengths.
  */
-function addTerm(from: Date) {
+function addTerm(from: Date, feature: OnePointsFeature) {
   const next = new Date(from);
   const day = next.getUTCDate();
-  next.setUTCMonth(next.getUTCMonth() + FEATURE_UNLOCK_TERM_MONTHS);
-  // Rolled past the end of a shorter month (31 Aug + 6 would be 31 Feb);
+  next.setUTCMonth(next.getUTCMonth() + FEATURE_UNLOCK_TERM_MONTHS[feature]);
+  // Rolled past the end of a shorter month (30 Nov + 3 would be 30 Feb);
   // clamp back to that month's last day.
   if (next.getUTCDate() !== day) {
     next.setUTCDate(0);
@@ -124,7 +124,7 @@ export async function unlockFeature(input: {
   const summary = await getOnePointsSummary(wallet);
   if (summary.available < cost) {
     throw new Error(
-      `${FEATURE_UNLOCK_TERM_LABEL} of this feature costs ${cost} OnePoints. You have ${summary.available}.`,
+      `${FEATURE_UNLOCK_TERM_LABEL[input.feature]} of this feature costs ${cost} OnePoints. You have ${summary.available}.`,
     );
   }
 
@@ -136,7 +136,7 @@ export async function unlockFeature(input: {
     previousExpiry && previousExpiry.getTime() > now.getTime()
       ? previousExpiry
       : now;
-  const expiresAt = addTerm(termStart).toISOString();
+  const expiresAt = addTerm(termStart, input.feature).toISOString();
 
   // Debit first: a failed write afterwards leaves a recorded spend we can
   // reconcile, whereas granting first could hand out a free term. The key is
@@ -144,7 +144,7 @@ export async function unlockFeature(input: {
   const { entry } = await recordLedgerEntry({
     description: `${existing ? "Renewed" : "Unlocked"} ${input.feature
       .replace(/_/g, " ")
-      .toLowerCase()} for ${FEATURE_UNLOCK_TERM_LABEL}`,
+      .toLowerCase()} for ${FEATURE_UNLOCK_TERM_LABEL[input.feature]}`,
     entryType: "ENTITLEMENT_UNLOCK",
     idempotencyKey: `entitlement:${wallet}:${input.feature}:${
       existing?.expires_at ?? "initial"
@@ -201,7 +201,7 @@ export async function grantPaidEntitlement(input: {
     .from(referralTables.entitlements)
     .upsert(
       {
-        expires_at: addTerm(termStart).toISOString(),
+        expires_at: addTerm(termStart, input.feature).toISOString(),
         feature: input.feature,
         ledger_entry_id: null,
         points_spent: 0,

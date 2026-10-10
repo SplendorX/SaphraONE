@@ -5,7 +5,6 @@ import {
   getAddress,
   isAddress,
   parseUnits,
-  type Address,
   type Chain,
   type Hash,
 } from "viem";
@@ -45,10 +44,6 @@ function treasuryPrivateKey() {
   );
 }
 
-export function isTreasuryPayoutConfigured() {
-  return Boolean(treasuryPrivateKey() && onchainFacts.usdcAddress);
-}
-
 /**
  * The largest single redemption the treasury will pay automatically.
  *
@@ -74,11 +69,6 @@ function clients() {
     publicClient: createPublicClient({ chain, transport }),
     walletClient: createWalletClient({ account, chain, transport }),
   };
-}
-
-export function treasuryPayoutAddress(): Address | null {
-  const ctx = clients();
-  return ctx ? ctx.account.address : null;
 }
 
 /**

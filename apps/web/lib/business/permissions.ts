@@ -100,40 +100,6 @@ export function assertPermission(
   }
 }
 
-export function canManageRole(actor: BusinessRole, target: BusinessRole) {
-  if (target === "owner") return false;
-  if (actor === "owner") return true;
-  if (actor === "admin" && target !== "admin") return true;
-  return false;
-}
 
-export function assignableRoles(actor: BusinessRole): readonly ("admin" | "finance" | "member" | "viewer")[] {
-  if (actor === "owner") {
-    return ["admin", "finance", "member", "viewer"] as const;
-  }
-  if (actor === "admin") {
-    return ["finance", "member", "viewer"] as const;
-  }
-  return [];
-}
 
-export function isBusinessRole(value: unknown): value is BusinessRole {
-  return (
-    value === "owner" ||
-    value === "admin" ||
-    value === "finance" ||
-    value === "member" ||
-    value === "viewer"
-  );
-}
 
-export function isInviteRole(
-  value: unknown,
-): value is Exclude<BusinessRole, "owner"> {
-  return (
-    value === "admin" ||
-    value === "finance" ||
-    value === "member" ||
-    value === "viewer"
-  );
-}

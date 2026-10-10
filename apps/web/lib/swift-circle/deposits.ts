@@ -9,13 +9,11 @@ import {
 
 import { swiftSaveVaultAddress } from "@/lib/save/config";
 import { isValidTxHash } from "@/lib/save/validation";
-import { circleTreasuryAddress } from "@/lib/swift-circle/adapter";
 import { arcChain } from "@/lib/chains";
 import { circleDb, circleTables, readCircleDbError } from "@/lib/swift-circle/db";
-import { circleErrors } from "@/lib/swift-circle/errors";
 import { logCircleEvent } from "@/lib/swift-circle/logging";
 import { parseUnits } from "@/lib/swift-circle/money";
-import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
+import { arcTokens } from "@/lib/tokens";
 
 /** ERC-20 Transfer(address,address,uint256) topic. */
 export const ERC20_TRANSFER_TOPIC =
@@ -152,31 +150,6 @@ export async function readArcReceipt(
   }
 }
 
-export async function verifyTreasuryDeposit(input: {
-  txHash: Hash;
-  asset: ArcTokenSymbol | string;
-  expectedUnits: bigint;
-  waitMs?: number;
-}): Promise<DepositVerification> {
-  const treasury = circleTreasuryAddress();
-  if (!treasury) {
-    return {
-      ok: false,
-      pending: true,
-      reason: "Circle treasury is not configured.",
-    };
-  }
-  const tokenInfo =
-    input.asset === "EURC" ? arcTokens.EURC : arcTokens.USDC;
-  const receipt = await readArcReceipt(input.txHash, input.waitMs ?? 0);
-  return verifyDepositReceipt({
-    receipt,
-    token: tokenInfo.address,
-    treasury,
-    expectedUnits: input.expectedUnits,
-  });
-}
-
 export async function findContributionByTxHash<T>(
   table: string,
   txHash: string,
@@ -303,16 +276,6 @@ export async function verifyContributionRow(input: {
     treasury: vault,
     expectedUnits,
   });
-}
-
-export function requireTreasuryOrThrow(product: "Save" | "Earn") {
-  const treasury = circleTreasuryAddress();
-  if (!treasury) {
-    throw circleErrors.providerUnavailable(
-      `Circle ${product} deposits are paused because the treasury wallet is not configured.`,
-    );
-  }
-  return treasury;
 }
 
 export function logDeposit(input: {

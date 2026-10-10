@@ -9,7 +9,7 @@ import {
   Send,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useWorkspace } from "@/components/business/workspace-provider";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import {
   decideBusinessPayment,
   fetchBusinessRequests,
   fetchWorkspaceDetail,
-  submitBusinessPayment,
   updateBusinessProfileClient,
   updateBusinessSettingsClient,
 } from "@/lib/business/client";

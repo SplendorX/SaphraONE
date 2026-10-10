@@ -8,10 +8,6 @@ export const fadeUp: Variants = {
   visible: { opacity: 1, y: 0 },
 };
 
-export const fadeIn: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
 
 export const staggerContainer: Variants = {
   hidden: {},
@@ -20,10 +16,6 @@ export const staggerContainer: Variants = {
   },
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  visible: { opacity: 1, scale: 1 },
-};
 
 type MotionDivProps = HTMLMotionProps<"div"> & {
   children: ReactNode;
@@ -86,22 +78,3 @@ export function StaggerItem({
   );
 }
 
-export function AnimatedCounter({
-  value,
-  className,
-}: {
-  value: string;
-  className?: string;
-}) {
-  return (
-    <motion.span
-      className={className}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      key={value}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {value}
-    </motion.span>
-  );
-}

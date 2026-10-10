@@ -89,6 +89,8 @@ type ChatResponse = {
   legs?: { address: string; amountUnits: string; label: string }[];
   fees?: ReturnType<typeof serializeFees>;
   totalDebitUnits?: string;
+  /** The plan the fees were priced on: Pro has no per-payment ALLIE fee. */
+  plan?: "free" | "pro";
 };
 
 function upgradePrompt(): AllieAction {
@@ -431,6 +433,7 @@ export async function POST(request: NextRequest) {
       // What will actually leave the wallet — the router's own estimate only
       // covers the platform cut, and ALLIE settles outside the send router.
       const breakdown = computeAgentFees(totalUnits, allieTier);
+      response.plan = allieTier;
 
       response.intentId = intent.intentId;
       response.rail = decision.rail;

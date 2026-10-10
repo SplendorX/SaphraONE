@@ -9,7 +9,6 @@ import {
   MonitorSmartphone,
   Shield,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { getAddress, isAddress } from "viem";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
@@ -104,7 +103,6 @@ function SessionRow({
 export function SessionDeviceManagement({
   embedded = false,
 }: SessionDeviceManagementProps) {
-  const router = useRouter();
   const { address, connector, isConnected } = useAccount();
   const { disconnectAsync } = useDisconnect();
   const { isPending: isSigningIn, signMessageAsync } = useSignMessage();

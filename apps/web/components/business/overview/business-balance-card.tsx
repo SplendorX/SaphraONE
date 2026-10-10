@@ -1,6 +1,8 @@
 "use client";
 
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { BalanceAssetBreakdown } from "./balance-asset-breakdown";
 import { LiquiditySummary } from "./liquidity-summary";
 import type { BusinessBalanceData } from "./types";
@@ -14,7 +16,8 @@ export function BusinessBalanceCard({ data }: BusinessBalanceCardProps) {
   const isTrendDown = data.trendDirection === "down";
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs">
+    <section className="one-watermark-host overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs">
+      <OneWatermark className="one-watermark-behind" />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8 lg:items-stretch min-h-[220px]">
         {/* Left Column: Total Balance & Assets (~65%) */}
         <div className="flex flex-col justify-between space-y-4 lg:col-span-7 xl:col-span-8">

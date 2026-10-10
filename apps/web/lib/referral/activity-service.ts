@@ -1,4 +1,4 @@
-import { referralDb, referralTables, readReferralDbError } from "@/lib/referral/db";
+import { referralDb, referralTables } from "@/lib/referral/db";
 import { pointsToInternalUnits, recordLedgerEntry } from "@/lib/referral/ledger-service";
 import { getReferralRewardPolicy } from "@/lib/referral/policy-service";
 import { getOrCreateReferralProfile } from "@/lib/referral/attribution-service";

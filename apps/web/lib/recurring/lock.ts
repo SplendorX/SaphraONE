@@ -108,19 +108,3 @@ export async function releaseRecurringLock(lock: RecurringLock | null) {
   await releasePostgresLock(lock);
 }
 
-export async function withRecurringLock<T>(
-  key: string,
-  fn: (lock: RecurringLock) => Promise<T>,
-  ttlMs = DEFAULT_TTL_MS,
-): Promise<{ locked: false; value: null } | { locked: true; value: T }> {
-  const lock = await acquireRecurringLock(key, ttlMs);
-  if (!lock) {
-    return { locked: false, value: null };
-  }
-  try {
-    const value = await fn(lock);
-    return { locked: true, value };
-  } finally {
-    await releaseRecurringLock(lock);
-  }
-}

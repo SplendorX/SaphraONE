@@ -32,7 +32,6 @@ export const STREAK_MILESTONES = [
   { days: 30, points: 75 },
 ] as const;
 
-export const STREAK_CYCLE_DAYS = 30;
 
 /** Points for streak day `cycleDay` (1..30): the daily points plus any milestone. */
 export function streakPointsForDay(cycleDay: number) {

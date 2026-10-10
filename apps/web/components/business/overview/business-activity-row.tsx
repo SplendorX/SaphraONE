@@ -10,7 +10,6 @@ import {
   ArrowDownLeft,
   ExternalLink,
 } from "lucide-react";
-import Link from "next/link";
 import type { BusinessActivityItem, BusinessActivityCategory } from "./types";
 
 type BusinessActivityRowProps = {

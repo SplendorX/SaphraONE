@@ -15,7 +15,6 @@ import type {
 import type { InvoiceRecord, InvoiceSummary } from "@/lib/account/types";
 import type { PayrollDashboardSummary } from "@/lib/payroll/types";
 import type { WalletTransfer } from "@/lib/arcscan-history";
-import { formatMoney } from "@/lib/account/money";
 
 type BuildRealOverviewParams = {
   usdcBalance: number;

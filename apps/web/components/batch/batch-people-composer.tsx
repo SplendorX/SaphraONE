@@ -40,7 +40,6 @@ import { searchPeople } from "@/lib/business/client";
 import type { DirectoryHit } from "@/lib/business/types";
 import { formatUsernameLabel } from "@/lib/profile-utils";
 import type { ArcTokenSymbol } from "@/lib/tokens";
-import { cn } from "@/lib/utils";
 
 export type BatchPeopleComposerHandle = {
   addRow: () => void;

@@ -48,9 +48,6 @@ function operatorPrivateKey() {
   return /^0x[a-fA-F0-9]{64}$/.test(key) ? key : null;
 }
 
-export function isPayrollAutopayConfigured() {
-  return Boolean(payrollExecutorAddress() && operatorPrivateKey());
-}
 
 function clients() {
   const privateKey = operatorPrivateKey();

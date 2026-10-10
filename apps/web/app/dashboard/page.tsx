@@ -3,33 +3,22 @@
 import {
   AlertCircle,
   ArrowDownRight,
-  ArrowDownUp,
-  ArrowRight,
   ArrowUpRight,
   CheckCircle2,
   Copy,
   Eye,
   EyeOff,
-  ExternalLink,
-  KeyRound,
-  QrCode,
-  RefreshCw,
-  UserPlus,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import {
   useAccount,
   useChainId,
   usePublicClient,
   useReadContract,
-  useSendTransaction,
   useSignMessage,
-  useSignTypedData,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -53,11 +42,7 @@ import { DashboardHome } from "@/components/dashboard/home/dashboard-home";
 import { DashboardIncoming } from "@/components/deposit/dashboard-incoming";
 import { DashboardCircleInvites } from "@/components/swift-circle/circle-invite-inbox";
 import { useWalletTransfers } from "@/lib/use-wallet-transfers";
-import {
-  formatDisplayAmount,
-  formatTransferTime,
-  shortenAddress,
-} from "@/lib/wallet-receipt";
+import { shortenAddress } from "@/lib/wallet-receipt";
 import { SendHub } from "@/components/send/send-hub";
 import {
   createRecurringDraft,
@@ -65,11 +50,9 @@ import {
   startTimeError,
   type RecurringScheduleDraft,
 } from "@/components/recurring-schedule-fields";
-import { showSuccess } from "@/components/success-popup";
 import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { PlatformAccessGate } from "@/components/platform-access-gate";
-import { emitOnePointsUpdated } from "@/lib/referral/use-one-points";
 import { recordAccountActivity } from "@/lib/activity/client";
 import { recordPlatformTransactionActivity } from "@/lib/referral/activity-client";
 import { LazyQRCodeSVG } from "@/components/lazy-qr-code";
@@ -116,7 +99,6 @@ import {
   SEND_FEE_BPS,
 } from "@/lib/fees";
 import { executeBundledSend } from "@/lib/payments/execute-send";
-import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { useDisplayCurrency } from "@/lib/display-currency";
 import {
   convertFromUsd,
@@ -131,7 +113,6 @@ import {
   markCircleSessionStale,
   callCircleWalletApi,
   isCircleDeviceIdError,
-  findCircleTokenBalance,
   friendlyCircleSdkMessage,
   userFacingErrorMessage,
   getCircleLoginIdentity,
@@ -140,7 +121,6 @@ import {
   readCircleWallets,
   type CircleClientErrorPayload,
   type CircleLoginResult,
-  type CircleTokenBalance,
   type CircleWallet,
   writeCircleWallets,
 } from "@/lib/circle-session";
@@ -169,9 +149,9 @@ import { cn } from "@/lib/utils";
 import { CoinDetailSheet } from "@/components/dashboard/coin-detail-sheet";
 import { switchToArc } from "@/lib/arc-network";
 import { InstallAppBanner } from "@/components/pwa/install-app";
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { usePreferredWalletMode } from "@/lib/use-preferred-wallet-mode";
 import { arcChain } from "@/lib/chains";
-import type { CircleSwapEstimate } from "@/swap/browser";
 
 const fallbackAddress = "0x0000000000000000000000000000000000000000";
 const sampleAddress = "0xA71CE15C5A0F4B9d7217B8A7A2E6d9D3F55A9cE1";
@@ -227,7 +207,6 @@ type CircleChallengeResult = {
   status?: string;
   transactionId?: string;
 };
-
 
 function formatDashboardGreetingName(username: string) {
   const normalized = username.trim().replace(/^@+/, "");
@@ -434,7 +413,8 @@ function PortfolioBoards({
 
   return (
     <div className="portfolio-boards">
-      <article className="portfolio-hero">
+      <article className="portfolio-hero one-watermark-host">
+        <OneWatermark className="one-watermark-behind" />
         <div className="flex h-full flex-col gap-6">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -717,10 +697,9 @@ export function DashboardContent({
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const publicClient = usePublicClient({ chainId: arcChain.id });
   const { signMessageAsync, isPending: isSigningIn } = useSignMessage();
-  const { signTypedDataAsync } = useSignTypedData();
-  const { sendTransactionAsync } = useSendTransaction();
+
   const [isMounted, setIsMounted] = useState(false);
-  const [activeAction, setActiveAction] = useState<"send" | "swap">("send");
+
   const [copied, setCopied] = useState(false);
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<ArcTokenSymbol>("USDC");
@@ -761,26 +740,14 @@ export function DashboardContent({
   );
   const [walletMode, setWalletMode] = usePreferredWalletMode("circle");
   const [circleWallets, setCircleWallets] = useState<CircleWallet[]>([]);
-  const [circleBalances, setCircleBalances] = useState<CircleTokenBalance[]>(
-    [],
-  );
-  const [circleStatus, setCircleStatus] = useState("Circle wallet loading");
-  const [circleError, setCircleError] = useState<string | null>(null);
-  const [isCircleLoading, setIsCircleLoading] = useState(false);
+
   const [isCirclePaymentPending, setIsCirclePaymentPending] = useState(false);
   const [isPreparingPayment, setIsPreparingPayment] = useState(false);
   const [circleSendSettled, setCircleSendSettled] = useState(false);
   const [lastExecutedChainId, setLastExecutedChainId] = useState<number>(arcChain.id);
   const lastCashbackPoints = useRef<number | null>(null);
-  const [swapTokenIn, setSwapTokenIn] = useState<ArcTokenSymbol>("USDC");
-  const [swapTokenOut, setSwapTokenOut] = useState<ArcTokenSymbol>("EURC");
-  const [swapAmount, setSwapAmount] = useState("");
-  const [swapEstimate, setSwapEstimate] = useState<CircleSwapEstimate>();
-  const [swapExplorerUrl, setSwapExplorerUrl] = useState<string>();
-  const [swapStatus, setSwapStatus] = useState("Ready");
-  const [swapError, setSwapError] = useState<string | null>(null);
-  const [isSwapEstimating, setIsSwapEstimating] = useState(false);
-  const [isSwapPending, setIsSwapPending] = useState(false);
+
+
   const [savedBeneficiaries, setSavedBeneficiaries] = useState<
     BeneficiaryRecord[]
   >([]);
@@ -923,7 +890,6 @@ export function DashboardContent({
 
   const {
     data: rawEurcBalance,
-    isLoading: isEurcBalanceLoading,
     refetch: refetchEurcBalance,
   } = useReadContract({
     address: arcTokens.EURC.address,
@@ -938,7 +904,6 @@ export function DashboardContent({
 
   const {
     data: rawUsdcBalance,
-    isLoading: isUsdcBalanceLoading,
     refetch: refetchUsdcBalance,
   } = useReadContract({
     address: arcTokens.USDC.address,
@@ -961,8 +926,6 @@ export function DashboardContent({
       },
     });
 
-  const platformWallet = usePlatformWallet();
-  const isEmbeddedWallet = platformWallet.source === "embedded" || isEmbeddedWalletMode;
   const tokenBalances = {
     EURC: typeof rawEurcBalance === "bigint" ? rawEurcBalance : 0n,
     USDC: typeof rawUsdcBalance === "bigint" ? rawUsdcBalance : 0n,
@@ -993,9 +956,8 @@ export function DashboardContent({
     return usdcValue + eurcAmount * usdPerEur;
   }, [fxRates, isConnected, tokenBalances.EURC, tokenBalances.USDC]);
   // Wallet history also feeds the portfolio chart; refetch after a payment
-  // or swap settles.
+  // settles.
   const { transfers: walletTransfers } = useWalletTransfers(address, [
-    swapExplorerUrl,
     transactionHash,
     transactionReceipt?.status,
   ].join("|"));
@@ -1035,18 +997,6 @@ export function DashboardContent({
     }
   }, [paymentAmount, selectedTokenInfo.decimals]);
 
-  const swapAmountUnits = useMemo(() => {
-    if (!swapAmount.trim()) {
-      return null;
-    }
-
-    try {
-      return parseUnits(swapAmount, arcTokens[swapTokenIn].decimals);
-    } catch {
-      return null;
-    }
-  }, [swapAmount, swapTokenIn]);
-
   const spendSaveUnits = useMemo(() => {
     if (!paymentQuote?.spendSave.active || !paymentQuote.spendSave.saveAmountUnits) {
       return zeroAmount;
@@ -1077,69 +1027,6 @@ export function DashboardContent({
     return paymentAmountUnits + sendFeeUnits + spendSaveUnits;
   }, [paymentAmountUnits, sendFeeUnits, spendSaveUnits]);
 
-  const hasEnoughTokenBalance = Boolean(
-    paymentAmountUnits !== null &&
-      paymentAmountUnits > zeroAmount &&
-      totalPaymentRequiredUnits !== null &&
-      selectedTokenBalance !== undefined &&
-      selectedTokenBalance >= totalPaymentRequiredUnits,
-  );
-  const swapTokenBalance = tokenBalances[swapTokenIn];
-  const hasEnoughSwapBalance = Boolean(
-    swapAmountUnits !== null &&
-      swapTokenBalance !== undefined &&
-      swapTokenBalance >= swapAmountUnits,
-  );
-  const embeddedSwapWallet =
-    circleLogin && circleWallet?.id && circleAddress
-      ? {
-          login: circleLogin,
-          walletAddress: circleAddress,
-          walletId: circleWallet.id,
-        }
-      : null;
-  const canUseEmbeddedSwapWallet = Boolean(
-    isEmbeddedWalletMode && embeddedSwapWallet,
-  );
-  const activeEmbeddedSwapWallet = isEmbeddedWalletMode
-    ? embeddedSwapWallet
-    : null;
-  const canUseExternalSwapWallet = Boolean(
-    !isEmbeddedWalletMode && externalAddress && connector,
-  );
-  const canUseSwapWallet = isEmbeddedWalletMode
-    ? canUseEmbeddedSwapWallet
-    : canUseExternalSwapWallet;
-  const canRequestSwapQuote = Boolean(
-    isConnected &&
-      canUseSwapWallet &&
-      isArcNetwork &&
-      swapTokenIn !== swapTokenOut &&
-      swapAmountUnits !== null &&
-      swapAmountUnits > zeroAmount &&
-      hasEnoughSwapBalance &&
-      !isSwapEstimating &&
-      !isSwapPending,
-  );
-  const canExecuteSwap = Boolean(canRequestSwapQuote && swapEstimate);
-  const swapQuoteButtonText = !isConnected
-    ? "Connect wallet"
-    : !canUseSwapWallet
-      ? isEmbeddedWalletMode
-        ? "Circle wallet loading"
-        : "Connect wallet"
-      : !isArcNetwork
-        ? "Switch network"
-        : swapTokenIn === swapTokenOut
-          ? "Choose assets"
-          : swapAmountUnits === null || swapAmountUnits <= zeroAmount
-            ? "Enter amount"
-            : swapTokenBalance === undefined
-              ? "Loading balance"
-              : !hasEnoughSwapBalance
-                ? `Insufficient ${swapTokenIn}`
-                : "Get quote";
-  const swapButtonText = !swapEstimate ? "Get quote first" : "Swap now";
   const incomingRequestClosedMessage = incomingRequestStatus
     ? paymentRequestClosedMessage(incomingRequestStatus)
     : null;
@@ -1275,10 +1162,9 @@ export function DashboardContent({
       const login = readCircleLogin();
 
       if (!login) {
-        setCircleStatus("No Circle wallet session");
         setCircleLogin(null);
         setCircleWallets([]);
-        setCircleBalances([]);
+
         setWalletMode("external");
         return;
       }
@@ -1291,13 +1177,8 @@ export function DashboardContent({
 
       if (cachedWallets.length > 0) {
         setCircleWallets(cachedWallets);
-        setCircleStatus("Circle wallet active");
       } else {
-        setCircleStatus("Loading Circle wallet");
       }
-
-      setIsCircleLoading(true);
-      setCircleError(null);
 
       try {
         const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
@@ -1333,32 +1214,17 @@ export function DashboardContent({
         writeCircleWallets(wallets);
 
         if (!primaryWallet) {
-          setCircleStatus("Circle wallet not found");
-          setCircleBalances([]);
           return;
         }
-
-        const balancePayload = await callCircleWalletApi<{
-          tokenBalances?: CircleTokenBalance[];
-        }>("getTokenBalance", {
-          userToken: login.userToken,
-          walletId: primaryWallet.id,
-        });
 
         if (cancelled) {
           return;
         }
-
-        setCircleBalances(balancePayload.tokenBalances ?? []);
-        setCircleStatus("Circle wallet active");
       } catch (error) {
         if (!cancelled) {
-          setCircleError(getErrorMessage(error));
-          setCircleStatus("Circle wallet unavailable");
         }
       } finally {
         if (!cancelled) {
-          setIsCircleLoading(false);
         }
       }
     }
@@ -1971,7 +1837,6 @@ export function DashboardContent({
 
   // A settled send ends on SendHub's animation receipt (components/send).
 
-
   useEffect(() => {
     if (!address || isEmbeddedWalletMode) {
       setAuthWallet(null);
@@ -2090,15 +1955,6 @@ export function DashboardContent({
     if (!circleLogin || !circleWallet) {
       return;
     }
-
-    const balancePayload = await callCircleWalletApi<{
-      tokenBalances?: CircleTokenBalance[];
-    }>("getTokenBalance", {
-      userToken: circleLogin.userToken,
-      walletId: circleWallet.id,
-    });
-
-    setCircleBalances(balancePayload.tokenBalances ?? []);
   }
 
   async function refreshBalances() {
@@ -2111,7 +1967,7 @@ export function DashboardContent({
 
   async function refreshBalancesFromButton() {
     setPaymentError(null);
-    setSwapError(null);
+
     setIsRefreshingBalances(true);
     try {
       await refreshBalances();
@@ -2133,7 +1989,7 @@ export function DashboardContent({
       // switchToArc already words it: approve, add Arc, or open the wallet app.
       const message = error instanceof Error ? error.message : getErrorMessage(error);
       setPaymentError(message);
-      setSwapError(message);
+
       return false;
     }
   }
@@ -2299,7 +2155,6 @@ export function DashboardContent({
       txHash: executed.txHash,
     };
   }
-
 
   async function prepareBusinessOutgoing() {
     businessPaymentIdRef.current = null;
@@ -2757,7 +2612,6 @@ export function DashboardContent({
       return;
     }
 
-
     setLastExecutedChainId(arcChain.id);
     if (!(await ensureArcNetwork())) {
       return;
@@ -2920,7 +2774,6 @@ export function DashboardContent({
     sdk.setAuthentication(currentCircleAuth(circleLogin));
 
     if (label) {
-      setSwapStatus(`Confirm ${label} in Circle wallet`);
     }
 
     const runChallenge = (client: W3SSdk) =>
@@ -2994,195 +2847,6 @@ export function DashboardContent({
     };
   }
 
-  async function handleEstimateSwap() {
-    setSwapError(null);
-    setSwapEstimate(undefined);
-    setSwapExplorerUrl(undefined);
-
-    if (isEmbeddedWalletMode && !activeEmbeddedSwapWallet) {
-      setSwapError("Circle wallet is not ready.");
-      return;
-    }
-
-    if (!isEmbeddedWalletMode && (!isConnected || !connector)) {
-      setSwapError("Connect a wallet before swapping.");
-      return;
-    }
-
-    if (!(await ensureArcNetwork())) {
-      return;
-    }
-
-    if (!swapAmount.trim() || Number(swapAmount) <= 0) {
-      setSwapError("Enter a valid swap amount.");
-      return;
-    }
-
-    if (swapAmountUnits === null || swapAmountUnits <= zeroAmount) {
-      setSwapError("Enter a valid swap amount.");
-      return;
-    }
-
-    if (swapTokenIn === swapTokenOut) {
-      setSwapError("Choose two different assets.");
-      return;
-    }
-
-    if (!hasEnoughSwapBalance) {
-      setSwapError(`Insufficient ${swapTokenIn} balance.`);
-      return;
-    }
-
-    try {
-      setIsSwapEstimating(true);
-      const { estimateCircleSwap, estimateCircleUserWalletSwap } =
-        await import("@/swap/browser");
-      const estimate = activeEmbeddedSwapWallet
-        ? await estimateCircleUserWalletSwap({
-            amountIn: swapAmount,
-            executeChallenge: executeCircleChallenge,
-            onStatus: setSwapStatus,
-            slippageBps: 100,
-            tokenIn: swapTokenIn,
-            tokenOut: swapTokenOut,
-            userToken: activeEmbeddedSwapWallet.login.userToken,
-            walletAddress: activeEmbeddedSwapWallet.walletAddress,
-            walletId: activeEmbeddedSwapWallet.walletId,
-          })
-        : await estimateCircleSwap({
-            amountIn: swapAmount,
-            connector,
-            slippageBps: 100,
-            tokenIn: swapTokenIn,
-            tokenOut: swapTokenOut,
-          });
-      setSwapEstimate(estimate);
-      setSwapStatus("Quote ready");
-    } catch (error) {
-      setSwapError(getErrorMessage(error));
-    } finally {
-      setIsSwapEstimating(false);
-    }
-  }
-
-  async function handleExecuteSwap() {
-    setSwapError(null);
-
-    if (isEmbeddedWalletMode && !activeEmbeddedSwapWallet) {
-      setSwapError("Circle wallet is not ready.");
-      return;
-    }
-
-    if (!isEmbeddedWalletMode && (!isConnected || !connector)) {
-      setSwapError("Connect a wallet before swapping.");
-      return;
-    }
-
-    if (!(await ensureArcNetwork())) {
-      return;
-    }
-
-    if (swapAmountUnits === null || swapAmountUnits <= zeroAmount) {
-      setSwapError("Enter a valid swap amount.");
-      return;
-    }
-
-    if (swapTokenIn === swapTokenOut) {
-      setSwapError("Choose two different assets.");
-      return;
-    }
-
-    if (!hasEnoughSwapBalance) {
-      setSwapError(`Insufficient ${swapTokenIn} balance.`);
-      return;
-    }
-
-    if (!swapEstimate) {
-      setSwapError("Get a quote before swapping.");
-      return;
-    }
-
-    try {
-      setIsSwapPending(true);
-      setSwapStatus(
-        activeEmbeddedSwapWallet
-          ? "Preparing Circle wallet swap"
-          : "Confirm swap in external wallet",
-      );
-      const { executeCircleSwap, executeCircleUserWalletSwap } =
-        await import("@/swap/browser");
-      const result = activeEmbeddedSwapWallet
-        ? await executeCircleUserWalletSwap({
-            amountIn: swapAmount,
-            executeChallenge: executeCircleChallenge,
-            onStatus: setSwapStatus,
-            slippageBps: 100,
-            stopLimit: swapEstimate.stopLimitAmount,
-            tokenIn: swapTokenIn,
-            tokenOut: swapTokenOut,
-            userToken: activeEmbeddedSwapWallet.login.userToken,
-            walletAddress: activeEmbeddedSwapWallet.walletAddress,
-            walletId: activeEmbeddedSwapWallet.walletId,
-          })
-        : await executeCircleSwap({
-            amountIn: swapAmount,
-            connector,
-            slippageBps: 100,
-            stopLimit: swapEstimate.stopLimitAmount,
-            tokenIn: swapTokenIn,
-            tokenOut: swapTokenOut,
-          });
-      setSwapExplorerUrl(
-        result.explorerUrl ??
-          `${arcChain.blockExplorers.default.url}/tx/${result.txHash}`,
-      );
-      trackTractionEvent({
-        amount: swapAmount,
-        chainId: arcChain.id,
-        circleSocialUuid:
-          activeEmbeddedSwapWallet?.login
-            ? getCircleLoginIdentity(activeEmbeddedSwapWallet.login)
-                .socialUserUUID ?? undefined
-            : undefined,
-        currency: swapTokenIn,
-        eventType: "swap_submitted",
-        metadata: {
-          amountOut: result.amountOut,
-          mode: activeEmbeddedSwapWallet ? "circle" : "external",
-          tokenOut: swapTokenOut,
-        },
-        source: "dashboard_swap",
-        txHash: result.txHash,
-        walletAddress:
-          activeEmbeddedSwapWallet?.walletAddress ?? address ?? undefined,
-      });
-      setSwapStatus(
-        result.amountOut
-          ? `Received ${result.amountOut} ${swapTokenOut}`
-          : "Swap submitted",
-      );
-      showSuccess({
-        amount: result.amountOut
-          ? `${result.amountOut} ${swapTokenOut}`
-          : undefined,
-        explorerUrl: result.txHash
-          ? `${arcChain.blockExplorers.default.url}/tx/${result.txHash}`
-          : undefined,
-        eyebrow: "Swap",
-        subtitle: result.amountOut
-          ? `Received ${result.amountOut} ${swapTokenOut}.`
-          : "Swap submitted on Arc.",
-        title: "Swap successful",
-      });
-      setSwapEstimate(undefined);
-      await refreshBalances();
-    } catch (error) {
-      setSwapError(getErrorMessage(error));
-    } finally {
-      setIsSwapPending(false);
-    }
-  }
-
   async function copyAddress() {
     try {
       await navigator.clipboard.writeText(walletAddress);
@@ -3207,19 +2871,11 @@ export function DashboardContent({
     }
   }
 
-  function flipSwapTokens() {
-    setSwapTokenIn(swapTokenOut);
-    setSwapTokenOut(swapTokenIn);
-    setSwapEstimate(undefined);
-  }
-
   function handleCircleSessionCleared() {
     circleSdkRef.current = null;
     setCircleLogin(null);
     setCircleWallets([]);
-    setCircleBalances([]);
-    setCircleError(null);
-    setCircleStatus("No Circle wallet session");
+
     setWalletMode("circle");
   }
 
@@ -3453,7 +3109,7 @@ export function DashboardContent({
                 .sort((first, second) => first.name.localeCompare(second.name)),
             );
           }}
-          refreshKey={[swapExplorerUrl, transactionHash, transactionReceipt?.status, circleSendSettled].join("|")}
+          refreshKey={[transactionHash, transactionReceipt?.status, circleSendSettled].join("|")}
           savedBeneficiaries={savedBeneficiaries}
         />
       </div>
@@ -3547,7 +3203,7 @@ export function DashboardContent({
 
         <DashboardTransactions
           ownerWallet={address}
-          refreshKey={[swapExplorerUrl, transactionHash, transactionReceipt?.status].join("|")}
+          refreshKey={[transactionHash, transactionReceipt?.status].join("|")}
         />
 
         <FeaturePromos />
@@ -3648,7 +3304,7 @@ export function DashboardContent({
       transactions={
         <DashboardTransactions
           ownerWallet={address}
-          refreshKey={[swapExplorerUrl, transactionHash, transactionReceipt?.status].join("|")}
+          refreshKey={[transactionHash, transactionReceipt?.status].join("|")}
         />
       }
       trend={

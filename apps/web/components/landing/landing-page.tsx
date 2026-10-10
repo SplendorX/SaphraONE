@@ -1,6 +1,6 @@
 "use client";
 
-import { arcChain, arcExplorerUrl } from "@/lib/chains";
+import { arcChain } from "@/lib/chains";
 import { rememberNextPath } from "@/lib/sign-in-destination";
 import {
   ArrowRight,
@@ -8,10 +8,6 @@ import {
   CalendarClock,
   CheckCircle2,
   CircleDollarSign,
-  ExternalLink,
-  FileCheck2,
-  Fingerprint,
-  FlaskConical,
   Layers,
   PiggyBank,
   ReceiptText,
@@ -37,6 +33,7 @@ import {
   signInModalEventName,
 } from "@/components/landing/launch-app-link";
 import { ProductShowcase } from "@/components/landing/product-showcase";
+import { SecuritySection } from "@/components/landing/security-section";
 import { SignInPanel } from "@/components/landing/sign-in-panel";
 import { FadeUp, Stagger, StaggerItem } from "@/components/design/motion";
 import { MarketingShell } from "@/components/layout/marketing-shell";
@@ -166,35 +163,6 @@ export function LandingPage() {
       title: t("landing.whyTrustTitle"),
     },
   ];
-  const trustItems = [
-    {
-      body: t("landing.trustNoncustodialBody"),
-      icon: Fingerprint,
-      link: null as string | null,
-      linkLabel: null as string | null,
-      title: t("landing.trustNoncustodialTitle"),
-    },
-    {
-      body: t("landing.trustVerifiedBody"),
-      icon: FileCheck2,
-      link: arcExplorerUrl,
-      linkLabel: t("landing.trustVerifiedLink"),
-      title: t("landing.trustVerifiedTitle"),
-    },
-    // Only true on testnet; on mainnet the card would misstate the risk.
-    ...(arcChain.testnet
-      ? [
-          {
-            body: t("landing.trustTestnetBody"),
-            icon: FlaskConical,
-            link: null,
-            linkLabel: null,
-            title: t("landing.trustTestnetTitle"),
-          },
-        ]
-      : []),
-  ];
-
   useEffect(() => {
     // A protected page sent the visitor here with ?next=; keep it through
     // the sign-in (and the Google round trip, which drops the query).
@@ -372,43 +340,8 @@ export function LandingPage() {
         </Stagger>
       </section>
 
-      {/* ── Security & Trust ── */}
-      <section className="marketing-section" id="security">
-        <div className="marketing-section-header">
-          <p className="section-eyebrow">{t("landing.trustEyebrow")}</p>
-          <h2 className="section-title">{t("landing.trustTitle")}</h2>
-          <p className="section-copy">{t("landing.trustCopy")}</p>
-        </div>
-        <Stagger className="marketing-trust-grid">
-          {trustItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <StaggerItem key={item.title}>
-                <div className="marketing-trust-badge">
-                  <div className="marketing-trust-badge-icon" aria-hidden>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="marketing-trust-badge-body">
-                    <p className="marketing-trust-badge-title">{item.title}</p>
-                    <p className="marketing-trust-badge-desc">{item.body}</p>
-                    {item.link && (
-                      <a
-                        className="marketing-contract-link"
-                        href={item.link}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {item.linkLabel}
-                        <ExternalLink className="h-3 w-3" aria-hidden />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </StaggerItem>
-            );
-          })}
-        </Stagger>
-      </section>
+      {/* ── Security ── */}
+      <SecuritySection />
 
       {/* ── FAQ ── */}
       <section className="marketing-section marketing-section-muted" id="faq">

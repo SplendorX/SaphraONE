@@ -36,32 +36,3 @@ export function bpsToPercentString(bps: number | null | undefined): string | nul
   return `${sign}${whole}.${frac}%`;
 }
 
-export function annualizeGrowthBps(
-  startAssets: bigint,
-  endAssets: bigint,
-  periodSeconds: number,
-): number | null {
-  if (startAssets <= 0n || endAssets <= startAssets || periodSeconds <= 0) {
-    return null;
-  }
-
-  // growth ratio in 1e18 fixed point
-  const growthRay = (endAssets * 10n ** 18n) / startAssets;
-  if (growthRay <= 10n ** 18n) {
-    return null;
-  }
-
-  // Approximate APY: ((end/start) - 1) * (secondsPerYear / period) * 10000 bps
-  // Using integer: ((growthRay - 1e18) * secondsPerYear * 10000) / (1e18 * period)
-  const secondsPerYear = 31_536_000n;
-  const numerator = (growthRay - 10n ** 18n) * secondsPerYear * 10_000n;
-  const denominator = 10n ** 18n * BigInt(periodSeconds);
-  const bps = numerator / denominator;
-
-  if (bps > 1_000_000n) {
-    // Cap absurd estimates
-    return 1_000_000;
-  }
-
-  return Number(bps);
-}

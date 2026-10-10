@@ -182,9 +182,45 @@ async function brandImage(src: string) {
   }
 }
 
+type PdfDoc = InstanceType<typeof import("jspdf").jsPDF>;
+
+/**
+ * The ONE ribbon from the SaphraONE mark, without its gradient tile, drawn
+ * faintly across the middle of the page. Same geometry as
+ * components/brand/one-watermark.tsx (a 1024-unit square, ribbon centred).
+ */
+function drawOneWatermark(doc: PdfDoc, GState: typeof import("jspdf").GState) {
+  const width = doc.internal.pageSize.getWidth();
+  const height = doc.internal.pageSize.getHeight();
+  const scale = 380 / 688;
+  const cx = width / 2;
+  const cy = height / 2 + 40;
+  const at = (x: number, y: number): [number, number] => [cx + (x - 512) * scale, cy + (y - 512) * scale];
+  const path = (points: Array<[number, number]>) => {
+    for (let index = 1; index < points.length; index += 1) {
+      const [x1, y1] = at(...points[index - 1]);
+      const [x2, y2] = at(...points[index]);
+      doc.line(x1, y1, x2, y2);
+    }
+  };
+
+  doc.saveGraphicsState();
+  doc.setGState(new GState({ opacity: 0.045, "stroke-opacity": 0.045 }));
+  doc.setDrawColor(95, 21, 244);
+  doc.setLineWidth(58 * scale);
+  doc.setLineCap("round");
+  doc.setLineJoin("round");
+  const [ox, oy] = at(317, 512);
+  doc.circle(ox, oy, 120 * scale, "S");
+  path([[317, 632], [462, 632], [500, 618], [517, 577], [517, 392], [667, 632], [667, 392], [827, 392]]);
+  path([[667, 512], [797, 512]]);
+  path([[667, 632], [827, 632]]);
+  doc.restoreGraphicsState();
+}
+
 /** The statement as a PDF (exported for checks; the UI calls downloadStatement). */
 export async function statementPdf(data: StatementData) {
-  const [{ jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
+  const [{ GState, jsPDF }, { autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const doc = new jsPDF({ format: "a4", orientation: "portrait", unit: "pt" });
   const width = doc.internal.pageSize.getWidth();
   const margin = 40;
@@ -296,6 +332,9 @@ export async function statementPdf(data: StatementData) {
   const height = doc.internal.pageSize.getHeight();
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
+    // Over the content at a whisper: striped rows are opaque and would hide
+    // a watermark drawn underneath.
+    drawOneWatermark(doc, GState);
     doc.setFontSize(7.5);
     doc.setTextColor(...muted);
     if (note) {

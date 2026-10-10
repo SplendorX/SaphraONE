@@ -154,11 +154,11 @@ export function renderAllieContext(context: AllieContext) {
     // the cache key stable within its 60-second life.
     // The weekday too: models miscount "next friday" from a bare date.
     `Current time: ${context.localNow} (${context.timeZone}), a ${weekdayOf(context.localNow)}`,
-    `User's ALLIE wallet balance: $${formatAmountUnits(context.walletBalance)} USDC`,
+    `User's ALLIE wallet balance: ${formatAmountUnits(context.walletBalance)} USDC`,
     context.approvedRecipients.length > 0
       ? `Approved recipients: ${context.approvedRecipients.join(", ")}`
       : "Approved recipients: any recipient allowed",
-    `Today's spending so far: $${formatAmountUnits(context.dailySpentUnits)} USDC (daily limit, resets at the owner's local midnight: $${formatAmountUnits(context.dailyLimitUnits)})`,
+    `Today's spending so far: ${formatAmountUnits(context.dailySpentUnits)} USDC (daily limit, resets at the owner's local midnight: ${formatAmountUnits(context.dailyLimitUnits)} USDC)`,
     `Agent wallet status: ${context.agentWalletStatus}`,
   ];
 
@@ -170,7 +170,7 @@ export function renderAllieContext(context: AllieContext) {
     lines.push(
       `Recent transactions: ${context.recentTransactions
         .map(
-          (entry) => `${entry.recipient} $${entry.amountUsdc} on ${entry.date}`,
+          (entry) => `${entry.recipient} ${entry.amountUsdc} USDC on ${entry.date}`,
         )
         .join("; ")}`,
     );

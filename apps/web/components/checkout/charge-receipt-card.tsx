@@ -3,6 +3,7 @@
 import { ArrowUpRight, Check, Download } from "lucide-react";
 import { toast } from "sonner";
 
+import { OneWatermark } from "@/components/brand/one-watermark";
 import { Button } from "@/components/ui/button";
 import { formatMoney, moneyNumber } from "@/lib/account/money";
 import { downloadChargeReceipt } from "@/lib/checkout/receipt";
@@ -39,7 +40,8 @@ export function ChargeReceiptCard({ payload }: { payload: PublicChargePayload })
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="one-watermark-host space-y-4">
+      <OneWatermark className="one-watermark-center one-watermark-behind" />
       <div className="flex flex-col items-center gap-2 text-center">
         <span className="grid h-14 w-14 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
           <Check className="h-7 w-7" />

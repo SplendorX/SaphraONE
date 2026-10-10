@@ -2,18 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Check,
-  Copy,
-  ExternalLink,
-  Gift,
-  ShoppingCart,
-  HelpCircle,
-  Loader2,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight, Check, Copy, Gift, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useOnePoints, emitOnePointsUpdated } from "@/lib/referral/use-one-points";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
@@ -39,7 +28,6 @@ export function TopBarPoints({ className }: TopBarPointsProps) {
     referralLink,
     activeWallet,
     isConnected,
-    isLoading,
     refresh,
   } = useOnePoints();
 

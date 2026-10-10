@@ -116,6 +116,8 @@ const systemPrompt = [
   "Answering questions:",
   'QueryBalance: {"type":"QueryBalance"}',
   'ListTransactions: {"type":"ListTransactions","limit"?:number}',
+  'ActivitySummary: {"type":"ActivitySummary","period":"24h"|"7d"|"30d"|"all"}',
+  'SwapQuote: {"type":"SwapQuote","fromAsset":"USDC"|"EURC","toAsset":"USDC"|"EURC","amountUsdc":number}',
   'SaveStatus: {"type":"SaveStatus"}',
   'EarnStatus: {"type":"EarnStatus"}',
   'PayrollStatus: {"type":"PayrollStatus"}',
@@ -138,6 +140,12 @@ const systemPrompt = [
   "  “for 5 days” daily = 5, “for 3 weeks” weekly = 3, “for 2 weeks” daily = 14,",
   "  “6 times” = 6. Omit it when the schedule is open-ended.",
   "- Asking someone else to pay is RequestPayment; paying someone is PaymentIntent.",
+  "- A rate, price or quote question (“how much EURC for 100 USDC”, “EURC price”,",
+  "  “quote a swap”) is SwapQuote; amountUsdc 1 when none is given. Doing the",
+  "  swap (“swap 50 usdc to eurc”) is Swap.",
+  "- How much was spent/received, volume, P&L, portfolio performance, or a",
+  "  breakdown over a time window is ActivitySummary: today/24 hours → 24h, this",
+  "  week/7 days → 7d, this month/30 days → 30d, ever/all time → all (default 30d).",
   "- Split the total yourself when asked to divide an amount between people.",
   "- A split plus other sends in one message is one BatchPay with every leg.",
   "- note: what the payment is for, only when the user says (“for lunch”,",
@@ -317,19 +325,7 @@ export async function writeCachedAction(
   }
 }
 
-export async function purgeExpiredAllieCache() {
-  const cutoff = new Date(Date.now() - cacheTtlSeconds * 1000).toISOString();
-  const supabase = createSupabaseAdminClient();
 
-  const { error } = await supabase
-    .from(allieLlmCacheTable)
-    .delete()
-    .lt("created_at", cutoff);
-
-  if (error) {
-    throw new Error(error.message || "ALLIE cache could not be purged.");
-  }
-}
 
 // ─── Inference ───────────────────────────────────────────────────────────────
 

@@ -7,12 +7,7 @@ import { EarnExternalWalletNotice } from "@/components/earn/earn-signer-notice";
 import { TransferProgressOverlay } from "@/components/send/transfer-progress";
 import { TokenIcon } from "@/components/token-icon";
 import { Button } from "@/components/ui/button";
-import {
-  browserPosition,
-  browserWithdraw,
-  browserWithdrawQuote,
-  EarnRejectedError,
-} from "@/lib/earn/browser";
+import { browserPosition, browserWithdraw, browserWithdrawQuote } from "@/lib/earn/browser";
 import { formatAssetAmount, formatFeeList, vaultName } from "@/lib/earn/display";
 import {
   EARN_POSITION_EVENT,

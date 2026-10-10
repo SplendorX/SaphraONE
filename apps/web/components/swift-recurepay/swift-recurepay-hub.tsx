@@ -248,9 +248,7 @@ export function SwiftRecurepayHub() {
   const [composeError, setComposeError] = useState<string | null>(null);
   const [openScheduleId, setOpenScheduleId] = useState<string | null>(null);
   const [detailBusy, setDetailBusy] = useState<string | null>(null);
-  const [approvingScheduleId, setApprovingScheduleId] = useState<string | null>(
-    null,
-  );
+
   const [authorizingScheduleId, setAuthorizingScheduleId] = useState<string | null>(
     null,
   );
@@ -982,7 +980,7 @@ export function SwiftRecurepayHub() {
     }
 
     setAuthorizingScheduleId(schedule.id);
-    setApprovingScheduleId(schedule.id);
+
     setError(null);
 
     try {
@@ -1014,7 +1012,6 @@ export function SwiftRecurepayHub() {
       throw authorizeError;
     } finally {
       setAuthorizingScheduleId(null);
-      setApprovingScheduleId(null);
     }
   }
 

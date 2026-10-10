@@ -111,7 +111,7 @@ export const es: Messages = {
     fullNameHint: "Se muestra en tu perfil y en la barra superior. Te siguen pagando con tu @usuario.",
     appearanceTitle: "Apariencia",
     appearanceBody:
-      "Oscuro, claro o del sistema. El modo claro puede cambiar entre cashmere y blanco.",
+      "Oscuro, claro o del sistema. El modo claro puede cambiar entre Liquid White y Cashmere.",
     theme: "Tema",
     lightSurface: "Superficie clara",
     languageTitle: "Idioma",
@@ -138,8 +138,8 @@ export const es: Messages = {
     system: "Sistema",
     cashmere: "Cashmere",
     cashmereBody: "Luz cálida de pergamino, la superficie original de SaphraONE.",
-    liquidGlass: "Blanco",
-    liquidGlassBody: "Tableros en blanco con un ligero relieve esmerilado.",
+    liquidGlass: "Liquid White",
+    liquidGlassBody: "Tableros blancos con un ligero relieve esmerilado. El aspecto claro predeterminado.",
     connectToSeeType: "Conecta una billetera para ver el tipo de cuenta.",
     accountType: "Tipo de cuenta",
     cannotRevert: "Las cuentas de empresa no se pueden volver a Personal.",
@@ -258,7 +258,7 @@ export const es: Messages = {
   },
   landing: {
     kicker: "SaphraONE en Arc",
-    heroTitleBefore: "Haz más con",
+    heroTitleBefore: "Powering possibilities with",
     heroLead:
       "Bienvenido a SaphraONE, una plataforma de pagos completa. Cambia, envía, solicita, paga por lotes, ahorra y programa pagos en stablecoins desde una sola billetera. El gas se paga en USDC, así que lo que ves es lo que gastas.",
     productEyebrow: "Producto",
@@ -349,10 +349,9 @@ export const es: Messages = {
     howStep3Label: "Confirma y liquida",
     howStep3Detail:
       "Confirma la transacción. El gas se paga en USDC. Sigue el estado en tiempo real y ve el recibo de ArcScan al instante.",
-    trustEyebrow: "Seguridad y confianza",
-    trustTitle: "Firmado por la billetera. On-chain. Comprobable.",
-    trustCopy:
-      "Firmas cada pago. La liquidación es pública en Arc. Las afirmaciones siguientes son ciertas en el producto de hoy.",
+    trustEyebrow: "Seguridad",
+    trustTitle: "Seguridad en cada capa.",
+    trustCopy: "SaphraONE protege tu cuenta, cada pago y tus datos con controles por capas, y todo lo que se liquida es verificable públicamente en Arc.",
     trustNoncustodialTitle: "No custodial",
     trustNoncustodialBody:
       "SaphraONE nunca retiene tus fondos. Cada transacción la firma tu billetera y se liquida directamente en Arc.",
@@ -363,6 +362,25 @@ export const es: Messages = {
     trustTestnetTitle: "Testnet, sin fondos reales",
     trustTestnetBody:
       "SaphraONE funciona hoy en Arc Testnet. No hay fondos reales en riesgo. El despliegue en mainnet se anunciará por separado.",
+    secPillarAccount: "Protección de la cuenta",
+    secPillarPayments: "Protección de pagos",
+    secPillarTransparency: "Transparencia",
+    secAppLockTitle: "Bloqueo con PIN o passkey",
+    secAppLockBody: "Bloquea SaphraONE con un PIN o una passkey de Face ID / huella. Se vuelve a bloquear tras inactividad, y los intentos fallidos repetidos pausan el acceso.",
+    secTwoFactorTitle: "Autenticación en dos pasos",
+    secTwoFactorBody: "Añade una app de autenticación para códigos temporales, con códigos de respaldo de un solo uso si pierdes tu teléfono.",
+    secAlertsTitle: "Alertas de inicio de sesión",
+    secAlertsBody: "Cada nuevo inicio de sesión te envía un correo con el navegador, la ubicación aproximada y la hora, para que detectes cualquier cosa inusual.",
+    secApprovalTitle: "Aprobación de transacciones",
+    secApprovalBody: "Aprueba pagos con Face ID, PIN o 2FA. Los pagos sensibles también pueden requerir un código de un solo uso enviado a tu correo, con el monto y el destinatario reales.",
+    secAllieTitle: "Límites de gasto de ALLIE",
+    secAllieBody: "La Agent Wallet de ALLIE opera dentro del límite diario que defines, pregunta antes de superar tu umbral y puede pausarse o revocarse al instante.",
+    secOnchainTitle: "Liquidación pública y final",
+    secOnchainBody: "Cada pago se liquida en Arc con un hash de transacción y un recibo que cualquiera puede comprobar en ArcScan.",
+    secCommit1: "Cifrado en tránsito",
+    secCommit2: "Inicios de sesión y códigos con límite de intentos",
+    secCommit3: "Nunca te pedimos tu PIN, códigos ni frase de recuperación",
+    secCommit4: "Billeteras protegidas por Circle",
     faqEyebrow: "FAQ",
     faqTitle: "Preguntas frecuentes de SaphraONE.",
     faqCopy:

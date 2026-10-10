@@ -15,7 +15,8 @@ const resendEndpoint = "https://api.resend.com/emails";
 
 function sender() {
   const explicit = process.env.TX_SECURITY_EMAIL_FROM?.trim();
-  if (explicit) return explicit;
+  // A bare address shows up in the inbox as "noreply@…"; give it the name.
+  if (explicit) return explicit.includes("<") ? explicit : `SaphraONE Security <${explicit}>`;
   const domain = process.env.RESEND_EMAIL_DOMAIN?.trim();
   return domain ? `SaphraONE Security <noreply@${domain}>` : null;
 }

@@ -95,16 +95,7 @@ export async function upgradeAccountClient(
   );
 }
 
-export async function fetchBusinessAccountProfile(
-  ownerWallet: string,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ profile: BusinessAccountProfile | null }>(
-    await fetch(withWallet("/api/business/profile", ownerWallet, { circleSocialUuid }), {
-      cache: "no-store",
-    }),
-  );
-}
+
 
 export async function updateBusinessAccountProfileClient(
   ownerWallet: string,

@@ -18,7 +18,6 @@ import {
   alertPreferencesChangedEvent,
   readAlertPreferences,
   writeAlertPreferences,
-  type AlertCategory,
   type AlertPreferences,
 } from "@/lib/notifications/preferences";
 import { rememberDismissedAlertHashes } from "@/lib/notifications/dismissed";

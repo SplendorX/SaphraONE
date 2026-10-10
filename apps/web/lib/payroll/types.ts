@@ -67,12 +67,6 @@ export type PayrollGroupRecord = {
   member_ids?: string[];
 };
 
-export type PayrollGroupMemberRecord = {
-  id: string;
-  payroll_group_id: string;
-  team_member_id: string;
-  created_at: string;
-};
 
 export type PayrollScheduleRecord = {
   id: string;
@@ -175,31 +169,7 @@ export type PayrollAdjustmentRecord = {
   created_at: string;
 };
 
-export type PayrollExecutionRecord = {
-  id: string;
-  payroll_run_id: string;
-  payroll_item_id: string | null;
-  batch_payment_id: string | null;
-  transaction_id: string | null;
-  blockchain_transaction_hash: string | null;
-  idempotency_key: string;
-  status: string;
-  attempt_number: number;
-  failure_reason: string | null;
-  started_at: string;
-  completed_at: string | null;
-  created_at: string;
-};
 
-export type PayrollAuditLogRecord = {
-  id: string;
-  account_id: string;
-  payroll_run_id: string | null;
-  action: PayrollAuditAction;
-  actor_id: string;
-  metadata: Record<string, unknown>;
-  created_at: string;
-};
 
 export type PayrollDashboardSummary = {
   activeTeamMembersCount: number;

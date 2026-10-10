@@ -13,7 +13,6 @@ import {
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import { useOptionalAccount } from "@/components/account/account-provider";
-import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { useT } from "@/components/locale-provider";
 import { useBusinessActor } from "@/components/business/use-business-actor";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,7 @@ import {
 export function AccountProfileSettings() {
   const t = useT();
   const accountContext = useOptionalAccount();
-  const workspaceContext = useOptionalWorkspace();
+
   const { circleSocialUuid, ownerWallet } = useBusinessActor();
   const isBusiness = accountContext?.isBusiness ?? false;
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
@@ -300,7 +299,6 @@ export function AccountProfileSettings() {
       </div>
     </>
   );
-
 
   return (
     <div className="space-y-4">

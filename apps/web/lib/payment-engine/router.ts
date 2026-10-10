@@ -141,16 +141,3 @@ export function routeIntent(
   };
 }
 
-export function routerWalletModeFromExecutor(
-  executor: RouteExecutor,
-): RouterWalletMode {
-  switch (executor) {
-    case "agent-wallet":
-      return "agent";
-    case "circle-user-wallet":
-      return "circle";
-    case "external-wallet":
-    default:
-      return "external";
-  }
-}

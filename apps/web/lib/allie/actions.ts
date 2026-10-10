@@ -24,6 +24,10 @@ export type AllieFrequency = (typeof allieFrequencies)[number];
 
 export type AllieBatchLeg = { recipient: string; amountUsdc: number };
 
+/** Windows ALLIE summarizes activity over. */
+export const allieActivityPeriods = ["24h", "7d", "30d", "all"] as const;
+export type AllieActivityPeriod = (typeof allieActivityPeriods)[number];
+
 export const alliePayrollActions = [
   "run",
   "team",
@@ -61,6 +65,10 @@ export type AllieAction =
   // ── answer ────────────────────────────────────────────────────────────────
   | { type: "QueryBalance" }
   | { type: "ListTransactions"; limit?: number }
+  /** Money in, money out, volume and where it went, over a period. */
+  | { type: "ActivitySummary"; period: AllieActivityPeriod }
+  /** A live swap quote: rate, route, minimum received, costs. Nothing is signed. */
+  | { type: "SwapQuote"; fromAsset: AllieAsset; toAsset: AllieAsset; amountUsdc: number }
   | { type: "SaveStatus" }
   | { type: "EarnStatus" }
   | { type: "PayrollStatus" }
@@ -136,7 +144,7 @@ export type AllieAction =
   // ── fallback ──────────────────────────────────────────────────────────────
   | { type: "Clarify"; question: string };
 
-export type AllieActionType = AllieAction["type"];
+
 
 export const defaultClarifyQuestion =
   "I didn't understand that. Could you rephrase?";
@@ -308,6 +316,19 @@ export function parseAllieAction(raw: string): AllieAction | null {
             ? Math.min(Math.floor(limit), 50)
             : undefined,
       };
+    }
+
+    case "ActivitySummary":
+      return {
+        type: "ActivitySummary",
+        period: readEnum(allieActivityPeriods, c.period) ?? "30d",
+      };
+
+    case "SwapQuote": {
+      const amountUsdc = readAmount(c.amountUsdc) ?? 1;
+      const fromAsset = readAsset(c.fromAsset);
+      const toAsset = c.toAsset === undefined ? (fromAsset === "USDC" ? "EURC" : "USDC") : readAsset(c.toAsset);
+      return fromAsset === toAsset ? null : { type: "SwapQuote", fromAsset, toAsset, amountUsdc };
     }
 
     case "SaveStatus":

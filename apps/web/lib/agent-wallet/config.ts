@@ -129,6 +129,3 @@ export async function agentWalletOwners(addresses: string[]) {
   return owners;
 }
 
-export function isAgentWalletSpendable(config: AgentWalletConfig | null) {
-  return config?.status === "active";
-}

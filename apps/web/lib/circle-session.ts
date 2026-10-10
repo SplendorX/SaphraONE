@@ -372,33 +372,7 @@ export function getCircleErrorMessage(error: unknown, fallback: string) {
   return userFacingErrorMessage(error, fallback);
 }
 
-/**
- * Credentials for the Circle PIN SDK. Prefers the stored login, which is
- * renewed in place when a token expires, over a copy a page captured earlier;
- * after a renewal, a challenge created with the new token must be confirmed
- * with it too. Not for sign-in flows, whose fresh login is not stored yet.
- */
-/**
- * The device credentials Circle issued at sign-in, for a new W3S SDK. Phones
- * (and the installed app) keep Circle's own device storage apart from the
- * page, so without them a confirm can fail with "device ID is not found".
- */
-export function circleSdkLoginConfigs() {
-  const deviceToken = readCircleSessionStorage(circleStorageKeys.deviceToken);
-  const deviceEncryptionKey = readCircleSessionStorage(circleStorageKeys.deviceEncryptionKey);
-  if (!deviceToken || !deviceEncryptionKey) return {};
-  return {
-    loginConfigs: {
-      deviceEncryptionKey,
-      deviceToken,
-      google: {
-        clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "",
-        redirectUri: typeof window !== "undefined" ? window.location.origin : "",
-        selectAccountPrompt: true,
-      },
-    },
-  };
-}
+
 
 /** Circle's answer when its device record doesn't match this browser. */
 export function isCircleDeviceIdError(error: unknown) {

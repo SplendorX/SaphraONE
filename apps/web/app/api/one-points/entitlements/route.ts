@@ -7,7 +7,10 @@ import {
   listEntitlements,
   unlockFeature,
 } from "@/lib/referral/entitlement-service";
-import { FEATURE_UNLOCK_COST } from "@/lib/referral/types";
+import {
+  FEATURE_UNLOCK_COST,
+  FEATURE_UNLOCK_TERM_LABEL,
+} from "@/lib/referral/types";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
 import {
   featureUnlockPriceUsdc,
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
       const feature = body.feature;
       const paid = await recordPremiumPayment({
         amountUsdc: featureUnlockPriceUsdc(feature),
-        description: `${premiumProductLabels[feature]}, 6 months`,
+        description: `${premiumProductLabels[feature]}, ${FEATURE_UNLOCK_TERM_LABEL[feature]}`,
         ownerWallet: actorWallet,
         product: feature,
         txHash: typeof body.txHash === "string" ? body.txHash : "",

@@ -11,11 +11,7 @@ import {
 import { swiftSaveVaultAbi } from "@/lib/save/abis";
 import { swiftSaveVaultAddress } from "@/lib/save/config";
 import { createRecurringPublicClient } from "@/lib/recurring/circle-adapter";
-import {
-  readArcReceipt,
-  tokenReceivedBy,
-  type DepositVerification,
-} from "@/lib/swift-circle/deposits";
+import { readArcReceipt, type DepositVerification } from "@/lib/swift-circle/deposits";
 import { circleErrors } from "@/lib/swift-circle/errors";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 
@@ -188,56 +184,6 @@ export function tokenTransferred(input: {
     }
   }
   return total;
-}
-
-export async function verifyCircleSaveDeposit(input: {
-  amountUnits: bigint;
-  asset: ArcTokenSymbol | string;
-  txHash: Hash;
-  waitMs?: number;
-}): Promise<DepositVerification> {
-  const vault = swiftSaveVaultAddress();
-  if (!vault) {
-    return {
-      ok: false,
-      pending: true,
-      reason: "SwiftSaveVault is not configured.",
-    };
-  }
-  const token =
-    input.asset === "EURC" ? arcTokens.EURC : arcTokens.USDC;
-  const receipt = await readArcReceipt(input.txHash, input.waitMs ?? 0);
-  if (!receipt) {
-    return {
-      ok: false,
-      pending: true,
-      reason: "The Arc transaction is not indexed yet.",
-    };
-  }
-  if (receipt.status !== "success") {
-    return {
-      ok: false,
-      pending: false,
-      reason: "The deposit transaction reverted on Arc.",
-    };
-  }
-  const received = tokenReceivedBy(
-    receipt.logs as Array<{
-      address: string;
-      topics: readonly string[];
-      data: string;
-    }>,
-    token.address,
-    vault,
-  );
-  if (received < input.amountUnits) {
-    return {
-      ok: false,
-      pending: false,
-      reason: "On-chain USDC did not arrive in the Circle Save pocket vault.",
-    };
-  }
-  return { ok: true, creditedUnits: input.amountUnits };
 }
 
 export async function verifyCircleSaveWithdrawal(input: {

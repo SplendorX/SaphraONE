@@ -13923,122 +13923,6 @@ html[data-theme="dark"] {
   }
 }
 
-.feature-promos {
-  display: grid;
-  gap: 0.75rem;
-  align-content: stretch;
-}
-
-.feature-promo {
-  --promo-tone: var(--primary);
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.9rem;
-  border: 1px solid var(--border);
-  background: var(--board-surface);
-  padding: 1rem 1.1rem;
-  color: var(--foreground);
-  box-shadow: 0 2px 6px color-mix(in oklch, var(--foreground) 5%, transparent);
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-
-.feature-promo[data-promo="earn"] { --promo-tone: #16a34a; }
-.feature-promo[data-promo="save"] { --promo-tone: #2563eb; }
-.feature-promo[data-promo="invite"] { --promo-tone: var(--primary); }
-
-.feature-promo:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in oklch, var(--promo-tone) 35%, var(--border));
-  box-shadow: 0 12px 28px -18px color-mix(in oklch, var(--promo-tone) 60%, transparent);
-}
-
-.feature-promo:focus-visible {
-  outline: 2px solid var(--promo-tone);
-  outline-offset: 2px;
-}
-
-.feature-promo-icon {
-  display: inline-flex;
-  height: 2.5rem;
-  width: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.85rem;
-  background: color-mix(in oklch, var(--promo-tone) 13%, transparent);
-  color: var(--promo-tone);
-}
-
-.feature-promo-copy {
-  display: grid;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.feature-promo-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-family: var(--font-sora), Sora, ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.98rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.feature-promo-arrow {
-  color: var(--muted-foreground);
-  transition: transform 160ms ease, color 160ms ease;
-}
-
-.feature-promo:hover .feature-promo-arrow {
-  transform: translate(2px, -2px);
-  color: var(--promo-tone);
-}
-
-.feature-promo-body {
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--muted-foreground);
-}
-
-.feature-promo-figure {
-  display: grid;
-  justify-items: end;
-  gap: 0.1rem;
-  text-align: right;
-}
-
-.feature-promo-figure strong {
-  font-family: var(--font-sora), Sora, ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--promo-tone);
-  font-variant-numeric: tabular-nums;
-}
-
-.feature-promo-figure small {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-}
-
-@media (max-width: 479px) {
-  .feature-promo {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .feature-promo-figure {
-    grid-column: 2;
-    justify-items: start;
-    grid-auto-flow: column;
-    align-items: baseline;
-    gap: 0.4rem;
-    text-align: left;
-  }
-}
-
 /* FX board. Light themes: the same flat board surface as its neighbours (cream
    in the default light theme, frosted white in glass), so it never glares.
    Dark theme: a deep plum-ink private-banking panel. Colors live in --fx-*. */
@@ -14294,44 +14178,14 @@ html[data-theme="dark"] {
   opacity: 0.6;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .feature-promo,
-  .feature-promo-arrow {
-    transition: none;
-  }
-
-  .feature-promo:hover,
-  .feature-promo:hover .feature-promo-arrow {
-    transform: none;
-  }
-}
-
-/* Light glass surface mode: the promos and the FX board join the other
-   boards' frosted treatment. */
-html[data-light-surface="glass"][data-theme="light"] :is(.feature-promo, .fx-board),
-html[data-light-surface="glass"]:not(.dark):not([data-theme="dark"]) :is(.feature-promo, .fx-board) {
+/* Light glass surface mode: the FX board joins the other boards' frosted
+   treatment. */
+html[data-light-surface="glass"][data-theme="light"] .fx-board,
+html[data-light-surface="glass"]:not(.dark):not([data-theme="dark"]) .fx-board {
   background: var(--board-surface);
   backdrop-filter: blur(22px) saturate(165%);
   -webkit-backdrop-filter: blur(22px) saturate(165%);
   border-color: var(--border);
-}
-
-.feature-promo-extra {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--promo-tone);
-}
-
-.feature-promo-extra::before {
-  content: "";
-  height: 0.35rem;
-  width: 0.35rem;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: currentColor;
 }
 
 /* ── Circle: one request-history board ── */

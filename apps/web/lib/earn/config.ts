@@ -90,9 +90,7 @@ export function earnModeBanner(mode: EarnMode = earnConfig.mode): {
   }
 }
 
-export function isEarnDepositEnabled(mode: EarnMode = earnConfig.mode): boolean {
-  return mode === "live" || mode === "simulation";
-}
+
 
 export function explorerAddressUrl(address: string): string {
   return `${earnConfig.explorerBase}/address/${address}`;

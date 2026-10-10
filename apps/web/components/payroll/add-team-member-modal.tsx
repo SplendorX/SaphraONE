@@ -2,7 +2,7 @@
 
 import { arcChain } from "@/lib/chains";
 import { useState } from "react";
-import { AtSign, Check, Loader2, UserRound, Wallet, X } from "lucide-react";
+import { AtSign, Loader2, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UsernameField } from "@/components/username-field";

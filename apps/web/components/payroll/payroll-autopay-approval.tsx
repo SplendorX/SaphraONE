@@ -171,7 +171,7 @@ export function PayrollAutopayApproval({
     try {
       const txHash =
         usdcPrice !== null
-          ? await premium.pay({ amountUsdc: usdcPrice, title: "Automatic payroll, 6 months" })
+          ? await premium.pay({ amountUsdc: usdcPrice, title: `Automatic payroll, ${FEATURE_UNLOCK_TERM_LABEL.PAYROLL_AUTO_SCHEDULE}` })
           : undefined;
       const response = await fetch("/api/one-points/entitlements", {
         body: JSON.stringify({
@@ -197,8 +197,8 @@ export function PayrollAutopayApproval({
           : "Automatic payment unlocked",
         {
           description: renew
-            ? `Another ${FEATURE_UNLOCK_TERM_LABEL} added to the time you had left.`
-            : `Active for the next ${FEATURE_UNLOCK_TERM_LABEL}.`,
+            ? `Another ${FEATURE_UNLOCK_TERM_LABEL.PAYROLL_AUTO_SCHEDULE} added to the time you had left.`
+            : `Active for the next ${FEATURE_UNLOCK_TERM_LABEL.PAYROLL_AUTO_SCHEDULE}.`,
         },
       );
       emitOnePointsUpdated();
@@ -329,7 +329,7 @@ export function PayrollAutopayApproval({
               {usdcPrice !== null ? usdcPrice.toFixed(2) : unlockCost.toLocaleString()}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              {usdcPrice !== null ? "USDC" : "OnePoints"} / {FEATURE_UNLOCK_TERM_LABEL}
+              {usdcPrice !== null ? "USDC" : "OnePoints"} / {FEATURE_UNLOCK_TERM_LABEL.PAYROLL_AUTO_SCHEDULE}
             </p>
             <Button
               className="mt-2 h-9"

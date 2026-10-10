@@ -3,7 +3,7 @@
 import { Fingerprint, Loader2, Lock } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { PIN_LENGTH, PinPad } from "@/components/app-lock/pin-pad";
+import { PinPad } from "@/components/app-lock/pin-pad";
 import { Button } from "@/components/ui/button";
 import {
   AppLockError,

@@ -63,7 +63,6 @@ export const platformNavItems = [
   label: string;
 }>;
 
-export const businessNavItems = platformNavItems;
 
 const shouldPrefetchPlatformRoutes = process.env.NODE_ENV === "production";
 

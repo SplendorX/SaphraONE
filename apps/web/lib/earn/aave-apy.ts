@@ -5,7 +5,6 @@ import {
 } from "viem";
 
 import { earnConfig } from "@/lib/earn/config";
-import { annualizeGrowthBps } from "@/lib/earn/decimal";
 import { arcChain, arcTransport } from "@/lib/chains";
 
 /**
@@ -41,17 +40,6 @@ export const aavePoolAbi = [
         ],
       },
     ],
-  },
-] as const;
-
-/** Some pools expose getReserveAToken only (mock / partial). */
-export const aavePoolMinimalAbi = [
-  {
-    type: "function",
-    name: "getReserveAToken",
-    stateMutability: "view",
-    inputs: [{ name: "asset", type: "address" }],
-    outputs: [{ name: "", type: "address" }],
   },
 ] as const;
 
@@ -216,52 +204,6 @@ export async function fetchAaveApy(options?: {
       capturedAt,
     };
   }
-}
-
-export function observedGrowthApy(params: {
-  startAssets: bigint;
-  endAssets: bigint;
-  periodSeconds: number;
-  feeBps: number;
-  isSimulation: boolean;
-}): ApySnapshotResult {
-  const capturedAt = new Date().toISOString();
-  if (params.isSimulation) {
-    return {
-      grossApyBps: null,
-      netApyBps: null,
-      underlyingApyBps: null,
-      dataSource: "simulation",
-      isEstimate: true,
-      isSimulation: true,
-      liquidityIndex: null,
-      currentLiquidityRateRay: null,
-      message: "Simulation — observed growth is not real yield.",
-      capturedAt,
-    };
-  }
-
-  const gross = annualizeGrowthBps(
-    params.startAssets,
-    params.endAssets,
-    params.periodSeconds,
-  );
-
-  return {
-    grossApyBps: gross,
-    netApyBps: applyPerformanceFeeBps(gross, params.feeBps),
-    underlyingApyBps: gross,
-    dataSource: "observed_growth",
-    isEstimate: true,
-    isSimulation: false,
-    liquidityIndex: null,
-    currentLiquidityRateRay: null,
-    message:
-      gross === null
-        ? "Insufficient history for observed APY."
-        : "Estimated APY from observed vault asset growth. Not a guarantee.",
-    capturedAt,
-  };
 }
 
 // silence unused until indexer uses period math

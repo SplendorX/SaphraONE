@@ -515,10 +515,7 @@ export async function processDepositAddress(address: DepositAddressRow) {
   }
 }
 
-export async function processDepositAddressById(id: string) {
-  const address = await getDepositAddress(id);
-  return address ? processDepositAddress(address) : null;
-}
+
 
 /** Background pass: every open sweep, then every recently active address. */
 export async function processDue() {

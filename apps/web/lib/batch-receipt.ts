@@ -1,6 +1,6 @@
 import { arcChain } from "@/lib/chains";
 import type { BatchReceiptData } from "@/components/batch/batch-receipt-modal";
-import { drawSaphraBrand } from "@/lib/brand-canvas";
+import { drawOneRibbon, drawSaphraBrand } from "@/lib/brand-canvas";
 
 /**
  * The BulkPay receipt image: every recipient with name, address and amount.
@@ -77,21 +77,8 @@ export async function buildBatchReceiptPng(receipt: BatchReceiptImageInput, with
  context.fillStyle = paper;
  context.fillRect(margin, margin, width - margin * 2, height - margin * 2);
 
- // Bold SaphraONE watermark behind the recipient table.
- context.save();
- context.translate(width / 2, tableTop + (height - tableTop) / 2);
- context.rotate((-22 * Math.PI) / 180);
- context.globalAlpha = 0.06;
- context.font = "800 170px Sora, Arial, sans-serif";
- context.textAlign = "center";
- context.textBaseline = "middle";
- const watermark = context.createLinearGradient(-400, 0, 400, 0);
- watermark.addColorStop(0, "#3b82f6");
- watermark.addColorStop(0.48, "#6366f1");
- watermark.addColorStop(1, "#8b5cf6");
- context.fillStyle = watermark;
- context.fillText("SaphraONE", 0, 0);
- context.restore();
+ // The ONE ribbon, faint, behind the recipient table.
+ drawOneRibbon(context, width / 2, tableTop + (height - tableTop) / 2, 560, { alpha: 0.06 });
 
  const header = context.createLinearGradient(margin, margin, width - margin, margin + headerHeight);
  header.addColorStop(0, "#5b21b6");

@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { useT } from "@/components/locale-provider";
 import {
   applyLightSurface,
-  lightSurfaceStorageKey,
-  type LightSurface,
+  readLightSurface,
 } from "@/components/settings/light-surface-picker";
 
 const themeStorageKey = "saphra.theme";
@@ -28,11 +27,7 @@ function applyTheme(pref: ThemePref) {
   document.documentElement.dataset.themePref = pref;
   document.documentElement.style.colorScheme = resolved;
   document.documentElement.classList.toggle("dark", resolved === "dark");
-  const surface =
-    window.localStorage.getItem(lightSurfaceStorageKey) === "glass"
-      ? "glass"
-      : "cream";
-  applyLightSurface(surface as LightSurface);
+  applyLightSurface(readLightSurface());
 }
 
 export function ThemeToggle() {

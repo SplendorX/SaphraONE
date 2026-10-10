@@ -47,9 +47,6 @@ function readPath(messages: Messages, key: string): string | undefined {
   return typeof current === "string" ? current : undefined;
 }
 
-export function getMessages(locale: string): Messages {
-  return catalogs[resolveAppLocale(locale)];
-}
 
 export function translate(
   locale: string,

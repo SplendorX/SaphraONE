@@ -7,18 +7,12 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
-  Clock,
-  Copy,
-  Download,
   ExternalLink,
   Loader2,
   RefreshCw,
   Send,
-  Share2,
   ShieldAlert,
   ShieldCheck,
-  UserRound,
-  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -43,7 +37,6 @@ import { PlatformProfileControls } from "@/components/platform-profile-controls"
 import { Button } from "@/components/ui/button";
 import { showSuccess } from "@/components/success-popup";
 import { PayrollStatusBadge } from "@/components/payroll/payroll-status-badge";
-import { TokenIcon } from "@/components/token-icon";
 import {
   approvePayrollRunClient,
   cancelPayrollRunClient,
@@ -63,29 +56,17 @@ import {
   readCircleLogin,
   readCircleWallets,
   writeCircleWallets,
-  type CircleClientErrorPayload,
   type CircleLoginResult,
   type CircleTokenBalance,
   type CircleWallet,
 } from "@/lib/circle-session";
-import {
-  extractCircleTransactionId,
-  extractCircleTxHash,
-  recoverCircleTxHash,
-} from "@/lib/circle-tx";
+import { recoverCircleTxHash } from "@/lib/circle-tx";
 import {
   dedicatedBusinessWallet,
   personalCircleWallet,
 } from "@/lib/business/provision-wallet";
 import { useOptionalWorkspace } from "@/components/business/workspace-provider";
-import {
-  erc20Abi,
-  swiftBatchAbi,
-  swiftBatchAddress,
-  swiftBatchFeeBasisPoints,
-  swiftBatchFeeRecipient,
-} from "@/lib/contracts";
-import { drawSaphraBrand } from "@/lib/brand-canvas";
+import { erc20Abi, swiftBatchAbi, swiftBatchAddress } from "@/lib/contracts";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 import { usePreferredWalletMode } from "@/lib/use-preferred-wallet-mode";
 import { arcChain, arcExplorerUrl, arcTransport } from "@/lib/chains";
@@ -137,11 +118,6 @@ const configuredBatchAddress =
     ? (getAddress(swiftBatchAddress) as Address)
     : undefined;
 
-function shorten(val?: string | null) {
-  if (!val) return "";
-  return `${val.slice(0, 6)}…${val.slice(-4)}`;
-}
-
 export default function PayrollRunDetailPage({
   params,
 }: {
@@ -151,7 +127,7 @@ export default function PayrollRunDetailPage({
   const circleSdkRef = useRef<W3SSdk | null>(null);
   const { ownerWallet, circleSocialUuid } = useAccountContext();
   const workspaceContext = useOptionalWorkspace();
-  const { address: externalAddress, isConnected } = useAccount();
+  const { address: externalAddress } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();

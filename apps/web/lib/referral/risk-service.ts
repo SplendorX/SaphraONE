@@ -1,4 +1,4 @@
-import { referralDb, referralTables, readReferralDbError } from "@/lib/referral/db";
+import { referralDb, referralTables } from "@/lib/referral/db";
 import { recordLedgerEntry } from "@/lib/referral/ledger-service";
 import type { ReferralFraudStatus } from "@/lib/referral/types";
 

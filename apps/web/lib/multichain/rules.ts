@@ -21,15 +21,7 @@ export const SWEEP_STATES = ["SWEEPING", "BURNED", "CREDITED", "FAILED", "NEEDS_
 
 export type SweepState = (typeof SWEEP_STATES)[number];
 
-/** A deposit still waiting to land on Arc. */
-export const OPEN_DEPOSIT_STATES: readonly DepositState[] = [
-  "DETECTED",
-  "CONFIRMED",
-  "BELOW_MIN",
-  "SWEEPING",
-  "BURNED",
-  "FAILED",
-];
+
 
 const depositTransitions: Record<DepositState, readonly DepositState[]> = {
   DETECTED: ["CONFIRMED", "FAILED", "NEEDS_REVIEW"],

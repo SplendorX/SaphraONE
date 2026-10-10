@@ -217,49 +217,4 @@ export function useAutoDeposit(input: {
   };
 }
 
-/** Marks a completed sweep so the rule advances to its next period. */
-export async function markSweepRan(input: {
-  circleSocialUuid?: string;
-  walletAddress: string;
-}) {
-  await fetch("/api/earn/auto-deposit", {
-    body: JSON.stringify({ ...input, markRan: true }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
-}
 
-/**
- * Whether a SWEEP rule should be offered right now.
- *
- * Deliberately conservative: the balance is the live on-chain figure, and the
- * floor must survive the deposit, so a rule can never be offered when taking
- * it would breach the reserve its owner set.
- */
-export function sweepReadiness(input: {
-  balanceUsdc: number | undefined;
-  rule: AutoDepositRule | null;
-}): { ready: boolean; reason: string | null } {
-  const { balanceUsdc, rule } = input;
-
-  if (!rule || !rule.enabled || rule.mode !== "SWEEP") {
-    return { ready: false, reason: null };
-  }
-
-  if (new Date(rule.next_run_at).getTime() > Date.now()) {
-    return { ready: false, reason: null };
-  }
-
-  if (balanceUsdc === undefined) {
-    return { ready: false, reason: null };
-  }
-
-  if (balanceUsdc - rule.amount_usdc < rule.min_balance_floor) {
-    return {
-      ready: false,
-      reason: `Waiting for your balance to cover ${rule.amount_usdc} USDC while keeping ${rule.min_balance_floor} liquid.`,
-    };
-  }
-
-  return { ready: true, reason: null };
-}

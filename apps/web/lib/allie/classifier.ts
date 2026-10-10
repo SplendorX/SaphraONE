@@ -1,5 +1,6 @@
 import type {
   AllieAction,
+  AllieActivityPeriod,
   AllieAsset,
   AllieBatchLeg,
   AllieFrequency,
@@ -66,6 +67,31 @@ const earnDepositPattern =
   /\b(?:deposit|put|move|add|stake)\s+\$?([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:usdc|eurc)?\s+(?:in)?to\s+(?:the\s+)?(?:earn|vault)\b/i;
 const earnWithdrawPattern =
   /\b(?:withdraw|redeem|take\s+out)\s+\$?([0-9][0-9,]*(?:\.[0-9]+)?)?\s*(?:usdc|eurc)?\s*(?:from\s+)?(?:the\s+)?(?:earn|vault)\b/i;
+
+// "quote 100 usdc to eurc", "how much eurc for 50 usdc", "eurc price",
+// "usdc to eurc rate". Read before the swap pattern: a question is never a swap.
+const swapQuotePattern =
+  /\b(?:quote|price|rate|how\s+much)\b[^\n]*?(?:\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*)?(usdc|eurc)\b(?:[^\n]*?\b(?:to|for|into|in)\s+(usdc|eurc)\b)?/i;
+const swapQuoteReversedPattern =
+  /\bhow\s+much\s+(usdc|eurc)\s+(?:would\s+i\s+get\s+|do\s+i\s+get\s+|is\s+|for\s+)?(?:for\s+)?\$?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(usdc|eurc)\b/i;
+const priceOnlyPattern = /\b(usdc|eurc)\s+(?:price|rate)\b|\b(?:price|rate)\s+of\s+(usdc|eurc)\b/i;
+
+// "how much did I spend this week", "activity summary for 30 days",
+// "my portfolio today", "volume all time", "pnl this month".
+const activitySummaryPattern =
+  /\b(?:summary|summari[sz]e|breakdown|overview|portfolio|p\s*&?\s*n?\s*l|pnl|profit|volume|how\s+much\s+(?:did|have)\s+i\s+(?:spen[dt]|sen[dt]|receiv(?:e|ed)|earn(?:ed)?|ma[dk]e)|money\s+(?:in|out)|spending|spent|received|cash\s*flow)\b/i;
+const periodAllPattern = /\b(?:all[\s-]*time|ever|since\s+(?:i\s+)?(?:joined|started|the\s+start)|lifetime|overall|in\s+total|all)\b/i;
+const period24hPattern = /\b(?:24\s*h(?:ours?|rs?)?|today|last\s+day|past\s+day)\b/i;
+const period7dPattern = /\b(?:7\s*d(?:ays?)?|this\s+week|last\s+week|past\s+week|weekly|seven\s+days)\b/i;
+const period30dPattern = /\b(?:30\s*d(?:ays?)?|this\s+month|last\s+month|past\s+month|monthly|thirty\s+days)\b/i;
+
+function readPeriod(text: string): AllieActivityPeriod {
+  if (period24hPattern.test(text)) return "24h";
+  if (period7dPattern.test(text)) return "7d";
+  if (period30dPattern.test(text)) return "30d";
+  if (periodAllPattern.test(text)) return "all";
+  return "30d";
+}
 
 const swapPattern =
   /\bswap\s+\$?([0-9][0-9,]*(?:\.[0-9]+)?)\s*(usdc|eurc)?\s*(?:for|to|into)\s+(usdc|eurc)\b/i;
@@ -669,6 +695,38 @@ export function classifyMessage(message: string): AllieTierOneResult | null {
     }
   }
 
+  // ── Swap quote (a question, so before the swap itself) ───────────────────
+  const reversedQuote = swapQuoteReversedPattern.exec(text);
+  if (reversedQuote) {
+    const amountUsdc = parseAmount(reversedQuote[2]);
+    const toAsset = parseAsset(reversedQuote[1]);
+    const fromAsset = parseAsset(reversedQuote[3]);
+    if (amountUsdc && fromAsset !== toAsset) {
+      return matched({ type: "SwapQuote", amountUsdc, fromAsset, toAsset });
+    }
+  }
+
+  const priceOnly = priceOnlyPattern.exec(text);
+  if (priceOnly && !/\bswap\b/i.test(text)) {
+    const asset = parseAsset(priceOnly[1] ?? priceOnly[2]);
+    return matched({
+      type: "SwapQuote",
+      amountUsdc: 1,
+      fromAsset: asset,
+      toAsset: asset === "USDC" ? "EURC" : "USDC",
+    });
+  }
+
+  const quote = swapQuotePattern.exec(text);
+  if (quote && /\b(?:quote|rate|price)\b/i.test(text)) {
+    const amountUsdc = quote[1] ? parseAmount(quote[1]) : 1;
+    const fromAsset = parseAsset(quote[2]);
+    const toAsset = quote[3] ? parseAsset(quote[3]) : fromAsset === "USDC" ? "EURC" : "USDC";
+    if (amountUsdc && fromAsset !== toAsset) {
+      return matched({ type: "SwapQuote", amountUsdc, fromAsset, toAsset });
+    }
+  }
+
   // ── Swap ─────────────────────────────────────────────────────────────────
   const swap = swapPattern.exec(text);
   if (swap) {
@@ -790,6 +848,11 @@ export function classifyMessage(message: string): AllieTierOneResult | null {
 
   if (earnStatusPattern.test(text)) {
     return matched({ type: "EarnStatus" });
+  }
+
+  // Before the balance question: "how much did I spend" is a summary.
+  if (activitySummaryPattern.test(text)) {
+    return matched({ type: "ActivitySummary", period: readPeriod(text) });
   }
 
   if (balancePattern.test(text)) {

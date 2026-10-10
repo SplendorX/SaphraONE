@@ -18,6 +18,8 @@ export type AllieActionPayload =
     }
   | { type: "QueryBalance" }
   | { type: "ListTransactions"; limit?: number }
+  | { type: "ActivitySummary"; period: "24h" | "7d" | "30d" | "all" }
+  | { type: "SwapQuote"; fromAsset: "USDC" | "EURC"; toAsset: "USDC" | "EURC"; amountUsdc: number }
   | { type: "SaveStatus" }
   | { type: "EarnStatus" }
   | { type: "PayrollStatus" }
@@ -109,6 +111,8 @@ export type AllieChatResponse = {
   legs?: AllieBatchLegView[];
   fees?: AllieFeeView;
   totalDebitUnits?: string;
+  /** The plan the fees were priced on: Pro has no per-payment ALLIE fee. */
+  plan?: "free" | "pro";
   context?: {
     walletBalance: string;
     dailySpentUnits: string;
@@ -468,11 +472,4 @@ export async function activateAllieProWithPoints(input: WalletContext) {
   return parseResponse<AllieSubscriptionState & { paidPoints: number }>(response);
 }
 
-export async function cancelAlliePro(context: WalletContext) {
-  const response = await fetch(
-    `/api/allie/subscription?${contextParams(context).toString()}`,
-    { method: "DELETE" },
-  );
 
-  return parseResponse<{ tier: "free" }>(response);
-}

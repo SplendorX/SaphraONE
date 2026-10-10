@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
 import {
   checkOperatorHealth,
   reportOperatorHealth,

@@ -8,9 +8,11 @@ import { join } from "node:path";
  * inside it. The Supabase sign-in templates (docs/email-templates/) copy
  * this markup by hand, so change both together.
  *
- * The wordmark goes inside the email as an inline (cid) image: a linked
- * image can't load from a local dev server, and some clients block remote
- * images by default.
+ * The wordmark is linked from the live site whenever there is one. An inline
+ * (cid) attachment looked tidy in some clients, but Gmail shows it as a
+ * "saphraone.png" attachment and can drop it from the header entirely, so the
+ * attachment is only the fallback for local development, where a linked
+ * image can't load.
  */
 
 export const wordmarkContentId = "saphra-wordmark";
@@ -19,6 +21,28 @@ export const wordmarkContentId = "saphra-wordmark";
 const gradient = "linear-gradient(135deg,#6a0ef4 0%,#3b2cf6 50%,#0078ff 100%)";
 const gradientFallback = "#3b2cf6";
 export const brandPurple = "#5f15f4";
+
+const wordmarkPath = "/brand/saphra-wordmark-white.png";
+
+/** The public https origin emails can link images from, or null (local dev). */
+function publicOrigin() {
+  const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (explicit) {
+    try {
+      const url = new URL(explicit);
+      if (url.protocol === "https:" && url.hostname !== "localhost") return url.origin;
+    } catch {
+      // fall through
+    }
+  }
+  return process.env.VERCEL_ENV === "production" ? "https://app.saphra.one" : null;
+}
+
+/** Absolute URL of the white wordmark, or null when only the attachment works. */
+export function hostedWordmarkUrl() {
+  const origin = publicOrigin();
+  return origin ? `${origin}${wordmarkPath}` : null;
+}
 
 let wordmarkBase64: Promise<string | null> | null = null;
 
@@ -29,8 +53,12 @@ function loadWordmark() {
   return wordmarkBase64;
 }
 
-/** Resend `attachments` for the inline wordmark, or none when the file can't be read. */
+/**
+ * Resend `attachments` for the inline wordmark: none when the wordmark is
+ * linked from the live site, or when the file can't be read.
+ */
 export async function wordmarkAttachments() {
+  if (hostedWordmarkUrl()) return [];
   const content = await loadWordmark();
   return content
     ? [{ content, content_id: wordmarkContentId, content_type: "image/png", filename: "saphraone.png" }]
@@ -68,9 +96,10 @@ export function brandedEmail(input: {
   /** Override for templates that link the image instead of attaching it. */
   wordmarkSrc?: string;
 }) {
-  const src = input.wordmarkSrc ?? `cid:${wordmarkContentId}`;
+  const hosted = hostedWordmarkUrl();
+  const src = input.wordmarkSrc ?? hosted ?? `cid:${wordmarkContentId}`;
   const brand =
-    input.hasWordmark === false && !input.wordmarkSrc
+    input.hasWordmark === false && !input.wordmarkSrc && !hosted
       ? `<span style="font-family:Arial,Helvetica,sans-serif;font-size:30px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;">SaphraONE</span>`
       : `<img src="${escapeHtml(src)}" alt="SaphraONE" width="170" height="75" style="display:inline-block;width:170px;height:auto;border:0;outline:none;" />`;
   const footer =

@@ -1,0 +1,26 @@
+/* Golden ring around the name chip in the top bar: a metallic gradient
+   border drawn with two backgrounds (fill clipped to the padding box, gold
+   to the border box), so the chip keeps its shape and size. */
+.profile-trigger.profile-trigger {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--sidebar), var(--sidebar)) padding-box,
+    linear-gradient(135deg, #f7e7a1 0%, #d4a72c 28%, #fff1b8 50%, #b8860b 74%, #f3d36b 100%) border-box;
+  box-shadow: 0 0 0 1px rgb(212 167 44 / 0.12), 0 4px 14px -6px rgb(184 134 11 / 0.45);
+}
+
+.profile-trigger.profile-trigger:hover {
+  border-color: transparent;
+  background:
+    linear-gradient(
+        color-mix(in oklch, var(--foreground) 4%, var(--sidebar)),
+        color-mix(in oklch, var(--foreground) 4%, var(--sidebar))
+      )
+      padding-box,
+    linear-gradient(135deg, #fff1b8 0%, #e0b23a 30%, #fff6cc 52%, #c8961a 76%, #f7dd80 100%) border-box;
+  box-shadow: 0 0 0 1px rgb(212 167 44 / 0.2), 0 6px 18px -6px rgb(184 134 11 / 0.55);
+}
+
+.profile-trigger.profile-trigger:focus-visible {
+  box-shadow: 0 0 0 3px rgb(212 167 44 / 0.35);
+}

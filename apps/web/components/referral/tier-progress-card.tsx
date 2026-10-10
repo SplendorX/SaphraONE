@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, ChevronRight, ShieldCheck, TrendingUp, Zap } from "lucide-react";
+import { ShieldCheck, Zap } from "lucide-react";
 import type { ReferralTier, TierProgress } from "@/lib/referral/types";
 import { TierBadge } from "@/components/referral/tier-badge";
 import { Progress } from "@/components/ui/progress";

@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { getOrCreateReferralProfile } from "@/lib/referral/attribution-service";
 import { getOnePointsSummary } from "@/lib/referral/ledger-service";
 import { getTierProgress } from "@/lib/referral/tier-service";

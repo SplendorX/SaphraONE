@@ -1,10 +1,14 @@
 "use client";
 
-import { ArrowUpRight, Gift, PiggyBank, TrendingUp, type LucideIcon } from "lucide-react";
+import { PiggyBank, TrendingUp, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { PromoGiftArt } from "@/components/dashboard/promo-gift-art";
 import { REFERRED_QUALIFICATION_REWARD_POINTS } from "@/lib/referral/types";
+import { rewardsV2Enabled } from "@/lib/rewards/config";
+
+import "./feature-promos.css";
 
 type EarnMode = "live" | "simulation" | "unavailable";
 type EarnApy = { display: string | null; estimate: boolean; mode: EarnMode | null };
@@ -46,32 +50,55 @@ function useEarnApy() {
 
 type Promo = {
   body: string;
-  /** Optional second line, set apart from the pitch. */
-  extra?: string;
+  /** The pill at the bottom of the card: the one number that sells it. */
   figure: string;
   figureNote: string;
   href: string;
-  icon: LucideIcon;
+  /** Art in the lower right; the invite card draws a gift box instead. */
+  icon: LucideIcon | null;
   id: "earn" | "save" | "invite";
-  title: string;
+  title: [string, string];
 };
 
-/** Slim boards that point people at Invest, Save and Invite & Earn. */
+/** Tall cards that point people at Invest, Save and Invite & Earn. */
 export function FeaturePromos() {
   const apy = useEarnApy();
 
   const promos: Promo[] = [
+    rewardsV2Enabled()
+      ? {
+          // Rewards v2: USDC commission on direct referrals' fees, 10% rising
+          // to 25% by tier (lib/referral/usdc-commission.ts).
+          body: "Earn a share of the fees on every payment your friends make, paid in USDC.",
+          figure: "10–25%",
+          figureNote: "of their fees",
+          href: "/referral",
+          icon: null,
+          id: "invite",
+          title: ["Invite friends", "& earn USDC"],
+        }
+      : {
+          // Referral activity cashback: points per qualifying payment the friend
+          // makes, rising with the referrer's tier (see lib/referral/policy-service).
+          body: "You both get ONE Points once they start, then cashback on every payment they make.",
+          figure: `+${REFERRED_QUALIFICATION_REWARD_POINTS}`,
+          figureNote: "ONE Points each",
+          href: "/referral",
+          icon: null,
+          id: "invite",
+          title: ["Invite friends", "& earn rewards"],
+        },
     {
       body: "Put idle USDC to work and move it back whenever you need it.",
       ...(apy.display
         ? { figure: apy.display, figureNote: apy.estimate ? "est. net APY" : "net APY" }
         : apy.mode === "simulation"
-          ? { figure: "Demo", figureNote: "testnet, no real yield" }
+          ? { figure: "Demo", figureNote: "testnet" }
           : { figure: "USDC", figureNote: "yield when live" }),
       href: "/earn",
       icon: TrendingUp,
       id: "earn",
-      title: "Invest",
+      title: ["Invest.", "Grow idle USDC."],
     },
     {
       body: "Set money aside in pockets, or save a little each time you spend.",
@@ -80,46 +107,39 @@ export function FeaturePromos() {
       href: "/save",
       icon: PiggyBank,
       id: "save",
-      title: "Save",
-    },
-    {
-      body: "Invite a friend. You both get OnePoints once they get started.",
-      // Referral activity cashback: points per qualifying payment the friend
-      // makes, rising with the referrer's tier (see lib/referral/policy-service).
-      extra: "Then earn cashback on every payment they make.",
-      figure: `+${REFERRED_QUALIFICATION_REWARD_POINTS}`,
-      figureNote: "OnePoints each",
-      href: "/referral",
-      icon: Gift,
-      id: "invite",
-      title: "Invite & Earn",
+      title: ["Save.", "A little every day."],
     },
   ];
 
   return (
-    <div aria-label="Explore SaphraONE" className="feature-promos" role="list">
-      {promos.map(({ body, extra, figure, figureNote, href, icon: Icon, id, title }) => (
+    <div aria-label="Explore SaphraONE" className="promo-tiles" role="list">
+      {promos.map(({ body, figure, figureNote, href, icon: Icon, id, title }) => (
         <Link
-          className="feature-promo board-edge"
+          className="promo-tile"
           data-promo={id}
           href={href}
           key={id}
           role="listitem"
         >
-          <span aria-hidden className="feature-promo-icon">
-            <Icon className="h-[1.1rem] w-[1.1rem]" />
+          <span className="promo-tile-title">
+            {title[0]}
+            <br />
+            {title[1]}
           </span>
-          <span className="feature-promo-copy">
-            <span className="feature-promo-title">
-              {title}
-              <ArrowUpRight className="feature-promo-arrow h-3.5 w-3.5" />
-            </span>
-            <span className="feature-promo-body">{body}</span>
-            {extra ? <span className="feature-promo-extra">{extra}</span> : null}
+          <span className="promo-tile-body">{body}</span>
+
+          <span aria-hidden className="promo-tile-art">
+            {Icon ? (
+              <span className="promo-tile-art-tile">
+                <Icon className="promo-tile-art-icon" strokeWidth={1.6} />
+              </span>
+            ) : (
+              <PromoGiftArt className="promo-tile-art-gift" />
+            )}
           </span>
-          <span className="feature-promo-figure">
-            <strong>{figure}</strong>
-            <small>{figureNote}</small>
+
+          <span className="promo-tile-pill">
+            <strong>{figure}</strong> {figureNote}
           </span>
         </Link>
       ))}

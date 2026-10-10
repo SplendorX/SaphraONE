@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   type ReactNode,
   useEffect,
@@ -51,6 +50,8 @@ import { endWalletSession } from "@/lib/wallet-auth-client";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { useT } from "@/components/locale-provider";
 import { resolvePlatformWalletMode } from "@/lib/wallet-mode";
+
+import "./profile-menu.css";
 
 export type WalletMode = "circle" | "external";
 
@@ -153,7 +154,7 @@ export function ProfileMenu({
   walletMode,
 }: ProfileMenuProps) {
   const t = useT();
-  const router = useRouter();
+
   const { disconnect } = useDisconnect();
   const accountContext = useOptionalAccount();
   const isBusinessAccount = accountContext?.isBusiness ?? false;

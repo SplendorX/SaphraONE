@@ -16,7 +16,7 @@ testnet first, like Checkout and multichain):
 - Referral USDC **accrues, then the referrer taps Claim** (minimum $1); one
   treasury transfer per claim.
 - Premium prices move from points to USDC **at 100 points = $1**: automatic
-  deposits $5 / 6 months, automatic payroll $15 / 6 months, Allie Pro
+  deposits $5 / 2 months, automatic payroll $15 / 3 months, Allie Pro
   5 USDC / month (unchanged), Allie overage 0.002 USDC / call.
 - Streaks: **milestones, then repeat**; streak and quest points sit outside the
   monthly cashback cap.

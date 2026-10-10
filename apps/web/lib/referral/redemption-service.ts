@@ -6,11 +6,7 @@ import {
 } from "@/lib/referral/ledger-service";
 import type { OnePointsRedemptionRecord } from "@/lib/referral/types";
 import { payUsdcFromTreasury } from "@/lib/referral/treasury";
-import {
-  MINIMUM_REDEMPTION_ONE_POINTS,
-  MINIMUM_REDEMPTION_UNITS,
-  ONE_POINTS_USD_PER_POINT,
-} from "@/lib/referral/types";
+import { MINIMUM_REDEMPTION_ONE_POINTS, ONE_POINTS_USD_PER_POINT } from "@/lib/referral/types";
 
 /**
  * Request redemption of OnePoints to on-chain USDC.

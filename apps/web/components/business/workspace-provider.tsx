@@ -22,7 +22,7 @@ import type {
 } from "@/lib/business/types";
 import type { OnboardingProfile } from "@/lib/business/service";
 import { applyAppLocale } from "@/lib/locales";
-import { ensureProfile, profileUpdatedEventName } from "@/lib/profile";
+import { profileUpdatedEventName } from "@/lib/profile";
 import { walletSessionChangedEventName } from "@/lib/wallet-auth-client";
 import { useOptionalAccount } from "@/components/account/account-provider";
 

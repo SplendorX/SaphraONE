@@ -23,20 +23,3 @@ export function TokenIcon({
   );
 }
 
-export function TokenAmount({
-  amount,
-  className = "inline-flex items-center gap-1.5",
-  symbol,
-}: {
-  amount: string;
-  className?: string;
-  symbol: ArcTokenSymbol;
-}) {
-  return (
-    <span className={className}>
-      <TokenIcon className="h-4 w-4 shrink-0 rounded-full" symbol={symbol} />
-      <span>{amount}</span>
-      <span>{symbol}</span>
-    </span>
-  );
-}

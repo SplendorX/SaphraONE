@@ -73,14 +73,4 @@ export function markAgentWalletActive(active: boolean) {
   }
 }
 
-export function readAgentWalletActive() {
-  if (typeof window === "undefined") {
-    return false;
-  }
 
-  return window.localStorage.getItem(agentWalletModeKey) === "1";
-}
-
-export function resolveAgentWalletMode(): WalletMode | null {
-  return readAgentWalletActive() ? "agent" : null;
-}

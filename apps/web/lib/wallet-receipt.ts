@@ -1,4 +1,4 @@
-import { drawSaphraBrand } from "@/lib/brand-canvas";
+import { drawOneRibbon, drawSaphraBrand } from "@/lib/brand-canvas";
 import type { WalletTransfer } from "@/lib/arcscan-history";
 import { arcChain } from "@/lib/chains";
 
@@ -223,21 +223,8 @@ export async function buildReceiptPngDataUrl(
   context.lineWidth = 2;
   context.strokeRect(32, 32, width - 64, height - 64);
 
-  // Bold SaphraONE watermark behind the receipt details.
-  context.save();
-  context.translate(width / 2, height * 0.58);
-  context.rotate((-22 * Math.PI) / 180);
-  context.globalAlpha = 0.08;
-  context.font = "800 190px Sora, Arial, sans-serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  const watermark = context.createLinearGradient(-420, 0, 420, 0);
-  watermark.addColorStop(0, "#3b82f6");
-  watermark.addColorStop(0.48, "#6366f1");
-  watermark.addColorStop(1, "#8b5cf6");
-  context.fillStyle = watermark;
-  context.fillText("SaphraONE", 0, 0);
-  context.restore();
+  // The ONE ribbon, faint, behind the receipt details.
+  drawOneRibbon(context, width / 2, height * 0.58, 600, { alpha: 0.07 });
 
   await drawSaphraBrand(context, 58, 58, 64);
   context.fillStyle = "#6a6079";

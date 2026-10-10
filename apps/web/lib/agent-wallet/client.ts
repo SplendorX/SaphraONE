@@ -18,11 +18,7 @@ import {
   type CircleDeveloperControlledWalletsClient,
 } from "@circle-fin/developer-controlled-wallets";
 
-import {
-  arcNetworkTarget,
-  officialArcChainId,
-  officialArcRpcUrl,
-} from "@/lib/network";
+import { officialArcChainId, officialArcRpcUrl } from "@/lib/network";
 import { getSaphraSendAddress, swiftPaySendAbi } from "@/lib/contracts";
 import { arcTokens } from "@/lib/tokens";
 
@@ -46,7 +42,7 @@ export function agentWalletBlockchain() {
   return arcCircleBlockchain;
 }
 
-type TerminalState = "COMPLETE" | "FAILED" | "DENIED" | "CANCELLED";
+
 
 const terminalStates: readonly string[] = [
   "COMPLETE",
@@ -257,27 +253,6 @@ export async function getAgentTransaction(transactionId: string) {
   const client = getAgentWalletClient();
   const response = await client.getTransaction({ id: transactionId });
   return response.data?.transaction ?? null;
-}
-
-/**
- * Poll until the transaction reaches a terminal state.
- * Returns the last transaction seen, even if polling timed out.
- */
-export async function waitForAgentTransaction(transactionId: string) {
-  let last: Awaited<ReturnType<typeof getAgentTransaction>> = null;
-
-  for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
-    last = await getAgentTransaction(transactionId);
-    const state = last?.state;
-
-    if (state && terminalStates.includes(state)) {
-      return { transaction: last, state: state as TerminalState };
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-  }
-
-  return { transaction: last, state: null };
 }
 
 /**

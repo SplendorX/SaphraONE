@@ -210,11 +210,7 @@ export async function moveDeposits(
   if (error) fail(error, "Deposits could not be updated.");
 }
 
-export async function getSweep(id: string) {
-  const { data, error } = await db().from("chain_sweeps").select("*").eq("id", id).maybeSingle<ChainSweepRow>();
-  if (error) fail(error, "Sweep could not be read.");
-  return data;
-}
+
 
 /** The address's open sweep (in flight or failed and resumable), if any. */
 export async function findOpenSweep(depositAddressId: string) {

@@ -1,4 +1,3 @@
-import { isAddress, type Address } from "viem";
 
 import { isValidTxHash, isValidUuid } from "@/lib/save/validation";
 import { writeCircleActivity } from "@/lib/swift-circle/activity";
@@ -731,10 +730,6 @@ export async function confirmPaymentFromWebhook(input: {
   }
 
   return newlyConfirmed?.[0] ?? matches[0];
-}
-
-export function paymentDestination(wallet: string): Address | null {
-  return isAddress(wallet) ? (wallet as Address) : null;
 }
 
 export function paymentAmountUnits(value: string) {

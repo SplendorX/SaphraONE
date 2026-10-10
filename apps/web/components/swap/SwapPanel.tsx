@@ -14,17 +14,10 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
-import {
- useAccount,
- useBalance,
- useChainId,
- useReadContract,
- useSwitchChain,
-} from "wagmi";
+import { useAccount, useChainId, useReadContract, useSwitchChain } from "wagmi";
 import { formatUnits, isAddress, parseUnits, type Address } from "viem";
 
 import { useOptionalWorkspace } from "@/components/business/workspace-provider";
-import { useT } from "@/components/locale-provider";
 import type { SuccessPopupDetail } from "@/components/success-popup";
 import { TokenIcon } from "@/components/token-icon";
 import { TransferProgressOverlay } from "@/components/send/transfer-progress";
@@ -97,7 +90,6 @@ type CircleChallengeResult = {
 };
 
 export function SwapPanel() {
- const t = useT();
  const circleSdkRef = useRef<W3SSdk | null>(null);
  const {
  address: accountAddress,
@@ -188,7 +180,6 @@ export function SwapPanel() {
 
  const {
  data: rawEurcBalance,
- isLoading: isEurcBalanceLoading,
  refetch: refetchEurcBalance,
  } = useReadContract({
  address: arcTokens.EURC.address,
@@ -203,7 +194,6 @@ export function SwapPanel() {
 
  const {
  data: rawUsdcBalance,
- isLoading: isUsdcBalanceLoading,
  refetch: refetchUsdcBalance,
  } = useReadContract({
  address: arcTokens.USDC.address,
@@ -216,26 +206,10 @@ export function SwapPanel() {
  },
  });
 
- const { data: nativeBalance } = useBalance({
- address,
- chainId: arcChain.id,
- query: {
- enabled: Boolean(isConnected && address),
- },
- });
-
  const tokenBalances = {
  EURC: typeof rawEurcBalance === "bigint" ? rawEurcBalance : undefined,
  USDC: typeof rawUsdcBalance === "bigint" ? rawUsdcBalance : undefined,
  } satisfies Record<ArcTokenSymbol, bigint | undefined>;
-
- const nativeBalanceText = nativeBalance
- ? `${Number(nativeBalance.formatted).toLocaleString(undefined, {
- maximumFractionDigits: 4,
- })} ${nativeBalance.symbol}`
- : isConnected
- ? "Loading gas"
- : "Connect wallet";
 
  const swapAmountUnits = useMemo(() => {
  if (!swapAmount.trim()) {
