@@ -22,18 +22,17 @@ All paths are relative to `apps/web/` unless they start with `packages/` or are 
 
 ### How this was verified
 
-The cloud environment that produced this document could not reach `vtpass.com` or `sandbox.vtpass.com`
-(network policy). Every statement in Part A therefore comes from one of two kinds of source, and the
-Sources section lists them:
+Part A was checked against the official documentation pages at `vtpass.com/documentation`, read directly
+on 2026-10-11 (31 pages, listed under Sources and cited inline as `[docs: page]`). Five community SDKs from
+npm were read in full as a cross-check on how integrators actually call the API: `@obipascal/vtpass-nodejs-sdk`
+1.0.15 (Dec 2025), `billpay` 0.2.0 (Apr 2026), `@braynexservices/nigeria-mcp-electricity` 0.3.0 (Oct 2026),
+`vtpassnodejs` 1.0.9 and `vtpass-node` 1.0.6 (2022). Where a page and an SDK disagree, the page wins and
+the difference is noted.
 
-- Search-engine excerpts of the official documentation pages, cited by URL inline as `[docs: page]`.
-- Five community SDKs downloaded from npm and read in full, which agree with each other and with the
-  excerpts: `@obipascal/vtpass-nodejs-sdk` 1.0.15 (Dec 2025, typed, carries the full response-code table),
-  `billpay` 0.2.0 (Apr 2026, VTpass + Interswitch failover), `@braynexservices/nigeria-mcp-electricity`
-  0.3.0 (Oct 2026, read-only meter verification), `vtpassnodejs` 1.0.9 and `vtpass-node` 1.0.6 (2022).
-
-Items that could not be read verbatim are collected under "Not yet verified" and must be checked against
-the live documentation before Phase 0 starts.
+The documentation is a WordPress site whose product pages were written at different times. Some still
+describe Basic authentication and some sample responses carry copy-paste artefacts (duplicated
+`commission_details` blocks, a `varations` key beside `variations`). Part A records what the pages say
+today; the few things no page states are under "Not yet verified".
 
 ## The design in one line
 
@@ -58,8 +57,19 @@ VTpass leg, so ALLIE, Insights, Activity and refunds all see a bill the way they
 
 Sandbox and live are separate accounts with separate keys. The sandbox wallet comes pre-funded and is
 debited like live. Going live means finishing integration on sandbox, registering on the live platform,
-then asking support (`support@vtpass.com`) to be provisioned on the live environment. Response code `027`
-means the server IP must be whitelisted by support first. `[docs: integrating-api, developers, response-codes]`
+then asking support (email, or Skype `vtpass.techsupport`) to provision the account for API access.
+Response code `027` means the server IP must be whitelisted by support first.
+`[docs: integrating-api, developers, response-codes]`
+
+**Products are disabled by default.** Every product the integration will sell must be ticked under
+Profile → Product Settings, in each environment; an unticked product answers code `028`.
+`[docs: whitelist-products]`
+
+The introduction page lists the services VTpass considers core: airtime (MTN, Airtel, Glo, 9mobile), data
+for the same four, electricity for AEDC, PHED, IKEDC, EKEDC, JEDplc and KEDCO (prepaid and postpaid), TV
+(DStv, GOtv, Startimes), education (WAEC registration and result checker) and third-party auto insurance,
+"for an updated list, please check the VTpass platform". The individual pages go further (Showmax, Smile,
+Spectranet, six more DisCos, JAMB, bank transfer, international airtime). `[docs: introduction]`
 
 ### A2. Authentication
 
@@ -71,8 +81,11 @@ The current authentication page documents API keys only `[docs: authentication]`
 - **GET** requests send headers `api-key` and `public-key`.
 - **POST** requests send headers `api-key` and `secret-key`.
 
-Older product pages and the 2022 SDKs use HTTP Basic (`Authorization: Basic base64(username:password)`),
-with a public sandbox pair baked into the SDKs. The design below uses API keys only. Bodies are JSON; the
+Several product pages (DStv, third-party insurance, bank transfer) still open with "The VTpass API uses
+Basic Authentication" (`Authorization: Basic base64(email:password)`), and the 2022 SDKs ship a public
+sandbox pair. The dedicated authentication page documents only API keys, and the account setting lets a
+merchant turn Basic off. The design below uses API keys only; code `087` ("invalid credentials, confirm the
+authentication method defined in your integration setup") is what a mismatch returns. Bodies are JSON; the
 Oct 2026 MCP package posts `application/x-www-form-urlencoded` to `/merchant-verify` and is accepted, so
 either encoding works.
 
@@ -90,10 +103,11 @@ A separate **Messaging API** (SMS) exists with `X-Token` / `X-Secret` headers. I
 | Purchase | POST | `/pay` | `request_id`, `serviceID`, `amount`, `phone`, and per product `billersCode`, `variation_code`, `subscription_type` (`change`\|`renew`), `quantity`, extra fields | envelope below |
 | Requery | POST | `/requery` | `request_id` | same envelope, `code "001"` |
 | Wallet balance | GET | `/balance` | | `{ code: 1, contents: { balance } }` (numeric code, note `contents`) |
-| International airtime | GET | `/get-international-airtime-countries`, `/operators`, `/plans` | `serviceID=foreign-airtime`, `operator_id`, `product_type_id` on `/service-variations` | fixed or `variation_rate × amount` pricing |
-| Motor insurance options | GET | `/universal-insurance/options/engine-capacity`, `/universal-insurance/options/state`, vehicle-model options | | option codes for `ui-insure` |
+| Product options | GET | `/options?serviceID={id}&name={option}` | e.g. `aero` with `passenger_type`, `trip_type` | `content{optionName, optionType, optionLabel, options{}}` |
+| International airtime | GET | `/get-international-airtime-countries`, `/get-international-airtime-product-types?code={CC}`, `/get-international-airtime-operators?code={CC}&product_type_id={n}`, `/service-variations?serviceID=foreign-airtime&operator_id={n}&product_type_id={n}` | purchase adds `operator_id`, `country_code`, `product_type_id`, `email` | fixed `charged_amount`, or `variation_rate × amount` in the local currency |
+| Motor insurance options | GET | `/universal-insurance/options/color`, `.../engine-capacity`, `.../state`, `.../lga/{StateCode}`, `.../brand`, `.../model/{VehicleMakeCode}` | | option codes for `ui-insure` |
 
-`[docs: available-services, service-ids, variation-codes, buying-services, re-query-services, get-vtpass-wallet-balance, foreign-airtime, third-party-insurance]`
+`[docs: available-services, service-ids, variation-codes, buying-services, re-query-services, get-vtpass-wallet-balance, product-options-api, foreign-airtime, third-party-insurance]`
 
 Three shapes to normalise in a client: purchase and requery put the code in `code`; the list endpoints
 put `"000"` in `response_description`; `/balance` uses a numeric `code: 1` and a `contents` key.
@@ -107,11 +121,11 @@ are what the documentation and SDKs show today.
 | --- | --- | --- |
 | Airtime | `mtn`, `glo`, `airtel`, `etisalat` (9mobile), `foreign-airtime` | `amount` + `phone`; `product_type` flexible |
 | Data | `mtn-data`, `glo-data`, `airtel-data`, `etisalat-data`, `9mobile-sme-data`, `glo-sme-data`, `smile-direct`, `spectranet` | `billersCode` = phone (Smile: account/email, verify first); `amount` ignored, the variation sets the price |
-| TV | `dstv`, `gotv`, `startimes`, `showmax` | `billersCode` = smartcard (Showmax: phone); verify first; `subscription_type` `renew` keeps the bouquet, `change` switches; `amount` optional (bouquet price used if absent); `quantity` = months |
-| Electricity | `ikeja-electric`, `eko-electric`, `abuja-electric`, `kano-electric`, `portharcourt-electric`, `jos-electric`, `kaduna-electric`, `enugu-electric`, `ibadan-electric`, `benin-electric`, `aba-electric`, `yola-electric` | `billersCode` = meter, `variation_code` = `prepaid`\|`postpaid`, `amount` in naira; verify returns `Min_Purchase_Amount`, arrears, `Can_Vend` |
-| Education | `waec` (variation `waecdirect`), `waec-registration`, `jamb` (`utme-mock`, `utme-no-mock`) | JAMB: verify Profile ID via `/merchant-verify` first; PINs come back in `purchased_code` |
-| Insurance | `ui-insure` (third-party motor), personal accident | Extra fields: `Insured_Name`, `Engine_Number`, `Chasis_Number`, `Plate_Number`, `Vehicle_Make`, `Vehicle_Color`, `Vehicle_Model`, `Year_of_Make`, `Contact_Address`; `amount` ignored |
-| Other | `bank-deposit` | variation = bank code; `025` invalid bank, `026` account not verified |
+| TV | `dstv`, `gotv`, `startimes`, `showmax` | `billersCode` = smartcard (Showmax: phone). Verify first: returns `Customer_Name`, `Status`, `Due_Date`, `Customer_Number`, `Customer_Type`, and for DStv/GOtv `Current_Bouquet` and `Renewal_Amount`. Two purchase shapes: **change** (`variation_code` + `subscription_type: "change"`, optional `amount` and `quantity` months) and **renew** (`amount` = `Renewal_Amount` from verify + `subscription_type: "renew"`, no `variation_code`) |
+| Electricity | `ikeja-electric`, `eko-electric`, `abuja-electric`, `kano-electric`, `portharcourt-electric`, `jos-electric`, `kaduna-electric`, `enugu-electric`, `ibadan-electric`, `benin-electric`, `aba-electric`, `yola-electric` | `billersCode` = meter, `variation_code` = `prepaid`\|`postpaid`, `amount` in naira. Verify returns `Customer_Name`, `Address`, `Meter_Number`, `Customer_Arrears`, `Min_Purchase_Amount`, `Can_Vend`, `Customer_Account_Type` (`MD`\|`NMD`, commission differs), `Meter_Type`, `WrongBillersCode`. Prepaid response carries the token; show it, and send it by SMS/email too |
+| Education | `waec` (variation `waecdirect`, optional `quantity`), `waec-registration`, `jamb` (`utme-mock`, `utme-no-mock`) | JAMB: verify Profile ID via `/merchant-verify` with `type` = the variation code (sandbox `0123456789`); never sell above JAMB's approved price. PINs: WAEC returns `purchased_code` plus `cards[]{Serial, Pin}`; JAMB returns `purchased_code` plus `Pin` |
+| Insurance | `ui-insure` (third-party motor, Universal Insurance), personal accident | `billersCode` = plate number, `variation_code` 1–4 (Private, Commercial, Tricycles, Motorcycle), `amount` ignored, plus `Insured_Name`, `engine_capacity`, `Chasis_Number`, `Plate_Number`, `vehicle_make`, `vehicle_color`, `vehicle_model`, `YearofMake`, `state`, `lga`, `email`, all codes from the options endpoints. Response adds `certUrl` (certificate download) |
+| Other | `bank-deposit` | variation = bank code (`gtb`, `uba`, `zenith`, `providus`…); verify (`type` = bank code) returns `account_name`; sandbox account `1234567890`; `025` invalid bank, `026` account not verified. Moves naira out of the VTpass wallet, so it competes with Send and is out of scope here |
 
 ### A5. The request ID
 
@@ -121,8 +135,9 @@ is called. Rules `[docs: how-to-generate-request-id, response-codes]`:
 - At least 12 characters. The first 12 are numeric `YYYYMMDDHHmm` in **Africa/Lagos** (UTC+1, no DST) and
   must be today's date in that zone.
 - Any alphanumeric suffix may follow, e.g. `202610111430` + a ULID.
-- `085` is returned when the date prefix is malformed or not today; `014` when the ID was already used;
-  `015` when a requery names an ID VTpass never saw.
+- `085` is returned when the date prefix is malformed or not today (the response-codes page words the
+  check as "first 8 characters must be today's date, YYYYMMDD"; the stricter 12-character rule satisfies
+  both); `014` when the ID was already used; `015` when a requery names an ID VTpass never saw.
 
 ### A6. Response envelope and codes
 
@@ -154,9 +169,14 @@ Purchase and requery return:
 }
 ```
 
-Electricity adds top-level `token` / `Token`, `units` / `Units`, `customerName`, `customerAddress`,
-`exchangeReference`, `tariff`, `MeterNumber`, and `purchased_code` as `"Token: 1234…"`. Education PINs
-arrive in `purchased_code`.
+`transaction_date` is an ISO string in the 2025 samples and a `{date, timezone_type, timezone}` object in
+older ones; parse both. Requery adds `extras` and `product_id` inside `transactions`.
+
+Electricity prepaid adds top-level `token`, `tokenAmount`, `units`, `customerName`, `customerAddress`,
+`meterNumber`, `exchangeReference`, `tariff`, `fixChargeAmount`, `taxAmount`, `debtAmount`, `kct1`, `kct2`
+and more, with `purchased_code` as `"Token : 2636…"`. Postpaid adds `customerName`, `customerAddress`,
+`utilityName`, `exchangeReference`, `balance`. WAEC adds `cards[]{Serial, Pin}`; JAMB adds `Pin`; insurance
+adds `certUrl`.
 
 **`000` is not success.** It means "processed"; the real state is `content.transactions.status`:
 
@@ -165,6 +185,12 @@ arrive in `purchased_code`.
 | `initiated` | Accepted | wait, requery |
 | `pending` | Provider has not concluded | requery until final |
 | `delivered` | Service confirmed delivered | final success |
+| `failed` | Rejected on request, wallet not debited (or refunded at once) | final failure |
+| `reversed` | Bounced by the provider after acceptance; wallet credited (arrives with code `040`) | final failure after the fact |
+
+The response-codes page is explicit about the unknowns: "Take any response that differs from the
+guidelines provided here as pending, and initiate a transaction requery accordingly. If transaction times
+out or response is not received, please treat as pending and initiate a transaction requery."
 
 Codes that matter `[docs: response-codes]`:
 
@@ -184,8 +210,11 @@ Codes that matter `[docs: response-codes]`:
 | `018` | Low VTpass wallet | pause the rail, alert ops |
 | `019` | Same service and `billersCode` within 30 s | de-duplicate client side |
 | `021` `022` `023` `024` `027` | Account locked, suspended, API off, inactive, IP not whitelisted | pause the rail, alert ops |
+| `028` | Product not whitelisted on the account | hide the service, alert ops (Profile → Product Settings) |
+| `087` | Invalid credentials or wrong authentication method for the account | pause the rail, alert ops |
+| `089` | Previous request still processing, wait before sending another | back off, then requery; never re-send `/pay` |
 | `034` `035` | Service suspended or inactive | hide the service |
-| `083` | System error | retry with backoff, then fail |
+| `083` | System error | treat as pending, requery; fail only when requery says so |
 
 Verification (`/merchant-verify`) answers `code "000"` with the customer block, or `content.error`.
 Any code other than those above during a purchase is a failure.
@@ -196,41 +225,65 @@ Any code other than those above during a purchase is a failure.
 
 - One callback URL per account, set in the VTpass dashboard. It must accept POST and answer JSON
   `{"response":"success"}`; otherwise VTpass retries five times.
-- Payload is `{ "type": "...", "data": {...} }`:
-  - `transaction-update`: `data` is the purchase envelope; the truth is `data.content.transactions.status`.
-  - Reversal: `data.code` `"040"`, `response_description` `"TRANSACTION REVERSAL TO WALLET"`, plus
-    `wallet_credit_id`.
-  - `variation-codes-update`: a service's variations changed; refresh the catalogue.
-- **No signature or HMAC is documented.** A webhook must therefore be treated as a hint: acknowledge
-  fast, then confirm by `/requery` before changing anything the user sees. This is the same rule the
-  multichain Circle webhook route already states for itself.
+- Payload is `{ "type": "...", "data": {...} }`, "and maybe more" parent keys:
+  - `transaction-update`: `data` is the requery envelope; the truth is `data.content.transactions.status`.
+    A normal update has `code "000"` and `response_description "TRANSACTION DELIVERED"`.
+  - A reversal is the **same type**, `transaction-update`, with `data.code "040"`,
+    `response_description "TRANSACTION REVERSAL TO WALLET"`, inner `status "reversed"`, and
+    `transactions.wallet_credit_id`. The top-level `amount` is what came back to the wallet, net of the
+    discount VTpass gave on the way out.
+  - `variations-update` (the table on the same page calls it `variations-code-update`): top-level
+    `serviceID`, `summary{added_variation_codes, updated_variation_codes, removed_variation_codes}`,
+    `data` with the full current variation list, and `actionRequired{added, updated, removed}` with the
+    codes. Refresh the catalogue for that service.
+- The pages ask for the acknowledgement to be returned "before commencing any long-running,
+  resource-intensive, or downstream operations".
+- **No signature, HMAC or source IP list is documented.** A webhook must therefore be treated as a hint:
+  acknowledge fast, then confirm by `/requery` before changing anything the user sees. This is the same
+  rule the multichain Circle webhook route already states for itself.
 
 ### A8. Sandbox test values
 
-| Product | Value | Result |
-| --- | --- | --- |
-| Airtime / data phone | `08011111111` | success |
-| | `201000000000` | pending |
-| | `300000000000` | timeout |
-| | `400000000000` | no response |
-| | `500000000000` | unexpected response |
-| | any other number | failed |
-| Electricity meter | `1111111111111` prepaid, `1010101010101` postpaid | success |
-| Smartcard (DStv/GOtv/Startimes) | `1212121212` | success; any other number fails |
-| Smile | `tester@sandbox.com` | verify success |
+The same five scenario values work as the phone number (airtime, data), the meter number (electricity)
+and the smartcard (TV):
 
-`[docs: airtel-airtime-vtu-api, foreign-airtime, gotv-subscription-api, ikedc, eedc, yedc]`
+| Value as `phone` / `billersCode` | Result |
+| --- | --- |
+| the product's success value (below) | `delivered` |
+| `201000000000` | pending |
+| `300000000000` | timeout |
+| `400000000000` | no response |
+| `500000000000` | "unexpected response", for anomaly handling |
+| any other number | failed |
+
+| Product | Success value |
+| --- | --- |
+| Airtime / data phone | `08011111111` |
+| Electricity meter | `1111111111111` prepaid, `1010101010101` postpaid |
+| Smartcard (DStv / GOtv / Startimes) | `1212121212` |
+| JAMB Profile ID | `0123456789` |
+| Bank account (`bank-deposit`) | `1234567890` |
+
+`[docs: mtn-airtime-vtu-api, mtn-data, ikedc, dstv-subscription-api, jamb-pin-vending-api, bank-transfer-api, foreign-airtime]`
 
 ### A9. Commercials
 
 `[docs: understanding-how-vtpass-commission-works, vtpass blog 2023-07-21]`
 
 - Prepaid model: the merchant funds a naira wallet; `/pay` debits it. The commission is taken as a
-  discount at debit time and reported in `commission_details` (`rate_type` percent or fixed).
-- API-agent rates published in July 2023 (stale, confirm): MTN airtime and data 3 %, Glo 4 %, Airtel 3.4 %,
-  DStv 1.5 %. The current table is at `vtpass.com/manage/product-commissions` after login.
-- Some services add a `convinience_fee` returned on `/services` and in the purchase response.
-- `amount` is ignored for data and insurance (the variation prices them) and optional for DStv/GOtv.
+  discount at debit time: `total_amount` = `amount` − `commission`. Three structures: percentage of the
+  amount, flat amount per transaction, and "special" rules (`computation_type` other than `default`, e.g.
+  `nmd`, possibly with `capped_at`).
+- `commission_details{amount, rate, rate_type, computation_type, capped_at?}` is returned by verify
+  (with `amount: null`), purchase and requery, so the effective rate is known per transaction without a
+  separate table. `rate_type` is documented as `percentage` or `flat`; the samples say `percent`.
+- Rates in the 2025 sample responses: MTN airtime 3.5 %, MTN data 4 %, DStv 1.5 %, IKEDC 1.5 %. The
+  general table is on the website after login (`vtpass.com/manage/product-commissions`). Electricity
+  commission differs by meter type and by `Customer_Account_Type` (`MD` vs `NMD`).
+- `convinience_fee` is returned per service (`/services`, `/service-variations`) and per transaction; `0 %`,
+  `N0` and `N0.00` all appear and mean zero.
+- `amount` is ignored for data, education and insurance (the variation prices them), optional for DStv/GOtv
+  change (bouquet price used if absent), and mandatory for airtime, electricity and DStv renew.
 
 ---
 
@@ -318,9 +371,11 @@ Three legs, each a row with a state.
 - Calls `/pay`. Maps the answer:
   - `000`/`099` with `status` `initiated`/`pending` → intent `submitted`, bill `pending`.
   - `000` with `status` `delivered` → intent `completed`, bill `delivered`, store token/units/PIN.
-  - `016`, `091`, `040`, validation codes → intent `failed`, bill `failed`, enqueue a refund.
-  - `018`, `021`–`027`, `034`, `035` → pause the rail (`bills_paused` setting), alert ops, fail and refund.
-  - network timeout or `083` → bill `unknown`; the requery cron decides.
+  - `016`, `091`, `040`, inner status `failed`/`reversed`, validation codes → intent `failed`, bill
+    `failed`, enqueue a refund.
+  - `018`, `021`–`028`, `034`, `035`, `087` → pause the rail (`bills_paused` setting), alert ops, fail and refund.
+  - network timeout, `083`, `089`, or any code not in the table → bill `unknown`; the requery cron
+    decides, as the response-codes page instructs.
 
 **Settle** (webhook + cron)
 
@@ -380,7 +435,8 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 | `099` / `pending` for a long time | Requery with backoff; `stuck` after 24 hours, ops alert, manual check with VTpass. |
 | `040` reversal after `delivered` | Webhook or requery flips the bill to `failed`; refund; alert, because a delivered-then-reversed bill is rare. |
 | `018` low wallet or account codes | Rail paused through a `bills_paused` row; UI shows "Bills are unavailable right now". |
-| Catalogue drift (`010`, `012`, `034`, `035`) | Refresh `bill_service_cache`; `variation-codes-update` webhook also triggers a refresh. |
+| Catalogue drift (`010`, `012`, `034`, `035`) | Refresh `bill_service_cache`; the `variations-update` webhook also triggers a refresh. |
+| Product not whitelisted (`028`) | Hide the service and alert; someone ticks it under Profile → Product Settings in that environment. |
 | Daily reconciliation | Cron compares `bill_payments` totals with VTpass wallet movements and the treasury's USDC inflow; mismatches go to `OPS_ALERT_WEBHOOK_URL`. |
 
 ### B8. Security
@@ -419,7 +475,7 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 
 | Phase | Scope | Exit criterion |
 | --- | --- | --- |
-| 0. Sandbox spike | Sandbox account, keys, `/balance`, one `mtn` airtime purchase to `08011111111`, one `201000000000` pending flow requeried to final, webhook echo to a test URL | Every row of A6 and A8 confirmed or corrected in this document |
+| 0. Sandbox spike | Sandbox account, API keys with authentication type set to API keys, products whitelisted, `/balance`, one `mtn` airtime purchase to `08011111111`, one `201000000000` pending flow requeried to final, webhook echo to a test URL | Every row of A6 and A8 confirmed or corrected in this document |
 | 1. Airtime and data | Quote, pay, settle, refunds, cron, catalogue cache; behind `NEXT_PUBLIC_BILLS_ENABLED`; Arc testnet; reference FX allowed | Ten end-to-end sandbox purchases with correct ledger rows |
 | 2. Electricity and TV | `/merchant-verify` in the quote step, token and units on the receipt, `subscription_type` | Prepaid `1111111111111` and `1212121212` flows delivered and shown |
 | 3. Mainnet canary | Real VTpass live account, real naira float, `BILLS_ALLOWED_WALLETS`, the quote source from B6, daily reconciliation | A week of canary volume with zero unreconciled rows |
@@ -459,24 +515,30 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 5. Product order after Phase 2: education and insurance need extra KYC-like fields; bank transfer
    competes with Send.
 
-### B14. Not yet verified (check against the live docs before Phase 0)
+### B14. Not yet verified (nothing in the documentation states these; confirm in Phase 0)
 
-- Whether Basic auth is formally deprecated or merely undocumented on the current authentication page.
-- Whether VTpass publishes webhook source IP ranges or has added a signature since the pages were written.
-- The complete `ui-insure` purchase field list and the vehicle-model options path.
-- Exact JAMB and WAEC response fields for PINs and serials.
-- The current commission table and whether `convinience_fee` applies per product or per account.
-- Which headers `/balance` expects (the SDKs send the GET pair).
-- Rate limits on the VTpass side, which no page states.
+- Whether an account with authentication type set to "API keys" still accepts Basic on the product
+  endpoints whose pages describe it (DStv, insurance, bank transfer), and vice versa. The design sends
+  keys everywhere and treats `087` as a configuration error.
+- Webhook source IP ranges. None are published; the `/requery` confirmation rule covers it either way.
+- Rate limits on the VTpass side. Code `089` suggests a per-account in-flight limit; no numbers are given.
+- Which headers `/balance` expects. Its page only links to the authentication page, so the GET pair
+  (`api-key` + `public-key`) is assumed.
+- The commission table itself, which is behind the dashboard login. `commission_details` on every
+  response removes the need to know it in advance.
+- Whether the sandbox honours `variations-update` and reversal webhooks, or only `transaction-update`.
 
 ## Sources
 
-Official documentation pages (read through search excerpts):
+Official documentation pages, read directly on 2026-10-11 (the index links 60 API and Messaging pages;
+these are the ones this document draws on):
 
 - https://vtpass.com/documentation/introduction/
 - https://vtpass.com/documentation/
 - https://vtpass.com/documentation/integrating-api/
 - https://vtpass.com/documentation/authentication/
+- https://vtpass.com/documentation/whitelist-products/
+- https://vtpass.com/documentation/faq/
 - https://vtpass.com/documentation/buying-services/
 - https://www.vtpass.com/documentation/available-services/
 - https://vtpass.com/documentation/service-ids/
@@ -497,6 +559,7 @@ Official documentation pages (read through search excerpts):
 - https://vtpass.com/documentation/9mobile-airtime-vtu-api/
 - https://vtpass.com/documentation/foreign-airtime/
 - https://vtpass.com/documentation/mtn-data/
+- https://vtpass.com/documentation/glo-data-api/
 - https://vtpass.com/documentation/airtel-data-api/
 - https://vtpass.com/documentation/9mobile-data-api/
 - https://vtpass.com/documentation/9mobile-sme-data-api/
@@ -513,6 +576,8 @@ Official documentation pages (read through search excerpts):
 - https://vtpass.com/documentation/eko-electricity-ekedc-payment-api/
 - https://vtpass.com/documentation/aedc-abuja-electricity-distribution-company-payment-api-2/
 - https://vtpass.com/documentation/phed-api/
+- https://vtpass.com/documentation/jos-electric/
+- https://vtpass.com/documentation/kano-electric/
 - https://vtpass.com/documentation/ibadan-electric/
 - https://vtpass.com/documentation/eedc-enugu-electric-api/
 - https://vtpass.com/documentation/kaedco-kaduna-electricity-distribution-company-api/
@@ -529,7 +594,7 @@ Official documentation pages (read through search excerpts):
 - https://vtpass.com/developers and https://sandbox.vtpass.com/developers
 - https://vtpass.com/blog/index.php/2023/07/21/vtpass-agent-commission-rates/
 
-Community SDKs read in full (npm):
+Community SDKs read in full (npm), as a cross-check only:
 
 - `@obipascal/vtpass-nodejs-sdk` 1.0.15, https://github.com/obipascal/vtpass-nodejs-sdk
 - `billpay` 0.2.0, https://github.com/deveasyclick/billpay
