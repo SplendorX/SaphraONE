@@ -126,6 +126,13 @@ pnpm --filter @saphra/contracts test:save
 3. `PUT /api/savings/refunds` with `transactionId` + `txHash` → confirms from on-chain receipt  
    Or use **Reverse refund** on a completed `SPEND_SAVE` row in `/save` history (runs the full flow).
 
+## Pay Bills (planned)
+
+Airtime, mobile data, cable TV and electricity tokens for Nigeria, fulfilled through the VTpass API and
+paid in USDC on Arc. Nothing is built yet. The API reference, the design, the phases and the owner
+decisions are in `VTPASS-PLAN.md`; the proposed environment variables are listed, commented out, at the
+end of `.env.example`.
+
 ## Environment
 
 Copy `.env.example` to `.env` at the repository root for contracts and scripts. The web app also loads the root `.env` through `apps/web/next.config.mjs`, so existing root-level environment files continue to work.
