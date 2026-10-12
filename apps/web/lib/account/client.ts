@@ -55,6 +55,8 @@ function withWallet(path: string, ownerWallet: string, extra?: Record<string, st
 export async function fetchAccountState(ownerWallet: string, circleSocialUuid?: string) {
   return requestJson<{
     account: AccountRecord;
+    /** Set while the account waits out its deletion grace period. */
+    pendingDeletion?: { requestedAt: string; scheduledFor: string } | null;
     profile: BusinessAccountProfile | null;
   }>(withWallet("/api/account", ownerWallet, { circleSocialUuid }), {
     cache: "no-store",

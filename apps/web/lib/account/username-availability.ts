@@ -1,4 +1,5 @@
 // Server-only. Whether a username is free to claim.
+import { isUsernameHeld } from "@/lib/account-deletion/retired-usernames";
 import { accountDb, accountTables, readAccountDbError } from "@/lib/account/db";
 import { businessTables } from "@/lib/business/db";
 import { normalizeUsername, validateUsername } from "@/lib/profile-utils";
@@ -8,8 +9,8 @@ export type UsernameAvailability =
   | { available: false; reason: "invalid" | "taken"; message: string; username: string };
 
 /**
- * A username must be free among people (profiles) and among business and
- * individual payment identities. One already held by `ownWallet` counts as
+ * A username must be free among people (profiles), among business and
+ * individual payment identities, and not held after an account deletion. One already held by `ownWallet` counts as
  * free, so a user's current name never shows as taken to themselves.
  */
 export async function checkUsernameAvailability(
@@ -22,7 +23,7 @@ export async function checkUsernameAvailability(
 
   const own = ownWallet?.trim().toLowerCase() || null;
   const supabase = accountDb();
-  const [profile, identity] = await Promise.all([
+  const [profile, identity, held] = await Promise.all([
     supabase
       .from(accountTables.profiles)
       .select("wallet_address")
@@ -34,6 +35,7 @@ export async function checkUsernameAvailability(
       .select("destination_wallet,profile_wallet")
       .eq("username", username)
       .maybeSingle(),
+    isUsernameHeld(username, own),
   ]);
   if (profile.error) throw new Error(readAccountDbError(profile.error, "Could not check that username."));
   if (identity.error) throw new Error(readAccountDbError(identity.error, "Could not check that username."));
@@ -46,7 +48,8 @@ export async function checkUsernameAvailability(
 
   const takenByProfile = Boolean(profileWallet) && profileWallet !== own;
   const takenByIdentity = Boolean(identityRow) && !(own && identityWallets.includes(own));
-  if (takenByProfile || takenByIdentity) {
+  // A deleted account's name, still on hold (lib/account-deletion).
+  if (takenByProfile || takenByIdentity || held) {
     return { available: false, message: "That username is taken. Try another.", reason: "taken", username };
   }
   return { available: true, username };

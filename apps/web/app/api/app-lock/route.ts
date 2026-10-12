@@ -144,21 +144,61 @@ function pinFailure(response: Awaited<ReturnType<typeof checkPin>>) {
 }
 
 /**
- * Who the lock screen greets: the signed-in profile's name and picture. The
- * device already holds this session, so it reveals nothing new. Never fatal.
+ * Who the lock screen greets: the signed-in profile's name and picture (a
+ * business's logo for a business account). The lock is keyed by the wallet
+ * the session started with, which for a Google or email account with several
+ * wallets often isn't the one the profile lives on, so every session wallet
+ * is tried, the lock's own first. The device already holds this session, so
+ * it reveals nothing new. Never fatal.
  */
-async function lockProfile(wallet: string) {
+async function lockProfile(wallets: string[]) {
+  const ordered = [...new Set(wallets.map((wallet) => wallet.toLowerCase()))];
+  if (ordered.length === 0) return null;
   try {
-    const { data } = await createSupabaseAdminClient()
-      .from(process.env.SUPABASE_PROFILES_TABLE ?? "profiles")
-      .select("display_name, username, avatar_url")
-      .eq("wallet_address", wallet.toLowerCase())
-      .maybeSingle();
-    if (!data) return null;
+    const supabase = createSupabaseAdminClient();
+    const table = process.env.SUPABASE_PROFILES_TABLE ?? "profiles";
+    const withType = await supabase
+      .from(table)
+      .select("wallet_address, display_name, username, avatar_url, account_type")
+      .in("wallet_address", ordered);
+    // A deployment without account types: personal profiles only.
+    const data: unknown[] | null = withType.error
+      ? (
+          await supabase
+            .from(table)
+            .select("wallet_address, display_name, username, avatar_url")
+            .in("wallet_address", ordered)
+        ).data
+      : withType.data;
+    const rows = (data ?? []) as Array<{
+      account_type?: string | null;
+      avatar_url: string | null;
+      display_name: string | null;
+      username: string | null;
+      wallet_address: string;
+    }>;
+    const byWallet = ordered.map((wallet) => rows.find((row) => row.wallet_address === wallet)).filter(Boolean);
+    const row = byWallet.find((profile) => profile?.avatar_url) ?? byWallet[0];
+    if (!row) return null;
+
+    if (row.account_type === "BUSINESS") {
+      const { data: business } = await supabase
+        .from("business_account_profiles")
+        .select("business_name, logo_url")
+        .eq("wallet_address", row.wallet_address)
+        .maybeSingle();
+      if (business) {
+        return {
+          avatarUrl: (business.logo_url as string | null) ?? row.avatar_url ?? null,
+          displayName: (business.business_name as string | null) ?? row.display_name ?? null,
+          username: row.username ?? null,
+        };
+      }
+    }
     return {
-      avatarUrl: (data.avatar_url as string | null) ?? null,
-      displayName: (data.display_name as string | null) ?? null,
-      username: (data.username as string | null) ?? null,
+      avatarUrl: row.avatar_url ?? null,
+      displayName: row.display_name ?? null,
+      username: row.username ?? null,
     };
   } catch {
     return null;
@@ -184,7 +224,7 @@ export async function GET() {
     lock ? listPasskeys(lock.owner_wallet).catch(() => []) : Promise.resolve([]),
     // The account whose lock this is, so the greeting and the passkey asked
     // for always match.
-    lock ? lockProfile(lock.owner_wallet) : Promise.resolve(null),
+    lock ? lockProfile([lock.owner_wallet, ...wallets]) : Promise.resolve(null),
   ]);
   const response = json({
     enabled: Boolean(lock),

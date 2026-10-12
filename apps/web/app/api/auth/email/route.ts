@@ -9,11 +9,16 @@ import {
   emailSessionCookieName,
   emailSessionTtlMs,
   issueCircleUserToken,
+  legacyGoogleWalletForEmail,
   listCircleUserWalletAddresses,
   normalizeEmail,
   readEmailSession,
   sendEmailCode,
+  unifiedGoogleSignInEnabled,
+  circleGoogleUserHasWallet,
+  supabaseUserIdForEmail,
   verifyEmailCode,
+  verifyGoogleIdToken,
 } from "@/lib/email-auth-server";
 import { readJsonRecord } from "@/lib/http";
 import { sessionControlsWallet } from "@/lib/recurring-auth";
@@ -44,12 +49,33 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 /**
+ * Open the email account's wallet: a Circle user token for the browser's PIN
+ * screen, and the short-lived cookie `complete` turns into a wallet session.
+ */
+async function openEmailWallet(circleUserId: string, email: string) {
+  const circle = await issueCircleUserToken(circleUserId);
+  const response = NextResponse.json({ circleUserId, email, ...circle }, { headers: noStore });
+  response.cookies.set(emailSessionCookieName, createEmailSessionToken({ circleUserId, email }), {
+    httpOnly: true,
+    maxAge: Math.floor(emailSessionTtlMs / 1000),
+    path: "/",
+    sameSite: "lax",
+    secure: await secureCookieFor(),
+  });
+  return response;
+}
+
+/**
  * Email sign-in for SaphraONE, backed by Supabase Auth and a Circle
  * user-controlled wallet:
  *   start    → Supabase emails a 6-digit code
  *   verify   → code checked; a Circle user token is issued for the PIN wallet
  *   complete → the wallet is checked against that Circle user, then the same
  *              wallet session an external wallet signature earns is issued
+ *   google   → with unified Google sign-in on: after Circle's Google login,
+ *              a new Google user opens the same wallet as the emailed code
+ *              for that address instead of a Google-only one (see
+ *              unifiedGoogleSignInEnabled)
  */
 export async function POST(request: NextRequest) {
   const body = await readJsonRecord(request);
@@ -85,23 +111,49 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const circle = await issueCircleUserToken(circleUserId);
-      const response = NextResponse.json(
-        { circleUserId, email, ...circle },
-        { headers: noStore },
-      );
-      response.cookies.set(
-        emailSessionCookieName,
-        createEmailSessionToken({ circleUserId, email }),
-        {
-          httpOnly: true,
-          maxAge: Math.floor(emailSessionTtlMs / 1000),
-          path: "/",
-          sameSite: "lax",
-          secure: await secureCookieFor(),
-        },
-      );
-      return response;
+      // No second account for an address that signed up with the old Google
+      // login: send them there, unless this email account already has a wallet.
+      if (unifiedGoogleSignInEnabled() && (await legacyGoogleWalletForEmail(email))) {
+        const owned = await listCircleUserWalletAddresses(circleUserId);
+        if (owned.length === 0) {
+          return NextResponse.json(
+            {
+              message: "This email already has a SaphraONE account that signs in with Google. Continue with Google to open it.",
+              useGoogle: true,
+            },
+            { headers: noStore, status: 409 },
+          );
+        }
+      }
+      return await openEmailWallet(circleUserId, email);
+    } catch (error) {
+      return jsonError(errorMessage(error, "Your wallet could not be opened."), 502);
+    }
+  }
+
+  if (body.action === "google") {
+    if (!unifiedGoogleSignInEnabled()) {
+      return jsonError("Unified Google sign-in isn't turned on.", 404);
+    }
+    const idToken = typeof body.idToken === "string" ? body.idToken.trim() : "";
+    const circleUserToken = typeof body.circleUserToken === "string" ? body.circleUserToken.trim() : "";
+    if (!idToken || !circleUserToken) {
+      return jsonError("Your Google sign-in couldn't be verified. Try again.", 400);
+    }
+
+    let email: string;
+    try {
+      email = await verifyGoogleIdToken(idToken, typeof body.nonce === "string" ? body.nonce : null);
+    } catch (error) {
+      return jsonError(errorMessage(error, "Your Google sign-in couldn't be verified."), 401);
+    }
+
+    try {
+      // Made with the old Google sign-in: keep opening that wallet.
+      if (await circleGoogleUserHasWallet(circleUserToken)) {
+        return NextResponse.json({ email, legacyGoogle: true }, { headers: noStore });
+      }
+      return await openEmailWallet(circleUserIdForSupabaseUser(await supabaseUserIdForEmail(email)), email);
     } catch (error) {
       return jsonError(errorMessage(error, "Your wallet could not be opened."), 502);
     }

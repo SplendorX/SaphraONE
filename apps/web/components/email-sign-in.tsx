@@ -4,7 +4,7 @@ import { arcCircleBlockchain } from "@/lib/chains";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import { ArrowLeft, ArrowRight, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { fetchAccountState } from "@/lib/account/client";
 import {
@@ -25,23 +25,31 @@ import { writePreferredWalletMode } from "@/lib/wallet-mode";
 
 type Step = "email" | "code" | "wallet";
 
-type VerifyResponse = {
+/** An opened email-account wallet: from a verified code, or a Supabase Google sign-in. */
+export type VerifyResponse = {
   circleUserId: string;
   email: string;
   encryptionKey: string;
   userToken: string;
 };
 
-async function postEmailAuth<T>(body: Record<string, unknown>) {
+/** The address already has an account that signs in with the old Google login. */
+export class UseGoogleError extends Error {}
+
+export async function postEmailAuth<T>(body: Record<string, unknown>) {
   const response = await fetch("/api/auth/email", {
     body: JSON.stringify(body),
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
-  const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
+  const payload = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+    useGoogle?: boolean;
+  };
   if (!response.ok) {
-    throw new Error(payload.message ?? "Email sign-in failed.");
+    const message = payload.message ?? "Email sign-in failed.";
+    throw payload.useGoogle ? new UseGoogleError(message) : new Error(message);
   }
   return payload;
 }
@@ -55,12 +63,22 @@ const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve,
  */
 export function EmailSignIn({
   bare = false,
+  onUseGoogle,
+  resume,
 }: {
   /** Controls only, for hosts that draw their own title (the sign-in board). */
   bare?: boolean;
+  /** Shown when the address already signs in with Google. */
+  onUseGoogle?: () => void;
+  /**
+   * An email-account wallet already opened by "Continue with Google"
+   * (unified sign-in): skip the code and go straight to the wallet steps.
+   */
+  resume?: VerifyResponse;
 } = {}) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("email");
+  const [step, setStep] = useState<Step>(resume ? "wallet" : "email");
+  const [useGoogle, setUseGoogle] = useState(false);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,7 +86,7 @@ export function EmailSignIn({
   const [error, setError] = useState<string | null>(null);
   const sdkRef = useRef<W3SSdk | null>(null);
   // A code works once; keep the verified login so a failed PIN step can retry.
-  const verifiedRef = useRef<VerifyResponse | null>(null);
+  const verifiedRef = useRef<VerifyResponse | null>(resume ?? null);
 
   async function loadSdk() {
     if (sdkRef.current) return sdkRef.current;
@@ -181,56 +199,16 @@ export function EmailSignIn({
     event.preventDefault();
     setBusy(true);
     setError(null);
+    setUseGoogle(false);
     try {
       setStatus("Checking your code");
       const verified =
         verifiedRef.current ??
         (await postEmailAuth<VerifyResponse>({ action: "verify", code, email }));
       verifiedRef.current = verified;
-      const login: CircleLoginResult = {
-        encryptionKey: verified.encryptionKey,
-        oAuthInfo: {
-          provider: "Email",
-          socialUserInfo: { email: verified.email },
-          socialUserUUID: verified.circleUserId,
-        },
-        userToken: verified.userToken,
-      };
-
-      setStep("wallet");
-      setStatus("Opening your wallet");
-      const wallets = await ensureArcWallet(login);
-      const wallet = wallets.find(isArcCircleWallet) ?? wallets[0];
-      if (!wallet?.address) {
-        throw new Error("Your wallet is still being created. Try again in a moment.");
-      }
-
-      setStatus("Signing you in");
-      await postEmailAuth({ action: "complete", walletAddress: wallet.address });
-      writeCircleLogin(login);
-      writeCircleWallets(wallets);
-      writePreferredWalletMode("circle");
-      notifyWalletSessionChanged();
-      await ensureProfile({
-        authProvider: "email",
-        circleSocialUuid: verified.circleUserId,
-        displayName: verified.email.split("@")[0],
-        walletAddress: wallet.address,
-      }).catch(() => undefined);
-
-      let destination = "/onboarding";
-      try {
-        const state = await fetchAccountState(wallet.address, verified.circleUserId);
-        destination = resolveSignInDestination({
-          accountTypeSelected: Boolean(state.account.account_type_selected),
-          isBusiness: state.account.account_type === "BUSINESS",
-          next: consumeNextPath(),
-        });
-      } catch {
-        destination = "/onboarding";
-      }
-      router.replace(destination);
+      await finishSignIn(verified, "email");
     } catch (verifyError) {
+      setUseGoogle(verifyError instanceof UseGoogleError);
       setError(getCircleErrorMessage(verifyError, "Email sign-in failed."));
       setStep((current) => (current === "wallet" ? "code" : current));
       // Past verification, the next press only retries the wallet step.
@@ -238,6 +216,78 @@ export function EmailSignIn({
     } finally {
       setBusy(false);
     }
+  }
+
+  /** From Google: run the wallet steps once, on arrival. */
+  const resumedRef = useRef(false);
+  useEffect(() => {
+    if (!resume || resumedRef.current) return;
+    resumedRef.current = true;
+    void retryResume();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resume]);
+
+  async function retryResume() {
+    if (!verifiedRef.current) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await finishSignIn(verifiedRef.current, "google");
+    } catch (resumeError) {
+      setError(getCircleErrorMessage(resumeError, "Google sign-in failed."));
+      setStatus(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** PIN and Arc wallet if needed, the wallet session, the profile, then the app. */
+  async function finishSignIn(verified: VerifyResponse, authProvider: "email" | "google") {
+    const login: CircleLoginResult = {
+      encryptionKey: verified.encryptionKey,
+      oAuthInfo: {
+        // "Email" even from Google: it's a server-issued token, which only
+        // the server can renew (refreshCircleLogin).
+        provider: "Email",
+        socialUserInfo: { email: verified.email },
+        socialUserUUID: verified.circleUserId,
+      },
+      userToken: verified.userToken,
+    };
+
+    setStep("wallet");
+    setStatus("Opening your wallet");
+    const wallets = await ensureArcWallet(login);
+    const wallet = wallets.find(isArcCircleWallet) ?? wallets[0];
+    if (!wallet?.address) {
+      throw new Error("Your wallet is still being created. Try again in a moment.");
+    }
+
+    setStatus("Signing you in");
+    await postEmailAuth({ action: "complete", walletAddress: wallet.address });
+    writeCircleLogin(login);
+    writeCircleWallets(wallets);
+    writePreferredWalletMode("circle");
+    notifyWalletSessionChanged();
+    await ensureProfile({
+      authProvider,
+      circleSocialUuid: verified.circleUserId,
+      displayName: verified.email.split("@")[0],
+      walletAddress: wallet.address,
+    }).catch(() => undefined);
+
+    let destination = "/onboarding";
+    try {
+      const state = await fetchAccountState(wallet.address, verified.circleUserId);
+      destination = resolveSignInDestination({
+        accountTypeSelected: Boolean(state.account.account_type_selected),
+        isBusiness: state.account.account_type === "BUSINESS",
+        next: consumeNextPath(),
+      });
+    } catch {
+      destination = "/onboarding";
+    }
+    router.replace(destination);
   }
 
   return (
@@ -255,7 +305,22 @@ export function EmailSignIn({
         </>
       )}
 
-      {step === "email" ? (
+      {resume ? (
+        <div className="grid gap-2">
+          <p className="text-xs text-muted-foreground">
+            Signed in as <span className="font-semibold text-foreground">{resume.email}</span>
+          </p>
+          <button
+            className="sp-bubble inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+            disabled={busy}
+            onClick={() => void retryResume()}
+            type="button"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {busy ? status ?? "Opening your wallet" : "Continue wallet setup"}
+          </button>
+        </div>
+      ) : step === "email" ? (
         <form
           className={bare ? "grid gap-2" : "mt-3 grid gap-2"}
           onSubmit={(event) => void handleSendCode(event)}
@@ -347,6 +412,16 @@ export function EmailSignIn({
         <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
           {error}
         </p>
+      ) : null}
+      {useGoogle && onUseGoogle ? (
+        <button
+          className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold transition hover:bg-muted"
+          onClick={onUseGoogle}
+          type="button"
+        >
+          Continue with Google
+          <ArrowRight className="h-4 w-4" />
+        </button>
       ) : null}
     </div>
   );

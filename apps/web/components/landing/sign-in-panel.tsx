@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
 import { CircleGoogleLogin } from "@/components/circle-google-login";
-import { EmailSignIn } from "@/components/email-sign-in";
+import { EmailSignIn, type VerifyResponse } from "@/components/email-sign-in";
 import { ReferralCodeField } from "@/components/landing/referral-code-field";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { useT } from "@/components/locale-provider";
@@ -44,6 +44,7 @@ import {
 
 type SignInMethod = "choose" | "email" | "google" | "wallet";
 
+
 export function SignInPanel() {
   const t = useT();
   const router = useRouter();
@@ -68,6 +69,9 @@ export function SignInPanel() {
   const [authError, setAuthError] = useState<string | null>(null);
   const authorizeInFlightRef = useRef(false);
   const [method, setMethod] = useState<SignInMethod>("choose");
+  // A new Google user's email account, opened after Google: its wallet steps
+  // run here (unified sign-in, see CircleGoogleLogin).
+  const [googleEmailAccount, setGoogleEmailAccount] = useState<VerifyResponse | null>(null);
 
   const refreshSession = useCallback(async () => {
     if (!isConnected || !address) {
@@ -277,12 +281,24 @@ export function SignInPanel() {
         </div>
       ) : null}
 
-      {method === "email" ? <EmailSignIn bare /> : null}
+      {method === "email" ? <EmailSignIn bare onUseGoogle={() => setMethod("google")} /> : null}
+
+      {method === "google" && googleEmailAccount ? (
+        <EmailSignIn bare resume={googleEmailAccount} />
+      ) : null}
 
       {/* Always mounted: Google sign-in completes after a redirect back to
           this page, which only works while the component is present. */}
-      <div hidden={method !== "google"}>
-        <CircleGoogleLogin bare embedded showRefreshWallet={false} />
+      <div hidden={method !== "google" || googleEmailAccount !== null}>
+        <CircleGoogleLogin
+          bare
+          embedded
+          onEmailAccount={(verified) => {
+            setGoogleEmailAccount(verified);
+            setMethod("google");
+          }}
+          showRefreshWallet={false}
+        />
       </div>
 
       {method === "wallet" ? (

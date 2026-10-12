@@ -82,6 +82,7 @@ import {
 import {
   ensureProfile,
   fetchProfile,
+  readCachedProfile,
   formatUsernameLabel,
   type ProfileRecord,
 } from "@/lib/profile";
@@ -1482,6 +1483,10 @@ export function DashboardContent({
       workspaceContext?.ownerWallet ?? address;
     let cancelled = false;
 
+    // The last known profile first, so the picture is there at once.
+    const cached = readCachedProfile(connectedAddress);
+    if (cached) setWalletProfile(cached);
+
     async function loadWalletProfile() {
       try {
         const profile =
@@ -1497,7 +1502,7 @@ export function DashboardContent({
         }
       } catch {
         if (!cancelled) {
-          setWalletProfile(null);
+          setWalletProfile(cached);
         }
       }
     }

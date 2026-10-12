@@ -36,6 +36,7 @@ import {
   type CircleWallet,
 } from "@/lib/circle-session";
 import { useOptionalAccount } from "@/components/account/account-provider";
+import { postEmailAuth, type VerifyResponse } from "@/components/email-sign-in";
 import { personalCircleWallet } from "@/lib/business/provision-wallet";
 import { fetchAccountState } from "@/lib/account/client";
 import { ensureProfile } from "@/lib/profile";
@@ -306,7 +307,15 @@ async function callCircleWalletApi<T>(
   return payload;
 }
 
+/** One account per email (see lib/email-auth-server.ts). */
+const unifiedGoogleSignIn = process.env.NEXT_PUBLIC_UNIFIED_GOOGLE_SIGN_IN?.trim() === "true";
+
 type CircleGoogleLoginProps = {
+  /**
+   * Unified sign-in: a new Google user goes on to the email account for
+   * their address instead of a Google-only wallet. The host finishes it.
+   */
+  onEmailAccount?: (verified: VerifyResponse) => void;
   embedded?: boolean;
   /** With `embedded`: controls only, no "Circle wallet" heading. */
   bare?: boolean;
@@ -314,6 +323,7 @@ type CircleGoogleLoginProps = {
 };
 
 export function CircleGoogleLogin({
+  onEmailAccount,
   embedded = false,
   bare = false,
   showRefreshWallet = true,
@@ -322,6 +332,11 @@ export function CircleGoogleLogin({
   const accountContext = useOptionalAccount();
   const isBusinessAccount = accountContext?.isBusiness ?? false;
   const sdkRef = useRef<W3SSdk | null>(null);
+  const onEmailAccountRef = useRef(onEmailAccount);
+  onEmailAccountRef.current = onEmailAccount;
+  // Google's ID token (and the nonce it signed) from the return URL, read
+  // before the SDK clears it: unified sign-in shows it to the server.
+  const googleReturnRef = useRef<{ idToken: string; nonce: string | null } | null>(null);
   const setupCompletionStartedRef = useRef(false);
   const setupChallengePendingRef = useRef(false);
   const enterAppAfterLoginRef = useRef(false);
@@ -495,16 +510,64 @@ export function CircleGoogleLogin({
             return;
           }
 
-          setLoginResult(nextLogin);
-          writeCircleLogin(nextLogin);
-          removeStorage(googleOAuthDiagnosticStorageKey);
-          setOauthDiagnostic(null);
+          const acceptGoogleWallet = () => {
+            setLoginResult(nextLogin);
+            writeCircleLogin(nextLogin);
+            removeStorage(googleOAuthDiagnosticStorageKey);
+            setOauthDiagnostic(null);
+            setError(null);
+            setStatus("Google login connected. Completing wallet setup");
+          };
+
+          const googleReturn = googleReturnRef.current;
+          googleReturnRef.current = null;
+          if (!unifiedGoogleSignIn || !googleReturn || !onEmailAccountRef.current) {
+            acceptGoogleWallet();
+            return;
+          }
+
+          // Unified: an existing Google wallet keeps opening; a new Google
+          // user goes on to the email account for their address.
+          setIsBusy(true);
           setError(null);
-          setStatus("Google login connected. Completing wallet setup");
+          void postEmailAuth<VerifyResponse & { legacyGoogle?: boolean }>({
+            action: "google",
+            circleUserToken: nextLogin.userToken,
+            idToken: googleReturn.idToken,
+            nonce: googleReturn.nonce,
+          })
+            .then((routed) => {
+              if (cancelled) return;
+              if (routed.legacyGoogle) {
+                acceptGoogleWallet();
+                return;
+              }
+              removeStorage(storageKeys.setupIntent);
+              removeStorage(storageKeys.enterApp);
+              removeStorage(googleOAuthDiagnosticStorageKey);
+              setOauthDiagnostic(null);
+              onEmailAccountRef.current?.(routed);
+            })
+            .catch((routeError: unknown) => {
+              if (cancelled) return;
+              removeStorage(storageKeys.setupIntent);
+              setError(
+                getClientErrorMessage(routeError, "Google sign-in couldn't be completed. Try again."),
+              );
+            })
+            .finally(() => {
+              if (!cancelled) setIsBusy(false);
+            });
         };
         // The SDK reads the Google token from the hash and clears it as soon
         // as it is constructed, so check for it first.
         const isGoogleReturn = window.location.hash.includes("id_token");
+        if (isGoogleReturn) {
+          const idToken = new URLSearchParams(window.location.hash.slice(1)).get("id_token");
+          googleReturnRef.current = idToken
+            ? { idToken, nonce: window.localStorage.getItem("nonce") }
+            : null;
+        }
         const sdk = new CircleW3SSdk(sdkConfigs, onLoginComplete);
 
         sdk.updateConfigs(sdkConfigs, onLoginComplete);

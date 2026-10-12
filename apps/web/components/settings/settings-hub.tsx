@@ -17,6 +17,7 @@ import {
   Palette,
   ShieldCheck,
   Smartphone,
+  UserX,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -24,11 +25,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useOptionalAccount } from "@/components/account/account-provider";
+import { GRACE_DAYS } from "@/lib/account-deletion/rules";
 import { useT } from "@/components/locale-provider";
 import { AccountProfileSettings } from "@/components/settings/account-profile-settings";
 import { AccountTypeSettings } from "@/components/settings/account-type-settings";
 import { AlertsSettings } from "@/components/settings/alerts-settings";
 import { AppLockSettings } from "@/components/settings/app-lock-settings";
+import { DeleteAccountSettings } from "@/components/settings/delete-account-settings";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 import { CurrencySettings } from "@/components/settings/currency-settings";
 import { LanguageSettings } from "@/components/settings/language-settings";
@@ -168,11 +171,19 @@ export function SettingsHub() {
         blurb: t("settings.alertsBody"),
         render: () => <AlertsSettings />,
       },
+      {
+        id: "delete-account",
+        group: "Danger zone",
+        icon: UserX,
+        title: "Delete account",
+        blurb: `Permanently delete your SaphraONE account and personal data. You have ${GRACE_DAYS} days to change your mind.`,
+        render: () => <DeleteAccountSettings />,
+      },
     ],
     [isBusiness, t],
   );
 
-  return <SettingsHome groupOrder={[...groupOrder, "Help"]} sections={sections} />;
+  return <SettingsHome groupOrder={[...groupOrder, "Help", "Danger zone"]} sections={sections} />;
 }
 
 /**
@@ -201,13 +212,24 @@ function SettingsHome({ groupOrder, sections }: { groupOrder: string[]; sections
   }, [sections]);
 
   function open(id: string) {
-    window.history.pushState(null, "", `#${id}`);
+    window.history.pushState({ ...window.history.state, settingsSection: id }, "", `#${id}`);
     setOpenId(id);
     window.scrollTo({ top: 0 });
   }
 
+  // A section opened from the list steps back to it, so the list's own back
+  // button then leaves Settings instead of reopening the section. One linked
+  // straight to (/settings#alerts) has nothing behind it, so it's replaced.
   function close() {
-    window.history.pushState(null, "", window.location.pathname + window.location.search);
+    if (window.history.state?.settingsSection) {
+      window.history.back();
+    } else {
+      window.history.replaceState(
+        { ...window.history.state, settingsSection: undefined },
+        "",
+        window.location.pathname + window.location.search,
+      );
+    }
     setOpenId(null);
     window.scrollTo({ top: 0 });
   }

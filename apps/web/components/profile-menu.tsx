@@ -41,6 +41,7 @@ import {
 import {
   ensureProfile,
   fetchProfile,
+  readCachedProfile,
   formatUsernameLabel,
   profileUpdatedEventName,
   type ProfileRecord,
@@ -382,6 +383,10 @@ export function ProfileMenu({
         return;
       }
 
+      // The last known profile first, so the picture is there at once.
+      const cached = readCachedProfile(walletAddress);
+      if (cached && !cancelled) setProfile(cached);
+
       try {
         let nextProfile = await fetchProfile(walletAddress);
 
@@ -399,7 +404,7 @@ export function ProfileMenu({
         }
       } catch {
         if (!cancelled) {
-          setProfile(null);
+          setProfile(cached);
         }
       }
     }

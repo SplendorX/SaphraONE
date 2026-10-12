@@ -37,6 +37,28 @@ type UsernameCheck =
   | { state: "taken"; message: string; username: string }
   | { state: "unknown"; username: string };
 
+/** "Use @ada_lovelace": the sign-in name, one tap away but never pre-filled. */
+function UsernameSuggestion({
+  current,
+  onPick,
+  suggestion,
+}: {
+  current: string;
+  onPick: (value: string) => void;
+  suggestion: string | null;
+}) {
+  if (!suggestion || normalizeUsername(current) === suggestion) return null;
+  return (
+    <button
+      className="mt-2 inline-flex items-center gap-1 rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+      onClick={() => onPick(suggestion)}
+      type="button"
+    >
+      Use @{suggestion}
+    </button>
+  );
+}
+
 function UsernameStatus({ check, formatError }: { check: UsernameCheck; formatError: string | null }) {
   const t = useT();
   let content: React.ReactNode = null;
@@ -87,6 +109,9 @@ export function OnboardingFlow() {
   const workspaceContext = useOptionalWorkspace();
   const [step, setStep] = useState<Step>("language");
   const [username, setUsername] = useState("");
+  // The name made at sign-in (from the Google name, or the wallet). Offered,
+  // never filled in: the person picks their own @username here.
+  const [suggestedUsername, setSuggestedUsername] = useState<string | null>(null);
   const [usernameCheck, setUsernameCheck] = useState<UsernameCheck>({ state: "idle" });
   const [country, setCountry] = useState("");
   const [fullName, setFullName] = useState("");
@@ -146,7 +171,9 @@ export function OnboardingFlow() {
           );
           return;
         }
-        setUsername(state.account.username);
+        setSuggestedUsername(
+          validateUsername(state.account.username) ? null : normalizeUsername(state.account.username),
+        );
         setCountry((state.account as { country?: string | null }).country ?? "");
         setFullName(state.account.display_name ?? "");
         setBio(state.account.bio ?? "");
@@ -469,6 +496,11 @@ export function OnboardingFlow() {
               value={username}
             />
           </label>
+          <UsernameSuggestion
+            current={username}
+            onPick={setUsername}
+            suggestion={suggestedUsername}
+          />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
@@ -522,6 +554,11 @@ export function OnboardingFlow() {
               value={username}
             />
           </label>
+          <UsernameSuggestion
+            current={username}
+            onPick={setUsername}
+            suggestion={suggestedUsername}
+          />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}

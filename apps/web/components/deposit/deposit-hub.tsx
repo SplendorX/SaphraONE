@@ -44,7 +44,10 @@ function shortAddress(value?: string | null) {
 
 /** Add money: your account to share, then every way to bring funds in. */
 export function DepositHub() {
-  const { address, isConnected } = usePlatformWallet();
+  const { address, isConnected, source } = usePlatformWallet();
+  // Bridging pulls USDC from a wallet you hold elsewhere (MetaMask and the
+  // like). Google and email accounts have no such wallet here, so it's hidden.
+  const canBridge = source !== "embedded";
   const [view, setView] = useState<View>("home");
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [networkOpen, setNetworkOpen] = useState(false);
@@ -200,18 +203,20 @@ export function DepositHub() {
                 />
               </li>
             ) : null}
-            <li>
-              <MethodRow
-                body={
-                  multichainEnabled
-                    ? "Move USDC you hold in MetaMask or another wallet over Circle CCTP."
-                    : "Bring USDC from Ethereum, Base and other networks over Circle CCTP."
-                }
-                icon={<Wallet className="h-5 w-5" />}
-                onClick={() => setView("chain")}
-                title={multichainEnabled ? "Bridge from my wallet" : "From another chain"}
-              />
-            </li>
+            {canBridge ? (
+              <li>
+                <MethodRow
+                  body={
+                    multichainEnabled
+                      ? "Move USDC you hold in MetaMask or another wallet over Circle CCTP."
+                      : "Bring USDC from Ethereum, Base and other networks over Circle CCTP."
+                  }
+                  icon={<Wallet className="h-5 w-5" />}
+                  onClick={() => setView("chain")}
+                  title={multichainEnabled ? "Bridge from my wallet" : "From another chain"}
+                />
+              </li>
+            ) : null}
             <li>
               <MethodRow
                 body="Buy USDC from your bank (US and supported European countries)."

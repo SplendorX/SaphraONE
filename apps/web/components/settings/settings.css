@@ -232,6 +232,11 @@
   color: #be185d;
 }
 
+.st-icon[data-group="Danger zone"] {
+  background: color-mix(in oklch, #dc2626 14%, var(--card));
+  color: #b91c1c;
+}
+
 .dark .st-icon {
   color: var(--link);
 }
@@ -250,6 +255,10 @@
 
 .dark .st-icon[data-group="Help"] {
   color: #f9a8d4;
+}
+
+.dark .st-icon[data-group="Danger zone"] {
+  color: #f87171;
 }
 
 /* An open section */

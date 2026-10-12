@@ -1,3 +1,5 @@
+// Called only at run time, so the import cycle with circle-session is safe.
+import { readCircleLogin } from "@/lib/circle-session";
 import {
   pickTxCall,
   txApprovalActions,
@@ -45,10 +47,28 @@ function open(request: TxApprovalRequest) {
 }
 
 /**
+ * Signed in with a PIN wallet (email accounts, and new Google accounts on
+ * the shared email wallet): Circle asks for the PIN on every transaction
+ * and that can't be switched off, so SaphraONE doesn't ask a second time.
+ * The server checks the same thing with Circle (lib/tx-approval/enforce.ts).
+ */
+function pinWalletSignedIn() {
+  try {
+    return readCircleLogin()?.oAuthInfo?.provider === "Email";
+  } catch {
+    return false;
+  }
+}
+
+function approvalNeeded() {
+  return txApprovalEnabledInBrowser() && !pinWalletSignedIn();
+}
+
+/**
  * Confirm a group of calls once, then run them. Without the flag, just runs.
  */
 export async function withTxApproval<T>(intent: TxGroupIntent, run: () => Promise<T>) {
-  if (!txApprovalEnabledInBrowser()) return run();
+  if (!approvalNeeded()) return run();
   const id = await open({ group: intent });
   const previous = activeGroup;
   activeGroup = { id, walletId: intent.walletId };
@@ -61,7 +81,7 @@ export async function withTxApproval<T>(intent: TxGroupIntent, run: () => Promis
 
 /** The params to send to /api/circle/user-wallets, with an approval attached when needed. */
 export async function withApproval(action: string, params: Record<string, unknown>) {
-  if (!txApprovalEnabledInBrowser() || !txApprovalActions.has(action) || params.approvalId) {
+  if (!approvalNeeded() || !txApprovalActions.has(action) || params.approvalId) {
     return params;
   }
   if (activeGroup && activeGroup.walletId === params.walletId) {

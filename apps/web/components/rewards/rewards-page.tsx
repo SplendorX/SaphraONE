@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, Flame, Gift, Loader2, Target } from "lucide-react";
+import { ArrowLeft, ChevronRight, Flame, Gift, Loader2, Target } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { isAddress } from "viem";
 import { useAccount } from "wagmi";
@@ -125,6 +126,9 @@ export function RewardsPage() {
   return (
     <div className="rw-page">
       <header className="rw-head">
+        <Link aria-label="Back" className="rw-round" href="/dashboard">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
         <h1 className="rw-title">Rewards</h1>
         <p className="rw-muted">Points from every payment</p>
       </header>

@@ -123,7 +123,8 @@ ${detailTable(detailRows(details))}
   });
 }
 
-async function send(to: string, subject: string, html: string, text: string, key: string) {
+/** Send one security email through Resend; false when it isn't configured or fails. */
+export async function sendSecurityEmail(to: string, subject: string, html: string, text: string, key: string) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = sender();
   if (!apiKey || !from) return false;
@@ -162,7 +163,7 @@ export function sendApprovalCode(
     "",
     "If this wasn't you, don't share the code. Sign out on every device and contact support.",
   ].join("\n");
-  return send(
+  return sendSecurityEmail(
     to,
     `Your SaphraONE code: ${code}`,
     layout(
@@ -183,7 +184,7 @@ export function sendApprovalNotice(to: string, details: ApprovalEmailDetails, ap
     "",
     "If this wasn't you, sign out on every device and contact support.",
   ].join("\n");
-  return send(
+  return sendSecurityEmail(
     to,
     `SaphraONE: ${details.title}${details.amount ? ` · ${details.amount} ${details.token ?? ""}` : ""}`.trim(),
     layout("Transaction approved", "A transaction was just approved on your SaphraONE account.", details),
@@ -236,5 +237,5 @@ ${detailTable(rows)}
     "",
     "The SaphraONE Team",
   ].join("\n");
-  return send(to, "You signed in to your SaphraONE account", html, text, key);
+  return sendSecurityEmail(to, "You signed in to your SaphraONE account", html, text, key);
 }

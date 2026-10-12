@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 
+import { findScheduledDeletionSafe } from "@/lib/account-deletion/server";
 import {
   completeAccountOnboarding,
   getAccountState,
@@ -16,11 +17,20 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
     const { actorWallet, circleSocialUuid } = await readActor(request);
-    const state = await getAccountState({
-      circleSocialUuid,
-      ownerWallet: actorWallet,
+    const [state, deletion] = await Promise.all([
+      getAccountState({
+        circleSocialUuid,
+        ownerWallet: actorWallet,
+      }),
+      findScheduledDeletionSafe(actorWallet),
+    ]);
+    // Scheduled for deletion: every device shows "Restore account" instead.
+    return jsonOk({
+      ...state,
+      pendingDeletion: deletion
+        ? { requestedAt: deletion.requested_at, scheduledFor: deletion.scheduled_for }
+        : null,
     });
-    return jsonOk(state);
   } catch (error) {
     return jsonBusinessError(error);
   }

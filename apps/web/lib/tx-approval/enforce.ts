@@ -2,6 +2,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { circleRequest } from "@/lib/circle-user-server";
 import {
   callFitsApproval,
   consumeApproval,
@@ -26,6 +27,36 @@ type Gate =
 
 const pass: Gate = { ok: true, release: async () => undefined };
 
+/** Recent answers, per user token: one Circle lookup covers a whole flow. */
+const pinAnswers = new Map<string, { expiresAt: number; pin: boolean }>();
+const pinAnswerTtlMs = 5 * 60_000;
+
+/**
+ * Whether Circle asks this user for their PIN on every transaction: email
+ * accounts (and new Google accounts on the shared email wallet) use PIN
+ * wallets, and Circle's PIN can't be switched off. Confirming those again
+ * here would ask twice, so they skip this gate. Asked of Circle, never taken
+ * from the browser; an error counts as "no PIN", so the gate stays on.
+ */
+async function circleAsksForPin(userToken: unknown) {
+  if (typeof userToken !== "string" || !userToken.trim()) return false;
+  const token = userToken.trim();
+  const cached = pinAnswers.get(token);
+  if (cached && cached.expiresAt > Date.now()) return cached.pin;
+  try {
+    const result = await circleRequest("/v1/w3s/user", { method: "GET", userToken: token });
+    if (result.status >= 400) return false;
+    const status = (result.body.data as { pinStatus?: string } | undefined)?.pinStatus;
+    // LOCKED: Circle refuses the transaction itself until the PIN is reset.
+    const pin = status === "ENABLED" || status === "LOCKED";
+    if (pinAnswers.size > 500) pinAnswers.clear();
+    pinAnswers.set(token, { expiresAt: Date.now() + pinAnswerTtlMs, pin });
+    return pin;
+  } catch {
+    return false;
+  }
+}
+
 function refuse(message: string, status = 403): Gate {
   return {
     ok: false,
@@ -45,6 +76,7 @@ function refuse(message: string, status = 403): Gate {
 export async function txApprovalGate(body: Record<string, unknown>): Promise<Gate> {
   const action = typeof body.action === "string" ? body.action : "";
   if (!txApprovalEnabledOnServer() || !txApprovalActions.has(action)) return pass;
+  if (await circleAsksForPin(body.userToken)) return pass;
 
   const cookieStore = await cookies();
   const session = readWalletToken(cookieStore.get(walletSessionCookieName)?.value, "session");

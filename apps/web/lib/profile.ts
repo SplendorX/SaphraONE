@@ -36,10 +36,64 @@ export type EnsureProfileInput = {
   walletAddress: string;
 };
 
+/**
+ * The last profile seen per wallet, in memory and in this browser, so a
+ * picture shows on the first frame instead of initials first. Always
+ * refreshed from the server after; never trusted for anything but display.
+ */
+const profileCacheKey = "saphra.profileCache";
+const profileCacheLimit = 8;
+/** Skip storing very large inline pictures; they stay in memory only. */
+const maxStoredAvatarLength = 200_000;
+const profileMemory = new Map<string, ProfileRecord>();
+
+function readStoredProfiles(): Record<string, ProfileRecord> {
+  try {
+    const raw = window.localStorage.getItem(profileCacheKey);
+    return raw ? (JSON.parse(raw) as Record<string, ProfileRecord>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The last known profile for a wallet, or null. Synchronous: use it as initial state. */
+export function readCachedProfile(walletAddress: string | null | undefined): ProfileRecord | null {
+  if (typeof window === "undefined" || !walletAddress) return null;
+  const wallet = walletAddress.toLowerCase();
+  const cached = profileMemory.get(wallet) ?? readStoredProfiles()[wallet] ?? null;
+  if (cached) profileMemory.set(wallet, cached);
+  return cached;
+}
+
+function writeCachedProfile(walletAddress: string, profile: ProfileRecord | null) {
+  if (typeof window === "undefined") return;
+  const wallet = walletAddress.toLowerCase();
+  if (profile) profileMemory.set(wallet, profile);
+  else profileMemory.delete(wallet);
+  try {
+    const stored = readStoredProfiles();
+    delete stored[wallet];
+    if (profile && (profile.avatar_url?.length ?? 0) <= maxStoredAvatarLength) {
+      stored[wallet] = profile;
+    }
+    // Newest last; keep only the most recent few.
+    const entries = Object.entries(stored).slice(-profileCacheLimit);
+    window.localStorage.setItem(profileCacheKey, JSON.stringify(Object.fromEntries(entries)));
+  } catch {}
+  // Warm the browser's image cache too, so the <img> paints at once.
+  if (profile?.avatar_url && !profile.avatar_url.startsWith("data:")) {
+    const image = new Image();
+    image.src = profile.avatar_url;
+  }
+}
+
 export function notifyProfileUpdated(profile: Partial<ProfileRecord> & { wallet_address: string }) {
   if (typeof window === "undefined") {
     return;
   }
+
+  const cached = readCachedProfile(profile.wallet_address);
+  if (cached) writeCachedProfile(profile.wallet_address, { ...cached, ...profile });
 
   window.dispatchEvent(
     new CustomEvent(profileUpdatedEventName, { detail: profile }),
@@ -67,6 +121,7 @@ export async function fetchProfile(walletAddress: string) {
   );
 
   if (response.status === 404) {
+    writeCachedProfile(normalizedWallet, null);
     return null;
   }
 
@@ -78,6 +133,7 @@ export async function fetchProfile(walletAddress: string) {
   }
 
   const payload = (await response.json()) as { profile: ProfileRecord };
+  writeCachedProfile(normalizedWallet, payload.profile);
   return payload.profile;
 }
 

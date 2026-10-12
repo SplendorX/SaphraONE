@@ -238,6 +238,8 @@ export function clearCircleSession(options: { clearDevice?: boolean } = {}) {
     window.localStorage.removeItem("saphra.activeWorkspaceId");
     window.localStorage.removeItem("saphra.preferredWalletMode");
     window.localStorage.removeItem("saphra.greetingName");
+    window.localStorage.removeItem("saphra.profileCache");
+    window.localStorage.removeItem("saphra.accountCache");
   } catch {}
 
   clearPlatformProfileConnected();

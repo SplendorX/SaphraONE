@@ -25,6 +25,8 @@ import { NetworkLogo, NetworkPicker } from "@/components/send/network-picker";
 import { TransferProgress } from "@/components/send/transfer-progress";
 import { QrScanSheet } from "@/components/send/qr-scan-sheet";
 import { arcChain, arcTransport } from "@/lib/chains";
+import { isCircleChallengeError } from "@/lib/circle-eip1193";
+import { userFacingErrorMessage } from "@/lib/circle-session";
 import { isRejection } from "@/lib/deposit-to-arc";
 import {
   fetchCrossChainSend,
@@ -339,8 +341,16 @@ export function CrossChainSend({
       setStage("amount");
     } catch (cause) {
       if (settled) return;
-      if (cause instanceof SendOutRejectedError || cause instanceof TxApprovalCancelled) {
-        if (id) await reportCrossChainSend(id, { error: "Cancelled in the wallet.", ownerWallet }).catch(() => null);
+      // Circle's PIN screen failed after the person confirmed: like a cancel,
+      // nothing left the balance, but say what went wrong.
+      const challengeFailed = isCircleChallengeError(cause);
+      if (cause instanceof SendOutRejectedError || cause instanceof TxApprovalCancelled || challengeFailed) {
+        const reason = challengeFailed
+          ? userFacingErrorMessage(cause, "Circle couldn't complete this payment.")
+          : null;
+        if (id) {
+          await reportCrossChainSend(id, { error: reason ?? "Cancelled in the wallet.", ownerWallet }).catch(() => null);
+        }
         if (feePaid && id) {
           // Keep it: "Try again" finishes this send without a second fee.
           resumeRef.current = {
@@ -352,10 +362,20 @@ export function CrossChainSend({
             serviceFeeRecipient,
             total: total ?? toBurn ?? amount,
           };
-          setError("Cancelled before sending. The service fee is already paid, so Try again won't charge it twice.");
+          setError(
+            reason
+              ? `${reason} The service fee is already paid, so Try again won't charge it twice.`
+              : "Cancelled before sending. The service fee is already paid, so Try again won't charge it twice.",
+          );
         } else {
           resumeRef.current = null;
-          setError("Cancelled. Nothing was sent.");
+          setError(
+            !reason
+              ? "Cancelled. Nothing was sent."
+              : /nothing was sent/i.test(reason)
+                ? reason
+                : `${reason} Nothing was sent.`,
+          );
         }
         setStage("amount");
         return;

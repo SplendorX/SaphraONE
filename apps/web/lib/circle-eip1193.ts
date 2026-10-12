@@ -57,6 +57,35 @@ class ProviderRpcError extends Error {
   }
 }
 
+/**
+ * Circle's PIN screen came back with an error. Only 155701 (the person
+ * closed it) is a cancel; anything else, after they confirmed, is a real
+ * failure and keeps Circle's own words. Labelling every error a cancel is
+ * how a failed send read "Cancelled. Nothing was sent." Either way the
+ * challenge never ran, so nothing left the wallet.
+ */
+function challengeError(error: { code?: unknown; message?: string }) {
+  const code = String(error.code ?? "");
+  if (code === "155701") {
+    return new ProviderRpcError(4001, error.message || "Cancelled in Circle wallet.");
+  }
+  const failure = new ProviderRpcError(
+    -32603,
+    `${code ? `[${code}] ` : ""}${error.message || "Circle couldn't complete this transaction."}`,
+  );
+  failure.name = "CircleChallengeError";
+  return failure;
+}
+
+/** A Circle confirmation that failed before anything was sent (see challengeError). */
+export function isCircleChallengeError(error: unknown) {
+  for (let cause = error, depth = 0; cause instanceof Error && depth < 6; depth += 1) {
+    if (cause.name === "CircleChallengeError") return true;
+    cause = (cause as Error & { cause?: unknown }).cause;
+  }
+  return false;
+}
+
 function toHexChainId(chainId: number) {
   return `0x${chainId.toString(16)}`;
 }
@@ -192,12 +221,7 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
     }>((resolve, reject) => {
       sdk.execute(challengeId, (error, result) => {
         if (error) {
-          reject(
-            new ProviderRpcError(
-              4001,
-              error.message || "Cancelled in Circle wallet.",
-            ),
-          );
+          reject(challengeError(error));
           return;
         }
         resolve({
@@ -280,12 +304,7 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
     const signature = await new Promise<string | undefined>((resolve, reject) => {
       sdk.execute(challengeId, (error, result) => {
         if (error) {
-          reject(
-            new ProviderRpcError(
-              4001,
-              error.message || "Cancelled in Circle wallet.",
-            ),
-          );
+          reject(challengeError(error));
           return;
         }
         resolve(extractSignature(result));

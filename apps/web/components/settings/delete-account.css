@@ -1,0 +1,396 @@
+/* Delete account (Settings) and the "scheduled for deletion" screen. Its own file, like settings.css. */
+
+.da-stack {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.da-steps {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.da-steps li {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.da-steps li span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 9999px;
+  background: var(--muted);
+  font-size: 0.72rem;
+}
+
+.da-steps li[data-active="true"] {
+  border-color: color-mix(in oklch, var(--destructive), transparent 55%);
+  color: var(--foreground);
+}
+
+.da-steps li[data-active="true"] span,
+.da-steps li[data-done="true"] span {
+  background: var(--destructive);
+  color: #ffffff;
+}
+
+.da-callout {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--card);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.da-callout p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.da-callout .da-callout-title {
+  margin-bottom: 0.15rem;
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.da-callout.is-danger {
+  border-color: color-mix(in oklch, var(--destructive), transparent 65%);
+  background: color-mix(in oklch, var(--destructive), transparent 92%);
+  color: var(--destructive);
+}
+
+.da-callout.is-warning {
+  border-color: rgb(217 119 6 / 0.4);
+  background: rgb(217 119 6 / 0.08);
+  color: #d97706;
+}
+
+.da-section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.da-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.da-muted {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.da-checks {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.da-checks li {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.da-checks li p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.da-checks li .da-check-title {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.da-checks li[data-kind="blocker"] {
+  border-color: color-mix(in oklch, var(--destructive), transparent 60%);
+}
+
+.da-checks li[data-kind="blocker"] > svg {
+  color: var(--destructive);
+}
+
+.da-checks li[data-kind="notice"] > svg {
+  color: #d97706;
+}
+
+.da-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.da-list li {
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+.da-list li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-weight: 700;
+}
+
+.da-list.is-erased li::before {
+  content: "✕";
+  color: var(--destructive);
+}
+
+.da-list.is-kept li::before {
+  content: "✓";
+  color: #16a34a;
+}
+
+.da-link {
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.da-link:hover {
+  text-decoration: underline;
+}
+
+.da-link:disabled {
+  opacity: 0.5;
+}
+
+.dark .da-link {
+  color: #b794ff;
+}
+
+.da-reasons {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.da-reasons label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.da-reasons label[data-checked="true"] {
+  border-color: var(--primary);
+  background: color-mix(in oklch, var(--primary), transparent 92%);
+}
+
+.da-reasons input,
+.da-ack input {
+  accent-color: var(--destructive);
+}
+
+.da-textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.da-textarea:focus {
+  outline: 2px solid color-mix(in oklch, var(--ring), transparent 50%);
+}
+
+.da-code-row {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+}
+
+.da-ack {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.da-ack input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.da-error {
+  margin: 0;
+  color: var(--destructive);
+  font-size: 0.85rem;
+}
+
+.da-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.da-actions button {
+  min-height: 2.6rem;
+  padding-inline: 1.1rem;
+}
+
+.da-done {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+}
+
+.da-done h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.da-done p {
+  max-width: 26rem;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.da-done-icon,
+.da-pending-icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+}
+
+.da-done-icon {
+  background: rgb(22 163 74 / 0.12);
+  color: #16a34a;
+}
+
+/* Scheduled for deletion: covers the app, under the app lock / 2FA screens. */
+.da-pending {
+  position: fixed;
+  inset: 0;
+  z-index: 2147481000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 2.5rem 1rem;
+  background: var(--background);
+}
+
+.da-pending-card {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 26rem;
+  text-align: center;
+}
+
+.da-pending-card h1 {
+  margin: 0;
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.da-pending-card > p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.da-pending-card strong {
+  color: var(--foreground);
+}
+
+.da-pending-icon {
+  background: rgb(217 119 6 / 0.12);
+  color: #d97706;
+}
+
+.da-pending-actions {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.da-pending-actions button {
+  width: 100%;
+  min-height: 2.9rem;
+}
+
+.da-fine {
+  font-size: 0.8rem !important;
+}
+
+.da-banner {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  left: 1rem;
+  z-index: 60;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgb(217 119 6 / 0.45);
+  border-radius: 1rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.85rem;
+  text-align: center;
+  box-shadow: 0 12px 30px -12px rgb(0 0 0 / 0.35);
+}
+
+.da-banner span {
+  color: #d97706;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

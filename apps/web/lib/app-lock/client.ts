@@ -91,6 +91,8 @@ export async function signOutForAppLock(disconnect?: () => void) {
     window.localStorage.removeItem("saphra.activeWorkspaceId");
     window.localStorage.removeItem("saphra.preferredWalletMode");
     window.localStorage.removeItem("saphra.greetingName");
+    window.localStorage.removeItem("saphra.profileCache");
+    window.localStorage.removeItem("saphra.accountCache");
   } catch {}
   await endWalletSession().catch(() => undefined);
   try {

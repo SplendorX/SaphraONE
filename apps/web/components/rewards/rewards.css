@@ -29,6 +29,24 @@
   padding-top: 0.5rem;
 }
 
+/* Back, like the other pages' round back buttons. */
+.rw-round {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--foreground);
+  transition: background-color 150ms ease;
+}
+
+.rw-round:hover {
+  background: var(--muted);
+}
+
 .rw-title {
   font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(1.9rem, 6vw, 2.4rem);

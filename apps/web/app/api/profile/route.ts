@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { getAddress, isAddress } from "viem";
 
+import { heldUsernameFor, isUsernameHeld } from "@/lib/account-deletion/retired-usernames";
+import { isDeletedUsername } from "@/lib/account-deletion/rules";
 import { isAppLocale } from "@/lib/locales";
 import { readJsonRecord } from "@/lib/http";
 import {
@@ -274,7 +276,8 @@ async function findAvailableUsername(
       throw new Error(readSupabaseError(existing.error));
     }
 
-    if (!existing.data) {
+    // A deleted account's name stays held for anyone but its own wallet.
+    if (!existing.data && !(await isUsernameHeld(candidate, walletAddress))) {
       return candidate;
     }
   }
@@ -341,7 +344,8 @@ export async function GET(request: NextRequest) {
       return jsonError(readSupabaseError(error), 500);
     }
 
-    if (!data) {
+    // An erased account's row is kept for its records; it's not a profile.
+    if (!data || isDeletedUsername(data.username)) {
       return jsonError("Profile not found.", 404);
     }
 
@@ -390,6 +394,42 @@ export async function POST(request: NextRequest) {
       (await canLinkCircleIdentity(walletAddress, body.circleUserToken))
         ? requestedCircleSocialUuid
         : null;
+
+    // The wallet's account was deleted: signing in again starts a new, empty
+    // account on the kept row (payments and invoices still point at it).
+    if (existing.data && isDeletedUsername(existing.data.username)) {
+      if (!(await canLinkCircleIdentity(walletAddress, body.circleUserToken))) {
+        return jsonError("Sign in with this wallet before creating a SaphraONE profile.", 401);
+      }
+      if (circleSocialUuid) {
+        await releaseCircleSocialUuid(supabase, circleSocialUuid, walletAddress);
+      }
+      const revived = await supabase
+        .from(profilesTable)
+        .update({
+          account_type_selected: false,
+          auth_provider: authProvider,
+          circle_social_uuid: circleSocialUuid,
+          display_name: displayName,
+          onboarding_completed_at: null,
+          tour_completed_at: null,
+          updated_at: new Date().toISOString(),
+          // Their old @name back, when it's still held for this wallet.
+          username: await findAvailableUsername(
+            walletAddress,
+            (await heldUsernameFor(walletAddress)) ?? usernameFromDisplayName(displayName),
+          ),
+        })
+        .eq("wallet_address", walletAddress)
+        .select(profileSelect)
+        .single();
+
+      if (revived.error) {
+        return jsonError(readSupabaseError(revived.error), 500);
+      }
+
+      return NextResponse.json({ profile: publicProfile(revived.data) });
+    }
 
     if (existing.data) {
       const updates: Record<string, string | null> = {};
@@ -583,6 +623,9 @@ export async function PATCH(request: NextRequest) {
     };
 
     if (hasUsername) {
+      if (await isUsernameHeld(username, walletAddress)) {
+        return jsonError("That username isn't available. Try another.", 409);
+      }
       updates.username = username;
     }
 
