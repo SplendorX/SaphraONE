@@ -185,12 +185,12 @@ export function proxy(request: NextRequest) {
   }
 
   // Keep the query string (a prefilled /send?…&charge=…) so signing in lands
-  // exactly where the visitor was going; #sign-in opens the sign-in modal.
+  // exactly where the visitor was going.
   const url = request.nextUrl.clone();
-  url.pathname = "/";
+  url.pathname = "/sign-in";
   url.search = "";
   url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
-  url.hash = "sign-in";
+  url.hash = "";
 
   return NextResponse.redirect(url);
 }

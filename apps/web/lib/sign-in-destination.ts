@@ -25,8 +25,8 @@ export function readSafeNextPath(value: unknown) {
   if (/(^|\/)\.\.?(\/|$)/.test(pathname)) return null;
   if (/%2e|%2f|%5c/i.test(pathname)) return null;
   if (/^\/[a-z][a-z0-9+.-]*:/i.test(pathname)) return null;
-  // Sending someone back to the landing page is not a destination.
-  if (pathname === "/") return null;
+  // Sending someone back to the landing page (or sign-in) is not a destination.
+  if (pathname === "/" || pathname === "/sign-in") return null;
   return path;
 }
 

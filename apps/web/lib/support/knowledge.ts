@@ -73,7 +73,7 @@ export const supportArticles: SupportArticle[] = [
       "Pick Google, email, or Connect wallet.",
       "If you connected a wallet, approve the sign-in message it shows.",
     ],
-    links: [{ label: "Sign in", href: "/#sign-in" }],
+    links: [{ label: "Sign in", href: "/sign-in" }],
   },
   {
     id: "add-funds",

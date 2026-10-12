@@ -17,8 +17,6 @@ import {
   readActivatedExternalProfile,
 } from "@/lib/platform-access";
 
-export const signInModalEventName = "saphra:open-sign-in";
-
 function hasLiveSignedInAccount(input?: {
   address?: string;
   isConnected?: boolean;
@@ -66,10 +64,6 @@ export function useHasSignedIn() {
   return signedIn;
 }
 
-export function openSignInModal() {
-  window.dispatchEvent(new CustomEvent(signInModalEventName));
-}
-
 export function LaunchAppLink({
   children,
   className,
@@ -89,7 +83,7 @@ export function LaunchAppLink({
       : isBusiness
         ? "/business"
         : "/dashboard"
-    : "/#sign-in";
+    : "/sign-in";
 
   return (
     <Link
@@ -106,12 +100,7 @@ export function LaunchAppLink({
           return;
         }
 
-        if (window.location.pathname === "/") {
-          openSignInModal();
-          return;
-        }
-
-        window.location.assign("/#sign-in");
+        router.push("/sign-in");
       }}
     >
       {children ?? "Open SaphraONE"}

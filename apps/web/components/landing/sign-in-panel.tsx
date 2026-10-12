@@ -226,12 +226,12 @@ export function SignInPanel() {
       )}
 
       <h2 className="sign-in-title">
-        {step ? step.title : "Sign in to SaphraONE"}
+        {step ? step.title : "Great to see you"}
       </h2>
       <p className="sign-in-lede">
         {step
           ? step.body
-          : "Create an account or sign in with email or Google, or use a wallet you already have."}
+          : "Sign in or create your SaphraONE account in under a minute, with email, Google or a wallet you already have."}
       </p>
 
       {method === "choose" ? (

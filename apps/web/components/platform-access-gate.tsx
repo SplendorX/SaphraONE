@@ -168,7 +168,7 @@ export function PlatformAccessGate({ children }: { children: ReactNode }) {
           </p>
           <Link
             className="sp-bubble mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-swift-600 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(66,17,143,0.24)] transition hover:-translate-y-0.5 hover:bg-swift-700"
-            href="/#sign-in"
+            href="/sign-in"
           >
             Go to sign in
           </Link>

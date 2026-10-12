@@ -724,7 +724,7 @@ export function CircleGoogleLogin({
         setStatus("Circle wallet loaded");
         if (
           typeof window !== "undefined" &&
-          window.location.pathname === "/" &&
+          (window.location.pathname === "/" || window.location.pathname === "/sign-in") &&
           (enterAppAfterLoginRef.current ||
             readStorage(storageKeys.enterApp) === "true")
         ) {

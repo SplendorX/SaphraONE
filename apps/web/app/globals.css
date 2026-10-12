@@ -2983,68 +2983,6 @@ select:focus {
   min-height: 12%;
 }
 
-.floating-activity {
-  width: 100%;
-}
-
-.floating-activity-content {
-  position: relative;
-  min-height: 3.5rem;
-  overflow: hidden;
-}
-
-.sign-in-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-  background: color-mix(in oklch, var(--background) 82%, transparent);
-  padding: 1rem;
-  backdrop-filter: blur(10px);
-}
-
-.sign-in-modal-card {
-  position: relative;
-  width: min(100%, 34rem);
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  border-radius: var(--swift-panel-radius);
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: 0 24px 70px -32px color-mix(in oklch, var(--foreground) 45%, transparent);
-}
-
-.sign-in-modal-close {
-  position: absolute;
-  /* Centred on the board's header row (panel padding + half the row). */
-  top: 1.5rem;
-  right: 1rem;
-  z-index: 2;
-  display: inline-flex;
-  height: 2.5rem;
-  width: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  border: 0;
-  background: transparent;
-  color: var(--muted-foreground);
-  transition: background 150ms ease, color 150ms ease;
-}
-
-.sign-in-modal-close:hover {
-  background: color-mix(in oklch, var(--foreground) 6%, transparent);
-  color: var(--foreground);
-}
-
-.sign-in-modal-card .sign-in-panel {
-  border: 0;
-  box-shadow: none;
-}
-
 .sign-in-panel {
   border-radius: var(--swift-panel-radius);
   border: 1px solid var(--border);
@@ -3079,26 +3017,9 @@ select:focus {
 
 /* ── Sign-in board: a menu of methods, each opening its own step ── */
 
-.sign-in-modal-card .sign-in-panel {
-  padding: 1.5rem 1.25rem 1.5rem;
-}
-
-@media (min-width: 640px) {
-  .sign-in-modal-card .sign-in-panel {
-    padding: 1.75rem 2rem 2rem;
-  }
-
-  .sign-in-modal-close {
-    top: 1.75rem;
-    right: 1.5rem;
-  }
-}
-
-/* Clear the modal's close button on the right. */
 .sign-in-step-head,
 .sign-in-eyebrow-solo {
   min-height: 2.5rem;
-  padding-right: 3rem;
 }
 
 .sign-in-step-head {

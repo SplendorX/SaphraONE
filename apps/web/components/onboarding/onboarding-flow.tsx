@@ -4,7 +4,9 @@ import { Briefcase, Check, CheckCircle2, Coins, Loader2, ShieldCheck, UserRound,
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
-import { PlatformBrand } from "@/components/brand/platform-brand";
+import { AuthShell, type AuthStory } from "@/components/auth/auth-shell";
+import { ProfileScene, SecurityScene, WorldScene } from "@/components/auth/auth-visuals";
+import { PlatformProfileControls } from "@/components/platform-profile-controls";
 import { useBusinessActor } from "@/components/business/use-business-actor";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { useOptionalWorkspace } from "@/components/business/workspace-provider";
@@ -278,30 +280,72 @@ export function OnboardingFlow() {
     }
   }
 
+  // The story panel follows the steps; the profile step previews the card
+  // people will see, live as it is typed.
+  const kind = step === "business" ? "business" : step === "personal" ? "personal" : "choose";
+  const stories: AuthStory[] = [
+    {
+      body: "Pick the language you think in. You can switch any time in Settings.",
+      label: "Language",
+      scene: <WorldScene />,
+      title: "Make SaphraONE feel like home.",
+    },
+    {
+      body: "Personal is for sending, saving and investing. Business adds invoices, payroll, checkout and your team.",
+      label: "Account",
+      scene: <ProfileScene kind="choose" />,
+      title: "Just you, or a business?",
+    },
+    {
+      body:
+        kind === "business"
+          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your @name."
+          : "People pay you by your @name instead of a long address. This is how you'll appear to them.",
+      label: "Profile",
+      scene: (
+        <ProfileScene
+          businessName={businessName}
+          displayName={fullName}
+          kind={kind}
+          logoUrl={logoUrl}
+          username={username}
+        />
+      ),
+      title: kind === "business" ? "Put your business on the map." : "Claim your @name.",
+    },
+    {
+      body: "A PIN, plus Face ID or fingerprint where your phone has it. Even with your phone in hand, no one else gets in.",
+      label: "Security",
+      scene: <SecurityScene />,
+      title: "Lock it to you.",
+    },
+  ];
+  const activeStory =
+    step === "language" ? 0 : step === "account" ? 1 : step === "security" ? 3 : 2;
+
   if (!ownerWallet) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-24 text-center">
-        <div className="flex justify-center">
-          <PlatformBrand />
-        </div>
-        <h1 className="mt-4 font-heading text-3xl">{t("onboarding.connectToContinue")}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {t("onboarding.connectToContinueBody")}
-        </p>
-      </div>
+      <AuthShell active={0} stories={stories}>
+        <h1 className="font-heading text-3xl">{t("onboarding.connectToContinue")}</h1>
+        <p className="mt-3 text-sm text-muted-foreground">{t("onboarding.connectToContinueBody")}</p>
+      </AuthShell>
     );
   }
 
   if (!ready) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-24 text-center text-sm text-muted-foreground">
-        {t("onboarding.preparingAccount")}
-      </div>
+      <AuthShell active={0} stories={stories} topRight={<PlatformProfileControls />}>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {t("onboarding.preparingAccount")}
+        </p>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-16 sm:py-20">
+    <AuthShell active={activeStory} stories={stories} topRight={<PlatformProfileControls />} wide>
+    <div className="w-full">
       <p className="eyebrow">{t("onboarding.languageEyebrow")}</p>
       {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
 
@@ -309,7 +353,7 @@ export function OnboardingFlow() {
         <section>
           <h1 className="mt-3 font-heading text-3xl sm:text-4xl">{t("onboarding.languageTitle")}</h1>
           <p className="mt-3 max-w-xl text-sm text-muted-foreground">{t("onboarding.languageSubtitle")}</p>
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {APP_LOCALES.map((item) => {
               const selected = item.id === locale;
               return (
@@ -344,11 +388,13 @@ export function OnboardingFlow() {
             {t("onboarding.howWillYouUseBody")}
           </p>
 
-          {/* New User Cashback Notice */}
-          <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3.5 flex items-start sm:items-center gap-3 text-xs text-foreground">
-            <Coins className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
+          {/* Rewards on every account (Rewards v2, REWARDS-PLAN.md) */}
+          <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3.5 text-xs text-foreground sm:items-center">
+            <Coins className="mt-0.5 h-5 w-5 shrink-0 text-amber-500 sm:mt-0" />
             <span>
-              <strong>Everyday Transaction Cashback:</strong> All SaphraONE accounts earn automatic OnePoints on platform transactions from 20 USDC/EURC up — <strong>1 pt (20+)</strong>, <strong>5 pts (100+)</strong>, <strong>20 pts (500+)</strong>, and <strong>50 pts (1,000+)</strong>.
+              <strong>Every account earns ONE Points.</strong> 1 point per 10 USDC you pay on your first 500 USDC
+              each month, then 0.5 per 10 USDC, plus bonuses for daily streaks. Spend them on discounts for ALLIE Pro
+              and automations.
             </span>
           </div>
 
@@ -589,5 +635,6 @@ export function OnboardingFlow() {
         </section>
       ) : null}
     </div>
+    </AuthShell>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { arcChain } from "@/lib/chains";
-import { rememberNextPath } from "@/lib/sign-in-destination";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -17,10 +16,9 @@ import {
   Users,
   UsersRound,
   Wallet,
-  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { LandingVideoBackground } from "@/components/landing/landing-video-background";
 import { AllieShowcase } from "@/components/landing/allie-showcase";
@@ -28,13 +26,9 @@ import { BusinessShowcase } from "@/components/landing/business-showcase";
 import { FeatureStories } from "@/components/landing/feature-stories";
 import { HeroWelcome } from "@/components/landing/hero-welcome";
 import { LandingFooter } from "@/components/landing/landing-footer";
-import {
-  LaunchAppLink,
-  signInModalEventName,
-} from "@/components/landing/launch-app-link";
+import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { ProductShowcase } from "@/components/landing/product-showcase";
 import { SecuritySection } from "@/components/landing/security-section";
-import { SignInPanel } from "@/components/landing/sign-in-panel";
 import { FadeUp, Stagger, StaggerItem } from "@/components/design/motion";
 import { MarketingShell } from "@/components/layout/marketing-shell";
 import { useT } from "@/components/locale-provider";
@@ -48,7 +42,6 @@ import { Badge } from "@/components/ui/badge";
 
 export function LandingPage() {
   const t = useT();
-  const [signInOpen, setSignInOpen] = useState(false);
   const productFlows = [
     {
       body: t("landing.flowDashboardBody"),
@@ -164,51 +157,25 @@ export function LandingPage() {
     },
   ];
   useEffect(() => {
-    // A protected page sent the visitor here with ?next=; keep it through
-    // the sign-in (and the Google round trip, which drops the query).
-    rememberNextPath();
-
-    function openSignIn() {
-      setSignInOpen(true);
+    // Sign-in has its own page. Google returns to the site root (its redirect
+    // URI), and older links say /#sign-in: send both there, keeping the query
+    // (?next=) and Google's hash so the sign-in can finish on /sign-in.
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const googleReturn = Boolean(
+      hashParams.get("id_token") ||
+        hashParams.get("error") ||
+        hashParams.get("state") ||
+        queryParams.get("id_token") ||
+        queryParams.get("code") ||
+        queryParams.get("error") ||
+        queryParams.get("state"),
+    );
+    if (googleReturn || window.location.hash === "#sign-in" || queryParams.get("next")) {
+      const hash = window.location.hash === "#sign-in" ? "" : window.location.hash;
+      window.location.replace(`/sign-in${window.location.search}${hash}`);
     }
-
-    function hasGoogleLoginCallback() {
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const queryParams = new URLSearchParams(window.location.search);
-      return Boolean(
-        hashParams.get("id_token") ||
-          hashParams.get("error") ||
-          hashParams.get("state") ||
-          queryParams.get("id_token") ||
-          queryParams.get("code") ||
-          queryParams.get("error") ||
-          queryParams.get("state"),
-      );
-    }
-
-    function openFromHash() {
-      if (window.location.hash === "#sign-in" || hasGoogleLoginCallback()) {
-        openSignIn();
-      }
-    }
-
-    openFromHash();
-    window.addEventListener(signInModalEventName, openSignIn);
-    window.addEventListener("hashchange", openFromHash);
-
-    return () => {
-      window.removeEventListener(signInModalEventName, openSignIn);
-      window.removeEventListener("hashchange", openFromHash);
-    };
   }, []);
-
-  function closeSignIn() {
-    setSignInOpen(false);
-
-    if (window.location.hash === "#sign-in") {
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  }
 
   return (
     <MarketingShell>
@@ -397,28 +364,6 @@ export function LandingPage() {
 
       <LandingFooter />
 
-      {signInOpen ? (
-        <div className="sign-in-modal" onClick={closeSignIn}>
-          {/* The dialog role sits on the card, not the backdrop: themes style
-              [role="dialog"] as a solid panel, which would hide the blur. */}
-          <div
-            aria-modal="true"
-            className="sign-in-modal-card"
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-          >
-            <button
-              aria-label={t("landing.closeSignIn")}
-              className="sign-in-modal-close"
-              onClick={closeSignIn}
-              type="button"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <SignInPanel />
-          </div>
-        </div>
-      ) : null}
     </MarketingShell>
   );
 }
