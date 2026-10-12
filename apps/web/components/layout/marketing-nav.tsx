@@ -43,7 +43,10 @@ export function MarketingNav() {
         <div className="flex items-center gap-2">
           <XLogoLink />
           <InstagramLogoLink />
-          <ThemeToggle />
+          {/* Phones: no room in the top bar; the theme stays in Settings. */}
+          <span className="hidden sm:inline-flex">
+            <ThemeToggle />
+          </span>
           <LaunchAppLink className="hero-launch-btn marketing-nav-launch">
             {t("common.openSaphra")}
             <ArrowRight className="h-4 w-4" />
