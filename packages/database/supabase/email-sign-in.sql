@@ -1,7 +1,7 @@
--- One account per email: a Google sign-in and an emailed code for the same
--- verified address open the same wallet (NEXT_PUBLIC_UNIFIED_GOOGLE_SIGN_IN).
--- The server finds the Supabase user behind an address with this function;
--- the wallet is keyed by that user's id (sp-email-<id>). Server-only.
+-- Email sign-in (NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN): new email accounts use
+-- Circle's own email login; accounts already on the older PIN wallet
+-- (sp-email-<Supabase user id>) keep signing in the old way. The server finds
+-- whether an address has such an account with this function. Server-only.
 -- Run in the Supabase SQL editor before turning the flag on.
 
 create or replace function public.auth_user_id_for_email(p_email text)

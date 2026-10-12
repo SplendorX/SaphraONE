@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
 import { CircleGoogleLogin } from "@/components/circle-google-login";
-import { EmailSignIn, type VerifyResponse } from "@/components/email-sign-in";
+import { EmailSignIn } from "@/components/email-sign-in";
 import { ReferralCodeField } from "@/components/landing/referral-code-field";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { useT } from "@/components/locale-provider";
@@ -69,9 +69,9 @@ export function SignInPanel() {
   const [authError, setAuthError] = useState<string | null>(null);
   const authorizeInFlightRef = useRef(false);
   const [method, setMethod] = useState<SignInMethod>("choose");
-  // A new Google user's email account, opened after Google: its wallet steps
-  // run here (unified sign-in, see CircleGoogleLogin).
-  const [googleEmailAccount, setGoogleEmailAccount] = useState<VerifyResponse | null>(null);
+  // Google sent this address to email sign-in: it already signs in that way.
+  const [emailFromGoogle, setEmailFromGoogle] = useState("");
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
 
   const refreshSession = useCallback(async () => {
     if (!isConnected || !address) {
@@ -196,7 +196,7 @@ export function SignInPanel() {
     email: {
       eyebrow: "Email",
       title: "Continue with email",
-      body: "New or returning, we'll email you a 6-digit code. Your wallet is protected by a PIN only you know.",
+      body: "New or returning, we'll email you a 6-digit code to sign in.",
     },
     google: {
       eyebrow: "Google",
@@ -281,21 +281,35 @@ export function SignInPanel() {
         </div>
       ) : null}
 
-      {method === "email" ? <EmailSignIn bare onUseGoogle={() => setMethod("google")} /> : null}
-
-      {method === "google" && googleEmailAccount ? (
-        <EmailSignIn bare resume={googleEmailAccount} />
+      {method === "email" && emailNotice ? (
+        <p className="mb-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {emailNotice}
+        </p>
+      ) : null}
+      {method === "email" ? (
+        <EmailSignIn
+          bare
+          initialEmail={emailFromGoogle}
+          key={emailFromGoogle}
+          onUseGoogle={() => {
+            setEmailNotice(null);
+            setMethod("google");
+          }}
+        />
       ) : null}
 
       {/* Always mounted: Google sign-in completes after a redirect back to
           this page, which only works while the component is present. */}
-      <div hidden={method !== "google" || googleEmailAccount !== null}>
+      <div hidden={method !== "google"}>
         <CircleGoogleLogin
           bare
           embedded
-          onEmailAccount={(verified) => {
-            setGoogleEmailAccount(verified);
-            setMethod("google");
+          onUseEmail={(address) => {
+            setEmailFromGoogle(address);
+            setEmailNotice(
+              "This address already has a SaphraONE account that signs in with email. We'll email you a code to open it.",
+            );
+            setMethod("email");
           }}
           showRefreshWallet={false}
         />

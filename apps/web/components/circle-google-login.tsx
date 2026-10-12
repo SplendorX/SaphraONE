@@ -36,7 +36,7 @@ import {
   type CircleWallet,
 } from "@/lib/circle-session";
 import { useOptionalAccount } from "@/components/account/account-provider";
-import { postEmailAuth, type VerifyResponse } from "@/components/email-sign-in";
+import { postEmailAuth } from "@/components/email-sign-in";
 import { personalCircleWallet } from "@/lib/business/provision-wallet";
 import { fetchAccountState } from "@/lib/account/client";
 import { ensureProfile } from "@/lib/profile";
@@ -307,15 +307,15 @@ async function callCircleWalletApi<T>(
   return payload;
 }
 
-/** One account per email (see lib/email-auth-server.ts). */
-const unifiedGoogleSignIn = process.env.NEXT_PUBLIC_UNIFIED_GOOGLE_SIGN_IN?.trim() === "true";
+/** No second account for an address that signs in with email (lib/email-auth-server.ts). */
+const checkEmailAccounts = process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() === "true";
 
 type CircleGoogleLoginProps = {
   /**
-   * Unified sign-in: a new Google user goes on to the email account for
-   * their address instead of a Google-only wallet. The host finishes it.
+   * A new Google user whose address already signs in with email: no Google
+   * wallet is made, and the host sends them to email sign-in instead.
    */
-  onEmailAccount?: (verified: VerifyResponse) => void;
+  onUseEmail?: (email: string) => void;
   embedded?: boolean;
   /** With `embedded`: controls only, no "Circle wallet" heading. */
   bare?: boolean;
@@ -323,7 +323,7 @@ type CircleGoogleLoginProps = {
 };
 
 export function CircleGoogleLogin({
-  onEmailAccount,
+  onUseEmail,
   embedded = false,
   bare = false,
   showRefreshWallet = true,
@@ -332,10 +332,10 @@ export function CircleGoogleLogin({
   const accountContext = useOptionalAccount();
   const isBusinessAccount = accountContext?.isBusiness ?? false;
   const sdkRef = useRef<W3SSdk | null>(null);
-  const onEmailAccountRef = useRef(onEmailAccount);
-  onEmailAccountRef.current = onEmailAccount;
+  const onUseEmailRef = useRef(onUseEmail);
+  onUseEmailRef.current = onUseEmail;
   // Google's ID token (and the nonce it signed) from the return URL, read
-  // before the SDK clears it: unified sign-in shows it to the server.
+  // before the SDK clears it: the server checks the address with it.
   const googleReturnRef = useRef<{ idToken: string; nonce: string | null } | null>(null);
   const setupCompletionStartedRef = useRef(false);
   const setupChallengePendingRef = useRef(false);
@@ -521,24 +521,25 @@ export function CircleGoogleLogin({
 
           const googleReturn = googleReturnRef.current;
           googleReturnRef.current = null;
-          if (!unifiedGoogleSignIn || !googleReturn || !onEmailAccountRef.current) {
+          if (!checkEmailAccounts || !googleReturn) {
             acceptGoogleWallet();
             return;
           }
 
-          // Unified: an existing Google wallet keeps opening; a new Google
-          // user goes on to the email account for their address.
+          // A Google login with no wallet yet, for an address that already
+          // signs in with email: send them there instead of making a second
+          // account. Anyone else carries on as before.
           setIsBusy(true);
           setError(null);
-          void postEmailAuth<VerifyResponse & { legacyGoogle?: boolean }>({
+          void postEmailAuth<{ email?: string; message?: string; ok?: boolean; useEmail?: boolean }>({
             action: "google",
             circleUserToken: nextLogin.userToken,
             idToken: googleReturn.idToken,
             nonce: googleReturn.nonce,
           })
-            .then((routed) => {
+            .then((checked) => {
               if (cancelled) return;
-              if (routed.legacyGoogle) {
+              if (!checked.useEmail) {
                 acceptGoogleWallet();
                 return;
               }
@@ -546,7 +547,8 @@ export function CircleGoogleLogin({
               removeStorage(storageKeys.enterApp);
               removeStorage(googleOAuthDiagnosticStorageKey);
               setOauthDiagnostic(null);
-              onEmailAccountRef.current?.(routed);
+              setError(checked.message ?? "This email signs in with email. Continue with email.");
+              onUseEmailRef.current?.(checked.email ?? "");
             })
             .catch((routeError: unknown) => {
               if (cancelled) return;

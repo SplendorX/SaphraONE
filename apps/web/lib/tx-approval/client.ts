@@ -47,9 +47,9 @@ function open(request: TxApprovalRequest) {
 }
 
 /**
- * Signed in with a PIN wallet (email accounts, and new Google accounts on
- * the shared email wallet): Circle asks for the PIN on every transaction
- * and that can't be switched off, so SaphraONE doesn't ask a second time.
+ * Signed in with a PIN wallet (email accounts made before Circle's email
+ * login): Circle asks for the PIN on every transaction and that can't be
+ * switched off, so SaphraONE doesn't ask a second time.
  * The server checks the same thing with Circle (lib/tx-approval/enforce.ts).
  */
 function pinWalletSignedIn() {

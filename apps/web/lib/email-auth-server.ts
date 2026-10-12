@@ -73,14 +73,15 @@ export async function verifyEmailCode(email: string, code: string) {
 }
 
 /**
- * One account per email, whichever way someone signs in. With the flag on, a
- * new Google sign-in opens the same `sp-email-<id>` wallet as an emailed code
- * for that verified address; a Google login that already has a Circle wallet
- * (made before the change) keeps it. Off: every Google sign-in makes its own
- * Circle Google wallet, as before.
+ * Email sign-in through Circle's own email-code login (flag on): new email
+ * accounts get Circle wallets without a PIN, so SaphraONE's own transaction
+ * confirmation is the only one, as for Google. Accounts already on the older
+ * PIN wallet (`sp-email-<id>`) keep signing in the old way. An address that
+ * signed up one way is sent back to that way, so it never becomes two
+ * accounts. Off: every email sign-in uses the PIN wallet, as before.
  */
-export function unifiedGoogleSignInEnabled() {
-  return process.env.NEXT_PUBLIC_UNIFIED_GOOGLE_SIGN_IN?.trim() === "true";
+export function circleEmailSignInEnabled() {
+  return process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() === "true";
 }
 
 type GoogleTokenInfo = {
@@ -137,33 +138,73 @@ export async function circleGoogleUserHasWallet(userToken: string) {
 }
 
 /**
- * The Supabase user for an email, created (already confirmed) when there is
- * none, so a Google sign-in and a later emailed code share one user, one
- * Circle user and one wallet. Needs unified-sign-in.sql.
+ * The Circle user of an email account on the older PIN wallet, when that
+ * address has one with a wallet in it: it keeps signing in the old way.
+ * Throws when it can't tell (email-sign-in.sql not run, Circle down), so an
+ * existing account is never sent to a new, empty wallet by mistake.
  */
-export async function supabaseUserIdForEmail(email: string) {
-  const supabase = createSupabaseAdminClient();
-  const lookup = async () => {
-    const { data, error } = await supabase.rpc("auth_user_id_for_email", { p_email: email });
-    if (error) throw new Error(error.message);
-    return typeof data === "string" && data ? data : null;
-  };
-  const existing = await lookup();
-  if (existing) return existing;
-  const { data, error } = await supabase.auth.admin.createUser({ email, email_confirm: true });
-  if (data.user?.id) return data.user.id;
-  // Created meanwhile (two tabs, or an emailed code in flight).
-  const raced = await lookup();
-  if (raced) return raced;
-  throw new Error(error?.message || "Your account couldn't be opened.");
+export async function pinAccountForEmail(email: string) {
+  const { data, error } = await createSupabaseAdminClient().rpc("auth_user_id_for_email", {
+    p_email: email,
+  });
+  if (error) throw new Error("Email sign-in isn't available right now. Try again later.");
+  if (typeof data !== "string" || !data) return null;
+  const circleUserId = circleUserIdForSupabaseUser(data);
+  const wallets = await listCircleUserWalletAddresses(circleUserId);
+  return wallets.length > 0 ? circleUserId : null;
 }
 
 /**
- * The wallet of an account made with the old Circle Google login for this
- * email, if any, found by the Google address saved at onboarding. An emailed
- * code can't see Google's own records, so this is how it avoids opening a
- * second, empty account for that address. Accounts on the shared email
- * wallet carry an `sp-email-` id and are never "old".
+ * Start a Circle email-code login: Circle emails the code itself, and its
+ * own screen (sdk.verifyOtp) checks it. The device token is bound to the
+ * browser's Circle device id.
+ */
+export async function requestCircleEmailLogin(email: string, deviceId: string) {
+  const result = await circleRequest("/v1/w3s/users/email/token", {
+    body: { deviceId, email, idempotencyKey: crypto.randomUUID() },
+    method: "POST",
+  });
+  const data = result.body.data as
+    | { deviceEncryptionKey?: string; deviceToken?: string; otpToken?: string }
+    | undefined;
+  if (result.status >= 400 || !data?.deviceToken || !data.otpToken) {
+    throw new Error(String(result.body.message ?? "The sign-in code could not be sent."));
+  }
+  return {
+    deviceEncryptionKey: data.deviceEncryptionKey ?? "",
+    deviceToken: data.deviceToken,
+    otpToken: data.otpToken,
+  };
+}
+
+/**
+ * Whether this address already has a SaphraONE account that signs in with
+ * email (either kind), found by the address saved on the profile. A new
+ * Google sign-in for it is sent to email instead of making a second account.
+ */
+export async function emailAccountExistsFor(email: string) {
+  try {
+    const { data, error } = await createSupabaseAdminClient()
+      .from(process.env.SUPABASE_PROFILES_TABLE ?? "profiles")
+      .select("wallet_address, username")
+      .eq("auth_provider", "email")
+      // Case-insensitive, with _ and % matched literally (both appear in emails).
+      .ilike("contact_email", email.replace(/[\\%_]/g, (char) => "\\" + char))
+      .limit(5);
+    if (error) return false;
+    return ((data ?? []) as Array<{ username: string | null }>).some(
+      (profile) => !isDeletedUsername(profile.username),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The wallet of an account that signs in with Google for this email, if
+ * any, found by the Google address saved at onboarding. An emailed code can't
+ * see Google's own records, so this is how email sign-in avoids opening a
+ * second, empty account for that address.
  */
 export async function legacyGoogleWalletForEmail(email: string) {
   try {

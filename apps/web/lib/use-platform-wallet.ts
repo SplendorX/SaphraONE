@@ -73,7 +73,8 @@ export function usePlatformWallet() {
     void ensureCircleWalletSession(circleLogin.userToken)
       .then(() =>
         ensureProfile({
-          authProvider: identity.provider === "Email" ? "email" : "google",
+          // "Email": the older PIN wallet; "EmailOtp": Circle's email login.
+          authProvider: identity.provider === "Email" || identity.provider === "EmailOtp" ? "email" : "google",
           circleSocialUuid: identity.socialUserUUID,
           displayName: identity.name,
           walletAddress: circleWalletAddress,

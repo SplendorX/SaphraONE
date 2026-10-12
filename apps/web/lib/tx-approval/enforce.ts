@@ -33,8 +33,8 @@ const pinAnswerTtlMs = 5 * 60_000;
 
 /**
  * Whether Circle asks this user for their PIN on every transaction: email
- * accounts (and new Google accounts on the shared email wallet) use PIN
- * wallets, and Circle's PIN can't be switched off. Confirming those again
+ * accounts made before Circle's email login use PIN wallets, and Circle's
+ * PIN can't be switched off. Confirming those again
  * here would ask twice, so they skip this gate. Asked of Circle, never taken
  * from the browser; an error counts as "no PIN", so the gate stays on.
  */

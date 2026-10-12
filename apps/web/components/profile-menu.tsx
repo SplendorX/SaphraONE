@@ -169,7 +169,6 @@ export function ProfileMenu({
   const [activatedExternalProfile, setActivatedExternalProfile] = useState("");
   const [loadedCircleWalletAddress, setLoadedCircleWalletAddress] =
     useState("");
-  const [copied, setCopied] = useState(false);
   const [copiedUsername, setCopiedUsername] = useState(false);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const activeLogin = circleLogin === undefined ? storedLogin : circleLogin;
@@ -213,7 +212,9 @@ export function ProfileMenu({
             ? shortenCircleAddress(externalAddress)
             : "Account");
   const profileProviderLabel = activeLogin
-    ? identity.provider
+    ? identity.provider === "EmailOtp"
+      ? "Email"
+      : identity.provider
     : externalAddress
       ? t("profile.externalWallet")
       : "Google";
@@ -486,16 +487,6 @@ export function ProfileMenu({
     setOpen(false);
   }
 
-  async function copyAddress(value?: string) {
-    if (!value || typeof navigator === "undefined") {
-      return;
-    }
-
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
-  }
-
   async function copyUsername(username: string) {
     if (typeof navigator === "undefined") {
       return;
@@ -609,27 +600,6 @@ export function ProfileMenu({
               <span className="font-semibold text-muted-foreground">Theme</span>
               <ThemeToggle />
             </div>
-            {/* One wallet per profile: only the wallet this session runs on. */}
-            {activeLogin ? (
-            <div className="rounded-lg border border-border px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-semibold text-muted-foreground">Circle wallet</span>
-                <button
-                  className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-border bg-background px-2 text-xs font-semibold text-foreground transition hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:text-muted-foreground"
-                  disabled={!resolvedCircleWalletAddress}
-                  onClick={() => void copyAddress(resolvedCircleWalletAddress)}
-                  type="button"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  {copied ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <p className="mt-2 break-all font-mono text-xs font-bold text-foreground">
-                {resolvedCircleWalletAddress || "Not connected"}
-              </p>
-            </div>
-            ) : null}
-
             {!activeLogin ? (
               <div className="rounded-lg border border-border px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
@@ -678,7 +648,9 @@ export function ProfileMenu({
                 type="button"
               >
                 <LogOut className="h-4 w-4" />
-                {t("profile.signOutGoogle")}
+                {activeLogin.oAuthInfo?.provider === "Email" || activeLogin.oAuthInfo?.provider === "EmailOtp"
+                  ? "Sign out"
+                  : t("profile.signOutGoogle")}
               </button>
             ) : externalAddress ? (
               <button
