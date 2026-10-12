@@ -15,7 +15,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase-server";
 const profilesTable = process.env.SUPABASE_PROFILES_TABLE ?? "profiles";
 const requestsTable = "account_deletion_requests";
 
-export type DeletionRequestRow = {
+type DeletionRequestRow = {
   id: string;
   owner_wallet: string;
   status: "scheduled" | "cancelled" | "completed";

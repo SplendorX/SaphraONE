@@ -42,7 +42,7 @@ type StartResponse =
   | { mode?: "pin"; sent?: boolean };
 
 /** Circle email logins say "EmailOtp"; "Email" is the older PIN wallet. */
-export const circleEmailLoginProvider = "EmailOtp";
+const circleEmailLoginProvider = "EmailOtp";
 
 /** The address already has an account that signs in with Google. */
 class UseGoogleError extends Error {}
