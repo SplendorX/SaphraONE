@@ -1,6 +1,6 @@
 "use client";
 
-import { Headset } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useBusinessActor } from "@/components/business/use-business-actor";
@@ -69,7 +69,7 @@ export function SupportLauncher({ className }: { className?: string }) {
         title="Help & support"
         type="button"
       >
-        <Headset className="h-4 w-4" />
+        <MessageCircle className="h-4 w-4" />
         {unread > 0 ? (
           <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
             {unread}

@@ -5,7 +5,7 @@ import {
   Briefcase,
   FileText,
   Gift,
-  ChartNoAxesColumn,
+  ChartPie,
   LayoutDashboard,
   PiggyBank,
   Settings,
@@ -51,7 +51,7 @@ export const platformNavItems = [
   { href: "/circle", label: "Circle", icon: UsersRound },
   { href: "/save", label: "Save", icon: PiggyBank },
   { href: "/earn", label: "Invest", icon: TrendingUp },
-  { href: "/insights", label: "Insights", icon: ChartNoAxesColumn },
+  { href: "/insights", label: "Insights", icon: ChartPie },
   // Rewards (ONE Points) is hidden only when NEXT_PUBLIC_REWARDS_V2=false.
   ...(rewardsV2Enabled() ? [{ href: "/rewards", label: "Rewards", icon: Trophy }] : []),
   { href: "/referral", label: "Invite & Earn", icon: Gift },

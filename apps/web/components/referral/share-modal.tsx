@@ -4,13 +4,16 @@ import { useState } from "react";
 import { Check, Copy, Download, MessageCircle, Share2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetGrabber,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useSheetSide } from "@/lib/use-media-query";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LazyQRCodeSVG } from "@/components/lazy-qr-code";
@@ -24,6 +27,8 @@ interface ShareModalProps {
 
 export function ShareModal({ referralLink, referralToken, trigger }: ShareModalProps) {
   const [copied, setCopied] = useState(false);
+  // Slides up from the bottom on phones, in from the side on wider screens.
+  const side = useSheetSide();
   const [tab, setTab] = useState<"link" | "qr">("link");
 
   // Rewards v2 pays the referrer USDC commission; there is no welcome bonus.
@@ -89,26 +94,34 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Sheet>
+      <SheetTrigger asChild>
         {trigger || (
           <Button className="gap-2 shadow-sm font-medium">
             <Share2 className="h-4 w-4" />
             Share & Invite
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent className="max-w-md p-6">
-        <DialogHeader className="space-y-1 text-left">
-          <DialogTitle className="text-xl font-bold">
+      </SheetTrigger>
+      <SheetContent
+        className={cn(
+          "gap-0 p-0",
+          side === "bottom" ? "h-auto max-h-[92dvh] rounded-t-[1.75rem] border-t-0" : "w-full sm:max-w-md",
+        )}
+        side={side}
+      >
+        {side === "bottom" ? <SheetGrabber /> : null}
+        <div className="grid gap-4 overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <SheetHeader className="space-y-1 p-0 text-left">
+          <SheetTitle className="text-xl font-bold">
             {v2 ? "Invite friends & earn USDC" : "Invite Friends & Businesses"}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
+          </SheetTitle>
+          <SheetDescription className="text-sm text-muted-foreground">
             {v2
               ? "Share your link. When friends pay with SaphraONE, you earn a share of their fees in USDC."
               : "Share your personal link to earn ONE Points and lifelong transaction cashback."}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         {/* View Switcher: Link vs QR */}
         <div className="flex rounded-lg bg-muted/60 p-1">
@@ -257,7 +270,8 @@ export function ShareModal({ referralLink, referralToken, trigger }: ShareModalP
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

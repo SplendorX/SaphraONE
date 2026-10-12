@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Headset, Menu, X } from "lucide-react";
+import { ChevronRight, MessageCircle, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -139,7 +139,7 @@ export function PlatformNavDrawer() {
             }}
             type="button"
           >
-            <Headset className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             Help &amp; Support
           </button>
         </div>

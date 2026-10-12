@@ -10,7 +10,7 @@ import {
   Bell,
   Bot,
   Building2,
-  Headset,
+  MessageCircle,
   Languages,
   Lock,
   MonitorSmartphone,
@@ -158,7 +158,7 @@ export function SettingsHub() {
       {
         id: "support",
         group: "Help",
-        icon: Headset,
+        icon: MessageCircle,
         title: "Get help",
         blurb: "Get support or send feedback.",
         render: () => <HelpSupportMenu />,

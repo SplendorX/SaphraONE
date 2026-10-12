@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleHelp,
-  Headset,
+  MessageCircle,
   Inbox,
   Loader2,
   MessageSquareText,
@@ -636,7 +636,7 @@ export function SupportCenter({
                 >
                   <div className="flex gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <Headset className="h-4 w-4" />
+                      <MessageCircle className="h-4 w-4" />
                     </span>
                     <div>
                       <p className="text-sm font-semibold">

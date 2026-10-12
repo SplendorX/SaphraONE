@@ -6,13 +6,16 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetGrabber,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { useSheetSide } from "@/lib/use-media-query";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { giftOnePointsRequest } from "@/lib/referral/points-client";
 import { emitOnePointsUpdated } from "@/lib/referral/use-one-points";
@@ -37,6 +40,8 @@ export function GiftPointsModal({
   userWallet,
 }: GiftPointsModalProps) {
   const [open, setOpen] = useState(false);
+  // Slides up from the bottom on phones, in from the side on wider screens.
+  const side = useSheetSide();
   const [amountStr, setAmountStr] = useState("50");
   const [recipient, setRecipient] = useState("");
   const [note, setNote] = useState("");
@@ -89,23 +94,31 @@ export function GiftPointsModal({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
-      <DialogTrigger asChild>
+    <Sheet onOpenChange={setOpen} open={open}>
+      <SheetTrigger asChild>
         {trigger ?? (
           <Button type="button" variant="outline">
             <Gift className="h-4 w-4" />
             Gift points
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Gift OnePoints</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent
+        className={cn(
+          "gap-0 p-0",
+          side === "bottom" ? "h-auto max-h-[92dvh] rounded-t-[1.75rem] border-t-0" : "w-full sm:max-w-md",
+        )}
+        side={side}
+      >
+        {side === "bottom" ? <SheetGrabber /> : null}
+        <div className="grid gap-4 overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <SheetHeader className="p-0">
+          <SheetTitle>Gift OnePoints</SheetTitle>
+          <SheetDescription>
             Send points to another SaphraONE user by username or wallet. They
             can redeem them for USDC or unlock premium features.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <div className="grid gap-4">
           <label className="grid gap-1.5">
@@ -179,7 +192,8 @@ export function GiftPointsModal({
             Gifts are final. Points move instantly and cannot be recalled.
           </p>
         </div>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
