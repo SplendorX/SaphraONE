@@ -382,10 +382,15 @@ export function CrossChainSend({
       }
       // We cannot tell whether the burn happened; never invite a blind retry.
       resumeRef.current = null;
+      const reason = userFacingErrorMessage(cause, "The wallet didn't confirm the send.");
+      // Saved with the send (left open, not failed), so it can be traced.
+      if (id) {
+        await reportCrossChainSend(id, { error: reason, ownerWallet, unconfirmed: true }).catch(() => null);
+      }
       setError(
         cause instanceof Error && !id
           ? cause.message
-          : "We could not confirm this send. Check Activity before trying again so it is not sent twice.",
+          : `We could not confirm this send (${reason.replace(/\.$/, "")}). Check Activity before trying again so it is not sent twice.`,
       );
       setStage("amount");
     }

@@ -6,6 +6,7 @@ import {
   getTransferView,
   reportBurn,
   reportFailure,
+  reportUnconfirmed,
   reportServiceFee,
   transferView,
 } from "@/lib/multichain/send-service";
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 /**
  * The browser reports what its wallet did: `serviceFeeTxHash` once the
  * service fee is paid, `burnTxHash` once the burn is signed, or `error` when
- * it stopped before burning. The burn is verified on
+ * it stopped before burning (with `unconfirmed` when it can't tell whether the
+ * burn happened, which keeps the send open). The burn is verified on
  * chain before the send counts as done.
  */
 export async function PATCH(request: NextRequest, context: RouteContext) {
@@ -42,7 +44,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ? await reportServiceFee(owner, id, body.serviceFeeTxHash)
       : body.burnTxHash
         ? await reportBurn(owner, id, body.burnTxHash, body.bridgeResult)
-        : await reportFailure(owner, id, body.error, body.bridgeResult);
+        : body.unconfirmed === true
+          ? await reportUnconfirmed(owner, id, body.error)
+          : await reportFailure(owner, id, body.error, body.bridgeResult);
     return multichainJson({ transfer: transferView(row) });
   } catch (error) {
     return multichainErrorResponse(error);

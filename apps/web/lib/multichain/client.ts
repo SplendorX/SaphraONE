@@ -106,6 +106,8 @@ export async function reportCrossChainSend(
     error?: string;
     bridgeResult?: unknown;
     serviceFeeTxHash?: string;
+    /** With `error`: the browser can't tell whether the burn happened. */
+    unconfirmed?: boolean;
   },
 ) {
   const response = await fetch(`/api/multichain/transfers/${encodeURIComponent(id)}`, {

@@ -87,7 +87,7 @@ export function PlatformNavDrawer() {
         <div className="mx-4 h-px bg-border" />
 
         <nav aria-label={t("common.slideNav")} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
-          {/* Rows with room to tap, and a clear line between each. */}
+          {/* A clear line between each row. */}
           <ul className="grid divide-y divide-foreground/10">
             {items.map((item, index) => {
               const isActive =
@@ -97,14 +97,14 @@ export function PlatformNavDrawer() {
 
               return (
                 <li
-                  className="nav-drawer-item py-1"
+                  className="nav-drawer-item py-0.5"
                   key={item.href}
                   style={{ transitionDelay: open ? `${Math.min(index, 10) * 18}ms` : "0ms" }}
                 >
                   <Link
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.985]",
+                      "group flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.985]",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",

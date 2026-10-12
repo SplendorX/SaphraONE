@@ -3,21 +3,31 @@
  * can't serve a stale copy. Overrides the older .app-nav rules in globals.css,
  * including the light "glass" surface ones, so the selectors match their weight.
  *
- * More room per row, a clear line between rows, and a selection that fills
+ * A wider sidebar, a clear line between rows, and a selection that fills
  * the whole row. Rows lean in a little under the pointer.
  */
 
+/* Wider than the 14.5rem in globals.css; the collapsed width is unchanged. */
+aside.app-sidebar:not(.app-sidebar-collapsed) {
+  width: 17.5rem;
+}
+
+/* The phone and tablet drawer: wider than its 20rem, still clear of the edge. */
+.nav-drawer-root .nav-drawer-panel {
+  width: min(23rem, calc(100vw - 1.5rem));
+}
+
 nav.app-nav {
   gap: 0;
-  padding: 0.9rem 0.75rem;
+  padding: 0.9rem 0.85rem;
 }
 
 nav.app-nav > a.app-nav-link {
   position: relative;
   display: flex;
   width: 100%;
-  min-height: 3rem;
-  margin: 0.2rem 0;
+  min-height: 2.6rem;
+  margin: 0.15rem 0;
   border-radius: 0.85rem;
   padding: 0 1rem;
   cursor: pointer;
@@ -31,7 +41,7 @@ nav.app-nav > a.app-nav-link {
 /* The line between rows: sits halfway in the gap, inset from both edges. */
 nav.app-nav > a.app-nav-link + a.app-nav-link::before {
   position: absolute;
-  top: -0.2rem;
+  top: calc(-0.15rem - 0.5px);
   right: 0.75rem;
   left: 0.75rem;
   height: 1px;

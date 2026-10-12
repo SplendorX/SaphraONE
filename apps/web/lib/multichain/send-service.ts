@@ -208,6 +208,21 @@ export async function reportFailure(owner: string, id: string, error: unknown, b
   );
 }
 
+/**
+ * The browser lost track of a send: it can't tell whether the burn happened.
+ * Keep the reason, but leave the send open (PENDING): marking it FAILED would
+ * hide a burn that did go through.
+ */
+export async function reportUnconfirmed(owner: string, id: string, error: unknown) {
+  const row = await ownTransfer(owner, id);
+  const reason = errorText(error, "The browser couldn't confirm this send.");
+  return (
+    (await updateTransfer(row.id, ["PENDING"], {
+      last_error: `Unconfirmed in the browser: ${reason}`.slice(0, 500),
+    })) ?? row
+  );
+}
+
 async function review(row: ChainTransferRow, reason: string) {
   return (await updateTransfer(row.id, ["BURNED"], { last_error: reason, state: "NEEDS_REVIEW" })) ?? row;
 }
