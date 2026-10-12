@@ -215,12 +215,19 @@ export function ensureCircleWalletSession(userToken?: string | null) {
     return existing;
   }
 
-  const request = fetch("/api/auth/circle", {
-    body: JSON.stringify({ userToken }),
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  })
+  // The Google/email address the user signed in with: saved as the
+  // profile's contact email when it has none, so security alerts reach them.
+  const request = import("@/lib/circle-session")
+    .then(({ readSignInEmail }) => readSignInEmail())
+    .catch(() => null)
+    .then((email) =>
+      fetch("/api/auth/circle", {
+        body: JSON.stringify({ email, userToken }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    )
     .then((response) => {
       if (response.ok) {
         notifyWalletSessionChanged();

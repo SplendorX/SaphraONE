@@ -80,6 +80,28 @@ export function emailButton(href: string, label: string) {
 }
 
 /**
+ * Dark mode, for mail apps that follow the phone's theme and read <style>
+ * (Apple Mail, Outlook, Gmail on iOS; [data-ogsc] is Outlook's dark mode).
+ * The gradient frame works in both themes, so only the page and the white
+ * card change. Apps that ignore this (some Gmail builds) invert colours on
+ * their own.
+ */
+const darkModeStyles = `<style>
+:root { color-scheme: light dark; supported-color-schemes: light dark; }
+@media (prefers-color-scheme: dark) {
+  .em-body { background:#0c0a12 !important; }
+  .em-card { background:#17131f !important; }
+  .em-card h1, .em-card p, .em-card td, .em-card span, .em-card strong, .em-card li { color:#ece8f5 !important; border-color:#2c2539 !important; }
+  .em-card a { color:#b794ff !important; }
+  .em-card .em-muted { color:#a59db4 !important; }
+  .em-card .em-code { background:#241b3a !important; border-color:#3a2d5c !important; color:#ffffff !important; }
+}
+[data-ogsc] .em-body { background:#0c0a12 !important; }
+[data-ogsc] .em-card { background:#17131f !important; }
+[data-ogsc] .em-card h1, [data-ogsc] .em-card p, [data-ogsc] .em-card td { color:#ece8f5 !important; }
+</style>`;
+
+/**
  * Wraps a message in the SaphraONE frame.
  * `body` is trusted HTML: escape anything user-supplied before passing it.
  */
@@ -107,15 +129,15 @@ export function brandedEmail(input: {
     "SaphraONE will never ask for your PIN, codes or recovery phrase by email, phone or chat.";
 
   return `<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${escapeHtml(input.title)}</title></head>
-<body style="margin:0;padding:0;background:#f1effa;">
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark"><title>${escapeHtml(input.title)}</title>${darkModeStyles}</head>
+<body class="em-body" style="margin:0;padding:0;background:#f1effa;">
 ${input.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(input.preheader)}</div>` : ""}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1effa;">
+<table class="em-body" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1effa;">
   <tr><td align="center" style="padding:28px 12px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;border-radius:24px;background-color:${gradientFallback};background-image:${gradient};">
       <tr><td align="center" style="padding:30px 20px 26px;">${brand}</td></tr>
       <tr><td style="padding:0 16px 16px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:18px;">
+        <table class="em-card" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border-radius:18px;">
           <tr><td style="padding:30px 28px 28px;font-family:Arial,Helvetica,sans-serif;color:#17111c;">
             <h1 style="margin:0 0 18px;font-size:22px;line-height:1.3;text-align:center;color:#17111c;">${escapeHtml(input.title)}</h1>
             ${input.body}

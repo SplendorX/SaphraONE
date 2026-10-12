@@ -47,6 +47,7 @@ export function DepositHub() {
   const { address, isConnected } = usePlatformWallet();
   const [view, setView] = useState<View>("home");
   const [receiveOpen, setReceiveOpen] = useState(false);
+  const [networkOpen, setNetworkOpen] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [copied, setCopied] = useState<"username" | "address" | null>(null);
   // Bank transfer goes live once the server has an Onramp key.
@@ -194,7 +195,7 @@ export function DepositHub() {
                 <MethodRow
                   body="Get an address on Base, Polygon, Arbitrum and more. USDC sent there lands in your balance by itself."
                   icon={<Network className="h-5 w-5" />}
-                  onClick={() => setView("network")}
+                  onClick={() => setNetworkOpen(true)}
                   title="Receive from another network"
                 />
               </li>
@@ -238,6 +239,15 @@ export function DepositHub() {
       <ReceiveSheet onClose={() => setReceiveOpen(false)} open={receiveOpen}>
         <ReceiveShareCard isConnected={isConnected} username={username} walletAddress={address ?? ""} />
       </ReceiveSheet>
+
+      <ReceiveSheet
+        description="Pick a network. USDC sent to its address lands in your balance by itself."
+        onClose={() => setNetworkOpen(false)}
+        open={networkOpen}
+        title="Receive from another network"
+      >
+        {networkOpen ? <ReceiveFromNetwork /> : null}
+      </ReceiveSheet>
     </div>
   );
 }
@@ -279,7 +289,19 @@ function MethodRow({
   );
 }
 
-function ReceiveSheet({ children, onClose, open }: { children: ReactNode; onClose: () => void; open: boolean }) {
+function ReceiveSheet({
+  children,
+  description = "Share your QR code, username or address.",
+  onClose,
+  open,
+  title = "Receive USDC",
+}: {
+  children: ReactNode;
+  description?: string;
+  onClose: () => void;
+  open: boolean;
+  title?: string;
+}) {
   const side = useSheetSide();
   return (
     <Sheet onOpenChange={(next) => !next && onClose()} open={open}>
@@ -290,10 +312,8 @@ function ReceiveSheet({ children, onClose, open }: { children: ReactNode; onClos
       >
         {side === "bottom" ? <SheetGrabber /> : null}
         <div className="dep-sheet">
-          <SheetTitle className="text-center text-xl font-bold">Receive USDC</SheetTitle>
-          <SheetDescription className="text-center text-sm text-muted-foreground">
-            Share your QR code, username or address.
-          </SheetDescription>
+          <SheetTitle className="text-center text-xl font-bold">{title}</SheetTitle>
+          <SheetDescription className="text-center text-sm text-muted-foreground">{description}</SheetDescription>
           {children}
         </div>
       </SheetContent>

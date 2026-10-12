@@ -8,7 +8,7 @@ import { setUnlockCookie } from "@/lib/app-lock/server";
 import { readJsonRecord } from "@/lib/http";
 import { sessionWallets } from "@/lib/wallet-session";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { notifySignIn } from "@/lib/security/sign-in-alert";
+import { notifySignIn, saveVerifiedContactEmail } from "@/lib/security/sign-in-alert";
 
 export const runtime = "nodejs";
 
@@ -74,6 +74,12 @@ export async function POST(request: NextRequest) {
     }
     // Never opens the lock on an account switch: this endpoint also runs on
     // page load with a stored token. The email is safe either way.
+    // Google/email sign-ins name their address; it becomes the contact email
+    // only when the profile has none (Settings can change it).
+    const signInEmail = typeof body?.email === "string" ? body.email : "";
+    if (signInEmail) {
+      await saveVerifiedContactEmail(issued.session.ownerWallet, signInEmail);
+    }
     if (issued.newAccount) {
       // "You signed in" email, after the response so signing in never waits.
       const ownerWallet = issued.session.ownerWallet;

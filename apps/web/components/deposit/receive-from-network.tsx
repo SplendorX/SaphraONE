@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Copy, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronRight, Copy, Loader2, RefreshCw, Share2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { IncomingDeposits } from "@/components/deposit/incoming-deposits";
@@ -17,6 +18,7 @@ import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { cn } from "@/lib/utils";
 
 import "./multichain.css";
+import "@/components/dashboard/receive-share-card.css";
 
 /** How often an open receive screen checks for arrivals. */
 const POLL_MS = 20_000;
@@ -31,7 +33,7 @@ export function ReceiveFromNetwork() {
   const [network, setNetwork] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"address" | "share" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const checkingRef = useRef(false);
 
@@ -121,10 +123,35 @@ export function ReceiveFromNetwork() {
     if (!address) return;
     try {
       await navigator.clipboard.writeText(address);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
+      setCopied("address");
+      window.setTimeout(() => setCopied(null), 1400);
     } catch {
-      setCopied(false);
+      setCopied(null);
+    }
+  }
+
+  /** The phone's share sheet when there is one; otherwise copy the details. */
+  async function shareDetails() {
+    if (!address || !chain) return;
+    const text = [
+      `Send USDC on ${chain.name} only`,
+      `Address: ${address}`,
+      `Minimum: ${chain.minDeposit} USDC`,
+    ].join("\n");
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ text, title: `My ${chain.name} USDC address` });
+        return;
+      } catch (shareError) {
+        if (shareError instanceof DOMException && shareError.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied("share");
+      window.setTimeout(() => setCopied(null), 1400);
+    } catch {
+      setCopied(null);
     }
   }
 
@@ -137,62 +164,102 @@ export function ReceiveFromNetwork() {
   }
 
   return (
-    <div className="mc-receive">
-      <NetworkPicker
-        chains={overview?.chains ?? []}
-        description="Each network has its own address. What lands there moves to your balance by itself."
-        detail={(entry) => `Min ${entry.minDeposit} USDC · ${entry.typicalWait}`}
-        onChange={(entry) => {
-          setNetwork(entry.key);
-          setError(null);
-        }}
-        value={chain}
-      />
+    <div className="rx">
+      <button
+        aria-label={copied === "address" ? "Address copied" : "Copy address"}
+        className="rx-board"
+        disabled={!address}
+        onClick={() => void copyAddress()}
+        type="button"
+      >
+        <span aria-hidden className="rx-board-sheen" />
+        <span className="rx-qr">
+          {address && chain ? (
+            <LazyQRCodeSVG
+              bgColor="transparent"
+              fgColor="#f5f5f7"
+              level="H"
+              marginSize={0}
+              size={232}
+              title={`${chain.name} deposit address`}
+              value={address}
+            />
+          ) : (
+            <span className="rx-board-hint">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              {overview ? `Creating your ${chain?.name ?? ""} address…` : "Loading networks…"}
+            </span>
+          )}
+          {address && chain ? (
+            <span aria-hidden className="rx-qr-badge">
+              <img alt="" className="rx-qr-token" height={28} src={`/networks/${chain.key}.png`} width={28} />
+            </span>
+          ) : null}
+        </span>
+        {address ? (
+          <span className="rx-board-hint">
+            {copied === "address" ? (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5" /> Address copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" /> Tap to copy address
+              </>
+            )}
+          </span>
+        ) : null}
+      </button>
 
-      <section className="mc-card">
-        {!overview || (creating && !address) ? (
-          <div className="mc-loading">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            {overview ? `Creating your ${chain?.name ?? ""} address…` : "Loading networks…"}
-          </div>
-        ) : address && chain ? (
-          <>
-            <p className="mc-card-label">Your {chain.name} address</p>
-            <div className="mc-qr">
-              <LazyQRCodeSVG
-                bgColor="#ffffff"
-                fgColor="#160f24"
-                marginSize={1}
-                size={168}
-                title={`${chain.name} deposit address`}
-                value={address}
-              />
-            </div>
-            <button className="mc-address" onClick={() => void copyAddress()} type="button">
-              <span>{address}</span>
-              {copied ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Copy className="h-4 w-4 shrink-0" />}
+      <div className="rx-network-picker">
+        <NetworkPicker
+          chains={overview?.chains ?? []}
+          description="Each network has its own address. What lands there moves to your balance by itself."
+          detail={(entry) => `Min ${entry.minDeposit} USDC · ${entry.typicalWait}`}
+          onChange={(entry) => {
+            setNetwork(entry.key);
+            setError(null);
+          }}
+          value={chain}
+        />
+      </div>
+
+      {address && chain ? (
+        <>
+          <div className="rx-tile">
+            <span className="rx-tile-main">
+              <span className="rx-label">Receive address · {chain.name}</span>
+              <span className="rx-value rx-address">{address}</span>
+            </span>
+            <button
+              aria-label={copied === "address" ? "Address copied" : "Copy address"}
+              className="rx-copy"
+              onClick={() => void copyAddress()}
+              type="button"
+            >
+              {copied === "address" ? <CheckCircle2 className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
             </button>
-            <ul className="mc-facts">
-              <li>
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  Send <strong>USDC on {chain.name} only</strong>. Other tokens or networks sent here are not
-                  credited.
-                </span>
-              </li>
-              <li>
-                Minimum {chain.minDeposit} USDC. Smaller amounts wait here until the total reaches it.
-              </li>
-              <li>
-                Lands in your {arcChain.name} balance in {chain.typicalWait}. Circle&apos;s network fee (about 2
-                cents) comes off the amount.
-              </li>
-            </ul>
-          </>
-        ) : (
-          <p className="mc-note">Pick a network to see its address.</p>
-        )}
-      </section>
+          </div>
+
+          <div className="rx-tile">
+            <span className="rx-label-strong">Minimum</span>
+            <span className="rx-value-strong">{chain.minDeposit} USDC</span>
+          </div>
+
+          <div className="rx-tile">
+            <span className="rx-label-strong">Arrives in {arcChain.name}</span>
+            <span className="rx-value-strong">{chain.typicalWait}</span>
+          </div>
+
+          <p className="rx-warning">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>
+              Send <strong>USDC on {chain.name} only</strong>. Other tokens or networks aren&apos;t credited. Smaller
+              amounts wait until they reach the minimum; Circle&apos;s fee (about 2 cents) comes off the amount.
+            </span>
+          </p>
+        </>
+      ) : null}
 
       {error ? <p className="mc-error">{error}</p> : null}
 
@@ -208,6 +275,16 @@ export function ReceiveFromNetwork() {
       ) : (
         <p className="mc-note">Nothing yet. Transfers show here as soon as their network sees them.</p>
       )}
+
+      <Link className="rx-tile rx-tile-link" href="/support">
+        <span className="rx-label-strong">I need help</span>
+        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+      </Link>
+
+      <button className="rx-share" disabled={!address} onClick={() => void shareDetails()} type="button">
+        {copied === "share" ? <CheckCircle2 className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+        {copied === "share" ? "Details copied" : "Share details"}
+      </button>
     </div>
   );
 }

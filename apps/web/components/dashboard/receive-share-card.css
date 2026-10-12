@@ -12,7 +12,7 @@
   text-align: center;
 }
 
-/* The board: brushed graphite with a notch in the top and bottom edges. */
+/* The board: the logo gradient with a notch in the top and bottom edges. */
 .rx-board {
   position: relative;
   isolation: isolate;
@@ -26,12 +26,13 @@
   border-radius: 1.6rem;
   cursor: pointer;
   color: #f5f5f7;
+  /* The SaphraONE logo gradient, with a soft highlight. */
   background:
-    radial-gradient(120% 70% at 30% 0%, rgb(255 255 255 / 0.22), transparent 55%),
-    linear-gradient(160deg, #6b6b72 0%, #45454c 38%, #2c2c31 72%, #3a3a40 100%);
+    radial-gradient(120% 70% at 30% 0%, rgb(255 255 255 / 0.2), transparent 55%),
+    linear-gradient(135deg, #6a0ef4 0%, #3b2cf6 50%, #0078ff 100%);
   box-shadow:
-    0 26px 48px -26px rgb(0 0 0 / 0.65),
-    inset 0 1px 0 rgb(255 255 255 / 0.25);
+    0 26px 48px -24px rgb(59 44 246 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.3);
   /* Only the notches are cut; the rounded corners come from border-radius. */
   clip-path: polygon(
     0 0, 30% 0, 35% 0.8rem, 65% 0.8rem, 70% 0, 100% 0,
@@ -53,7 +54,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: repeating-linear-gradient(100deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 4px);
+  background: repeating-linear-gradient(100deg, rgb(255 255 255 / 0.04) 0 1px, transparent 1px 4px);
   pointer-events: none;
 }
 
@@ -234,4 +235,39 @@
 
 .rx-share:active {
   transform: scale(0.98);
+}
+
+/* Receive from another network: the network picker sits under the board. */
+.rx-network-picker {
+  justify-self: center;
+  width: min(100%, 21rem);
+}
+
+.rx-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.85rem 1.05rem;
+  border-radius: 1.2rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #92400e;
+  background: color-mix(in oklch, #f59e0b 14%, var(--card));
+}
+
+.dark .rx-warning {
+  color: #fcd34d;
+}
+
+.rx-board:disabled {
+  cursor: default;
+}
+
+.rx-board:disabled:active {
+  transform: none;
+}
+
+.rx-share:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }

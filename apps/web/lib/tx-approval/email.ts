@@ -107,7 +107,7 @@ function detailTable(rows: ReadonlyArray<readonly [string, string]>) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows
     .map(
       ([label, value]) =>
-        `<tr><td style="padding:9px 0;border-bottom:1px solid #eeebf6;color:#6b6478;font-size:14px;vertical-align:top">${escapeHtml(label)}</td><td style="padding:9px 0;border-bottom:1px solid #eeebf6;font-size:14px;font-weight:600;text-align:right;word-break:break-all">${escapeHtml(value)}</td></tr>`,
+        `<tr><td style="padding:9px 0;border-bottom:1px solid #eeebf6;color:#6b6478;font-size:14px;vertical-align:top" class="em-muted">${escapeHtml(label)}</td><td style="padding:9px 0;border-bottom:1px solid #eeebf6;font-size:14px;font-weight:600;text-align:right;word-break:break-all">${escapeHtml(value)}</td></tr>`,
     )
     .join("")}</table>`;
 }
@@ -117,7 +117,7 @@ function layout(heading: string, intro: string, details: ApprovalEmailDetails, e
     body: `<p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#2a2433">${escapeHtml(intro)}</p>
 ${extra}
 ${detailTable(detailRows(details))}
-<p style="margin:20px 0 0;font-size:13px;line-height:1.55;color:#6b6478">If this wasn't you, don't share any code. Open SaphraONE, sign out on every device and contact support.</p>`,
+<p class="em-muted" style="margin:20px 0 0;font-size:13px;line-height:1.55;color:#6b6478">If this wasn't you, don't share any code. Open SaphraONE, sign out on every device and contact support.</p>`,
     preheader: intro,
     title: heading,
   });
@@ -153,7 +153,7 @@ export function sendApprovalCode(
   details: ApprovalEmailDetails,
   approvalId: string,
 ) {
-  const codeBlock = `<p style="margin:0 0 22px;padding:16px 0;border-radius:14px;background:#f3efff;border:1px solid #e2d9fd;font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;color:#120b20">${escapeHtml(code)}</p>`;
+  const codeBlock = `<p class="em-code" style="margin:0 0 22px;padding:16px 0;border-radius:14px;background:#f3efff;border:1px solid #e2d9fd;font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:700;letter-spacing:10px;text-align:center;color:#120b20">${escapeHtml(code)}</p>`;
   const text = [
     `Your SaphraONE confirmation code is ${code}.`,
     "",

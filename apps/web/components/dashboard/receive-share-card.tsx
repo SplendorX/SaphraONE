@@ -22,7 +22,7 @@ async function copyText(value: string) {
 }
 
 /**
- * Receive: a bold QR card (white code on a dark brushed board, the tokens in
+ * Receive: a bold QR card (white code on the logo-gradient board, the tokens in
  * the middle), then the username and address to copy, the network, help, and
  * one button that shares everything.
  */
@@ -36,7 +36,7 @@ export function ReceiveShareCard({
   walletAddress: string;
 }) {
   // A plain black-on-white copy of the code, kept off screen: it is what
-  // "Copy QR" puts on the clipboard, since the visible one is white on dark.
+  // "Copy QR" puts on the clipboard, since the visible one is white on the gradient.
   const printableQrRef = useRef<HTMLDivElement>(null);
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState<CopiedField | null>(null);
