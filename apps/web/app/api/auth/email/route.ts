@@ -119,8 +119,14 @@ export async function POST(request: NextRequest) {
           }
           const deviceId = typeof body.deviceId === "string" ? body.deviceId.trim() : "";
           if (!deviceId) return jsonError("Your device couldn't be prepared. Reload and try again.", 400);
-          const login = await requestCircleEmailLogin(email, deviceId);
-          return NextResponse.json({ mode: "circle", ...login }, { headers: noStore });
+          try {
+            const login = await requestCircleEmailLogin(email, deviceId);
+            return NextResponse.json({ mode: "circle", ...login }, { headers: noStore });
+          } catch (error) {
+            // Circle's email login isn't set up in this console (Email off, or
+            // no SMTP): sign in the older way rather than not at all.
+            console.warn("[auth/email] Circle email login unavailable, using the PIN wallet:", errorMessage(error, ""));
+          }
         }
       } catch (error) {
         return jsonError(errorMessage(error, "The sign-in code could not be sent."), 502);

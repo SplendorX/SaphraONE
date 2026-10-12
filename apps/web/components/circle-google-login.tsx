@@ -308,7 +308,7 @@ async function callCircleWalletApi<T>(
 }
 
 /** No second account for an address that signs in with email (lib/email-auth-server.ts). */
-const checkEmailAccounts = process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() === "true";
+const checkEmailAccounts = process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() !== "false";
 
 type CircleGoogleLoginProps = {
   /**

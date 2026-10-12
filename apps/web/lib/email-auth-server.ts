@@ -73,7 +73,8 @@ export async function verifyEmailCode(email: string, code: string) {
 }
 
 /**
- * Email sign-in through Circle's own email-code login (flag on): new email
+ * Email sign-in through Circle's own email-code login (on unless the flag is
+ * "false"): new email
  * accounts get Circle wallets without a PIN, so SaphraONE's own transaction
  * confirmation is the only one, as for Google. Accounts already on the older
  * PIN wallet (`sp-email-<id>`) keep signing in the old way. An address that
@@ -81,7 +82,7 @@ export async function verifyEmailCode(email: string, code: string) {
  * accounts. Off: every email sign-in uses the PIN wallet, as before.
  */
 export function circleEmailSignInEnabled() {
-  return process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() === "true";
+  return process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() !== "false";
 }
 
 type GoogleTokenInfo = {
@@ -144,10 +145,22 @@ export async function circleGoogleUserHasWallet(userToken: string) {
  * existing account is never sent to a new, empty wallet by mistake.
  */
 export async function pinAccountForEmail(email: string) {
-  const { data, error } = await createSupabaseAdminClient().rpc("auth_user_id_for_email", {
-    p_email: email,
-  });
-  if (error) throw new Error("Email sign-in isn't available right now. Try again later.");
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.rpc("auth_user_id_for_email", { p_email: email });
+  if (error) {
+    // email-sign-in.sql not run yet: find the account by its profile instead
+    // (PIN-wallet profiles carry their sp-email- Circle id).
+    const profiles = await supabase
+      .from(process.env.SUPABASE_PROFILES_TABLE ?? "profiles")
+      .select("circle_social_uuid")
+      .eq("auth_provider", "email")
+      .like("circle_social_uuid", "sp-email-%")
+      .ilike("contact_email", email.replace(/[\\%_]/g, (char) => "\\" + char))
+      .limit(1);
+    if (profiles.error) throw new Error("Email sign-in isn't available right now. Try again later.");
+    const circleUserId = (profiles.data?.[0] as { circle_social_uuid?: string } | undefined)?.circle_social_uuid;
+    return circleUserId ?? null;
+  }
   if (typeof data !== "string" || !data) return null;
   const circleUserId = circleUserIdForSupabaseUser(data);
   const wallets = await listCircleUserWalletAddresses(circleUserId);

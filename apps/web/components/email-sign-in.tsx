@@ -65,7 +65,8 @@ export async function postEmailAuth<T>(body: Record<string, unknown>) {
   return payload;
 }
 
-const circleEmailSignIn = process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() === "true";
+/** On unless the flag is "false" (lib/email-auth-server.ts). */
+const circleEmailSignIn = process.env.NEXT_PUBLIC_CIRCLE_EMAIL_SIGN_IN?.trim() !== "false";
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
