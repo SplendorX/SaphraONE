@@ -444,7 +444,7 @@ export async function resolveAllieAction(
       if (!savings || savings.pockets.length === 0) {
         return {
           kind: "panel",
-          title: "Swift+Save",
+          title: "Save",
           summary: "No savings pockets yet.",
           rows: [{ label: "Total saved", value: usd(0n) }],
           cta: "Open Save",
@@ -454,7 +454,7 @@ export async function resolveAllieAction(
 
       return {
         kind: "panel",
-        title: "Swift+Save",
+        title: "Save",
         summary: `${savings.pockets.length} active pocket${savings.pockets.length === 1 ? "" : "s"}.`,
         rows: [
           { label: "Total saved", value: usd(savings.total) },
@@ -502,7 +502,7 @@ export async function resolveAllieAction(
     case "EarnStatus":
       return {
         kind: "panel",
-        title: "Swift+Invest",
+        title: "Invest",
         summary: "Your Invest vault positions live on the Invest page.",
         rows: [{ label: "Vaults", value: "Circle Earn (Morpho) on Arc" }],
         cta: "Open Invest",
