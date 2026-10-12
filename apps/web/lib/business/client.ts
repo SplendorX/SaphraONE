@@ -1,15 +1,9 @@
 import type {
-  ApprovalTier,
   BusinessAsset,
   BusinessPaymentRecord,
-  BusinessPaymentRequestRecord,
-  BusinessProfileRecord,
   DirectoryHit,
   PublicProfile,
   WorkspaceInvitationRecord,
-  WorkspaceMemberRecord,
-  WorkspaceRecord,
-  WorkspaceSettingsRecord,
   WorkspaceSummary,
 } from "@/lib/business/types";
 import type { OnboardingProfile } from "@/lib/business/service";
@@ -89,35 +83,6 @@ export async function switchWorkspaceClient(
   );
 }
 
-export async function fetchWorkspaceDetail(
-  ownerWallet: string,
-  workspaceId: string,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{
-    analytics: {
-      moneyReceived: number;
-      moneySent: number;
-      netFlow: number;
-      points: Array<{ date: string; received: number; sent: number }>;
-      transactionCount: number;
-    };
-    member: WorkspaceMemberRecord;
-    payments: BusinessPaymentRecord[];
-    permissions: string[];
-    profile: BusinessProfileRecord | null;
-    settings: WorkspaceSettingsRecord | null;
-    workspace: WorkspaceRecord;
-  }>(
-    await fetch(
-      withWallet(`/api/workspaces/${workspaceId}`, ownerWallet, {
-        circleSocialUuid,
-      }),
-      { cache: "no-store" },
-    ),
-  );
-}
-
 export async function createBusinessPayment(
   ownerWallet: string,
   workspaceId: string,
@@ -144,22 +109,6 @@ export async function createBusinessPayment(
   );
 }
 
-export async function decideBusinessPayment(
-  ownerWallet: string,
-  workspaceId: string,
-  paymentId: string,
-  decision: "approved" | "rejected",
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ payment: BusinessPaymentRecord }>(
-    await fetch(`/api/workspaces/${workspaceId}/payments/${paymentId}`, {
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, { decision })),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    }),
-  );
-}
-
 export async function submitBusinessPayment(
   ownerWallet: string,
   workspaceId: string,
@@ -172,69 +121,6 @@ export async function submitBusinessPayment(
       body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
       headers: { "Content-Type": "application/json" },
       method: "POST",
-    }),
-  );
-}
-
-export async function createBusinessRequest(
-  ownerWallet: string,
-  workspaceId: string,
-  body: { amount?: string; asset: BusinessAsset; memo?: string },
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ request: BusinessPaymentRequestRecord }>(
-    await fetch(`/api/workspaces/${workspaceId}/requests`, {
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    }),
-  );
-}
-
-export async function fetchBusinessRequests(
-  ownerWallet: string,
-  workspaceId: string,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ requests: BusinessPaymentRequestRecord[] }>(
-    await fetch(
-      withWallet(`/api/workspaces/${workspaceId}/requests`, ownerWallet, {
-        circleSocialUuid,
-      }),
-      { cache: "no-store" },
-    ),
-  );
-}
-
-export async function updateBusinessProfileClient(
-  ownerWallet: string,
-  workspaceId: string,
-  body: Record<string, unknown>,
-  circleSocialUuid?: string,
-) {
-  return parseJson<{
-    profile: BusinessProfileRecord;
-    workspace: WorkspaceRecord;
-  }>(
-    await fetch(`/api/workspaces/${workspaceId}/profile`, {
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
-      headers: { "Content-Type": "application/json" },
-      method: "PATCH",
-    }),
-  );
-}
-
-export async function updateBusinessSettingsClient(
-  ownerWallet: string,
-  workspaceId: string,
-  body: { approvalPolicy?: ApprovalTier[]; maxMembers?: number },
-  circleSocialUuid?: string,
-) {
-  return parseJson<{ settings: WorkspaceSettingsRecord }>(
-    await fetch(`/api/workspaces/${workspaceId}/settings`, {
-      body: JSON.stringify(authBody(ownerWallet, circleSocialUuid, body)),
-      headers: { "Content-Type": "application/json" },
-      method: "PATCH",
     }),
   );
 }

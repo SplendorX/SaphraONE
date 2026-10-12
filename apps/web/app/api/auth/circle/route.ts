@@ -72,7 +72,9 @@ export async function POST(request: NextRequest) {
     if (issued.lock && issued.freshSignIn) {
       await setUnlockCookie(response, issued.lock.owner_wallet, issued.lock.timeout_minutes);
     }
-    if (issued.freshSignIn) {
+    // Never opens the lock on an account switch: this endpoint also runs on
+    // page load with a stored token. The email is safe either way.
+    if (issued.newAccount) {
       // "You signed in" email, after the response so signing in never waits.
       const ownerWallet = issued.session.ownerWallet;
       const headers = new Headers(request.headers);

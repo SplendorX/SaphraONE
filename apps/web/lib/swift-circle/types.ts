@@ -289,20 +289,6 @@ export type CircleSavePocketRecord = {
   archived_at: string | null;
 };
 
-export type CircleEarnAccountRecord = {
-  id: string;
-  circle_id: string;
-  provider: string;
-  external_account_id: string | null;
-  principal: string;
-  principal_units: string;
-  current_value: string;
-  current_value_units: string;
-  status: "active" | "frozen" | "closed";
-  yield_info: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-};
 
 export type CircleEarnContributionRecord = {
   id: string;

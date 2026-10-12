@@ -23,8 +23,9 @@ import {
  * Only wallets Circle itself reports for the token are added, never an
  * address the browser names, so the session proves control of each wallet.
  * An existing session keeps its wallets and its owner (the wallet the user
- * signed in with). Returns null when the token controls no wallet, e.g. it
- * expired, so callers can treat the exchange as best-effort.
+ * signed in with) only when the token is for the same account; a different
+ * account replaces the session. Returns null when the token controls no
+ * wallet, e.g. it expired, so callers can treat the exchange as best-effort.
  *
  * `freshSignIn` is true only when the browser had no session: a Circle token
  * is kept in the browser, so exchanging it again must never open an app
@@ -41,8 +42,19 @@ export async function createCircleWalletSession(userToken: string) {
     cookieStore.get(walletSessionCookieName)?.value,
     "session",
   );
+  // Only the same account carries its session forward. A different account
+  // signing in on this device starts a new one: keeping the previous owner
+  // made the app lock greet, and unlock, the wrong account.
+  const lowerWallets = wallets.map((wallet) => wallet.toLowerCase());
+  const carried =
+    previous &&
+    [previous.ownerWallet.toLowerCase(), ...sessionWallets(previous)].some((wallet) =>
+      lowerWallets.includes(wallet),
+    )
+      ? previous
+      : null;
   const appLock = await appLockForSession([
-    ...(previous ? [previous.ownerWallet, ...sessionWallets(previous)] : []),
+    ...(carried ? [carried.ownerWallet, ...sessionWallets(carried)] : []),
     ...wallets,
   ]);
   const session = createWalletSession(
@@ -52,12 +64,14 @@ export async function createCircleWalletSession(userToken: string) {
       additionalWallets: wallets.slice(1),
       ...(appLock.known ? { appLock: Boolean(appLock.lock) } : {}),
       keepPreviousOwner: true,
-      mfaPending: await mfaPendingForSignIn(previous, wallets),
-      previous,
+      mfaPending: await mfaPendingForSignIn(carried, wallets),
+      previous: carried,
     },
   );
   return {
     freshSignIn: !previous,
+    /** A different account than the session held (or none): worth a sign-in email. */
+    newAccount: !carried,
     lock: appLock.lock,
     session,
     token: createWalletToken(session),

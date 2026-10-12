@@ -56,15 +56,6 @@ export function calculateSaveAmountUnits(
   return (paymentAmountUnits * hundredths) / 10_000n;
 }
 
-export function formatUsdDisplay(amount: string): string {
-  const cleaned = amount.trim();
-  if (!cleaned) return "$0.00";
-  const num = cleaned.includes(".")
-    ? cleaned
-    : `${cleaned}.00`;
-  const [w, f = "00"] = num.split(".");
-  return `$${w}.${(f + "00").slice(0, 2)}`;
-}
 
 export function progressPercent(
   currentUnits: bigint,

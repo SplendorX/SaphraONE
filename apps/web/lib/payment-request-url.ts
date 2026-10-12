@@ -54,15 +54,6 @@ export function buildPaymentRequestUrl({
   return requestUrl.toString();
 }
 
-export function buildPaymentRequestPath(
-  input: Omit<BuildPaymentRequestUrlInput, "origin">,
-) {
-  const url = new URL(
-    buildPaymentRequestUrl({ ...input, origin: "https://saphra.local" }),
-  );
-
-  return `${url.pathname}${url.search}`;
-}
 
 export function withPaymentRequestId(link: string, requestId: string) {
   const id = requestId.trim();

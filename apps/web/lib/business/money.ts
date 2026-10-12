@@ -39,9 +39,3 @@ export function formatAssetAmount(value: string, asset: "USDC" | "EURC") {
   })}`;
 }
 
-export function greetingForHour(hour: number, name?: string | null) {
-  const period =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  if (!name) return period;
-  return `${period}, ${name}`;
-}

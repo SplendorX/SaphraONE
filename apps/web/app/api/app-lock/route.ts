@@ -182,7 +182,9 @@ export async function GET() {
 
   const [passkeys, profile] = await Promise.all([
     lock ? listPasskeys(lock.owner_wallet).catch(() => []) : Promise.resolve([]),
-    lock ? lockProfile(session.ownerWallet) : Promise.resolve(null),
+    // The account whose lock this is, so the greeting and the passkey asked
+    // for always match.
+    lock ? lockProfile(lock.owner_wallet) : Promise.resolve(null),
   ]);
   const response = json({
     enabled: Boolean(lock),
