@@ -3,6 +3,7 @@
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { adminLoadError, useAdminKey } from "@/components/admin/use-admin-key";
 import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { arcChain } from "@/lib/chains";
 import { cn } from "@/lib/utils";
@@ -132,7 +133,7 @@ const emptyQuest = {
 };
 
 export default function AdminRewardsPage() {
-  const [adminKey, setAdminKey] = useState("");
+  const { key: adminKey, ready: keyReady, setKey: setAdminKey } = useAdminKey();
   const [data, setData] = useState<AdminData | null>(null);
   const [tab, setTab] = useState<"queues" | "quests">("queues");
   const [loading, setLoading] = useState(false);
@@ -155,21 +156,26 @@ export default function AdminRewardsPage() {
     try {
       const response = await fetch("/api/admin/rewards", { cache: "no-store", headers: headers() });
       const json = (await response.json()) as AdminData & { message?: string };
-      if (!response.ok) throw new Error(json.message || "Could not load.");
+      if (!response.ok) throw new Error(adminLoadError(response.status, Boolean(adminKey), json.message || "Could not load."));
       setData(json);
+      // A successful load clears an earlier load error (e.g. the first try,
+      // before the key was entered); action results stay.
+      setMessage((current) => (current?.tone === "error" ? null : current));
     } catch (cause) {
       setMessage({ text: cause instanceof Error ? cause.message : "Could not load.", tone: "error" });
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [headers]);
+  }, [adminKey, headers]);
 
   useEffect(() => {
+    if (!keyReady) return;
     void load();
-    // Loads once on open (local dev needs no key); "Refresh" reloads with the key.
+    // Loads once the remembered key is read (local dev needs none); "Refresh"
+    // reloads with a newly typed key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [keyReady]);
 
   async function act(id: string, body: Record<string, unknown>, done: string) {
     setBusyId(id);

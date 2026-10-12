@@ -3,6 +3,7 @@
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { adminLoadError, useAdminKey } from "@/components/admin/use-admin-key";
 import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { campaignSources, metricLabels, type CampaignMetric } from "@/lib/campaigns/rules";
 import { arcChain } from "@/lib/chains";
@@ -83,7 +84,7 @@ function toIso(local: string) {
 }
 
 export default function AdminCampaignsPage() {
-  const [adminKey, setAdminKey] = useState("");
+  const { key: adminKey, ready: keyReady, setKey: setAdminKey } = useAdminKey();
   const [campaigns, setCampaigns] = useState<AdminCampaign[] | null>(null);
   const [ledger, setLedger] = useState<LedgerStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,21 +108,26 @@ export default function AdminCampaignsPage() {
     try {
       const response = await fetch("/api/admin/campaigns", { cache: "no-store", headers: headers() });
       const json = (await response.json()) as { campaigns: AdminCampaign[]; ledger: LedgerStatus; message?: string };
-      if (!response.ok) throw new Error(json.message || "Could not load.");
+      if (!response.ok) throw new Error(adminLoadError(response.status, Boolean(adminKey), json.message || "Could not load."));
       setCampaigns(json.campaigns);
       setLedger(json.ledger);
+      // A successful load clears an earlier load error (e.g. the first try,
+      // before the key was entered); action results stay.
+      setMessage((current) => (current?.tone === "error" ? null : current));
     } catch (cause) {
       setMessage({ text: cause instanceof Error ? cause.message : "Could not load.", tone: "error" });
     } finally {
       setLoading(false);
     }
-  }, [headers]);
+  }, [adminKey, headers]);
 
   useEffect(() => {
+    if (!keyReady) return;
     void load();
-    // Loads once on open (local dev needs no key); "Refresh" reloads with the key.
+    // Loads once the remembered key is read (local dev needs none); "Refresh"
+    // reloads with a newly typed key.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [keyReady]);
 
   async function act(key: string, body: Record<string, unknown>, done: string) {
     setBusy(key);
@@ -196,7 +202,8 @@ export default function AdminCampaignsPage() {
           {ledger ? (
             <div className="ar-facts">
               <strong>
-                {ledger.totalRows.toLocaleString()} transactions · {ledger.eligibleRows.toLocaleString()} count toward campaigns
+                {ledger.totalRows.toLocaleString()} transaction{ledger.totalRows === 1 ? "" : "s"} ·{" "}
+                {ledger.eligibleRows.toLocaleString()} count{ledger.eligibleRows === 1 ? "s" : ""} toward campaigns
               </strong>
               <span>Last recorded: {when(ledger.lastRecordedAt)}</span>
               <span>
