@@ -100,25 +100,46 @@
   mask-image: linear-gradient(180deg, black, transparent 75%);
 }
 
-/* The 3D coins: on the right, behind the balance, clear of the eye button
-   above and the actions below. */
+/* The 3D coins: an overlay inside the card, on the right, over the
+   background and clear of the eye button above and the actions below.
+   Clicks pass through to whatever is underneath. */
 .dh-card-art {
   position: absolute;
-  z-index: -1;
-  top: 2.4rem;
-  right: -0.9rem;
-  width: clamp(8rem, 36%, 12.5rem);
+  z-index: 1;
+  top: 3.5rem;
+  right: 0.6rem;
+  width: clamp(9.5rem, 46%, 17rem);
   height: auto;
+  /* Never down into the actions row, however short the card. */
+  max-height: calc(100% - 9.75rem);
+  object-fit: contain;
+  object-position: right top;
   pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 18px 28px rgb(10 4 30 / 0.55));
 }
 
-@media (min-width: 640px) {
-  .dh-card-art {
-    top: 1.6rem;
-    right: 0.4rem;
+/* Room for the coins beside the balance, once there's width for both. */
+@media (min-width: 520px) {
+  .dh-card .dh-wheel,
+  .dh-card .dh-amount {
+    padding-right: min(44%, 16rem);
   }
+}
+
+/* On narrow phones a long balance can reach the coins: keep it legible. */
+.dh-card .dh-wheel,
+.dh-card .dh-amount {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 2px 14px rgb(13 6 28 / 0.85);
+}
+
+.dh-card .dh-card-top,
+.dh-card .dh-change,
+.dh-card .dh-actions {
+  position: relative;
+  z-index: 2;
 }
 
 .dh-card-top {
