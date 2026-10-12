@@ -120,6 +120,18 @@ export function DashboardHome({
       <section aria-label="Balance" className="dh-card">
         <span aria-hidden className="dh-card-glow" />
         <span aria-hidden className="dh-card-sheen" />
+        {/* SaphraONE, USDC and EURC coins in 3D (public/brand/dashboard-coins.webp). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt=""
+          aria-hidden
+          className="dh-card-art"
+          decoding="async"
+          draggable={false}
+          height={760}
+          src="/brand/dashboard-coins.webp"
+          width={760}
+        />
         <div className="dh-card-top">
           <span className="dh-card-label">
             {isBusiness ? "Business balance" : "Total balance"} · {currency}
