@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   CalendarClock,
   Check,
   CheckCircle2,
@@ -108,6 +109,28 @@ function formatAmount(value: string | null | undefined) {
 
 function counterpartyOf(item: AccountActivityItem) {
   return (item.transfer?.counterparty ?? item.counterparty ?? "").toLowerCase();
+}
+
+/**
+ * Under the search results, in the sign-up page's colours: someone you
+ * can't find can join in a minute and be paid by @username from then on.
+ */
+function InviteBanner() {
+  return (
+    <section aria-label="Invite someone to SaphraONE" className="sx-invite">
+      <span aria-hidden className="sx-invite-glow" />
+      <span aria-hidden className="sx-invite-grain" />
+      <p className="sx-invite-title">Can&apos;t find who you&apos;re looking for?</p>
+      <p className="sx-invite-body">
+        Invite them to SaphraONE. They sign up in a minute, and from then on you can pay them by
+        @username, free and in seconds.
+      </p>
+      <Link className="sx-invite-cta" href="/referral">
+        Invite friends
+        <ArrowRight className="h-4 w-4" />
+      </Link>
+    </section>
+  );
 }
 
 /** A round avatar: a photo when there is one, else the first letter. */
@@ -383,6 +406,7 @@ export function SendHub(props: SendHubProps) {
         </label>
 
         {needle ? (
+          <>
           <section className="sx-card">
             <ul className="sx-list">
               {isAddress(needle) ? (
@@ -419,6 +443,8 @@ export function SendHub(props: SendHubProps) {
               ) : null}
             </ul>
           </section>
+          <InviteBanner />
+          </>
         ) : (
           <>
             <section className="sx-section">

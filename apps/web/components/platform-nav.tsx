@@ -25,6 +25,8 @@ import { rewardsV2Enabled } from "@/lib/rewards/config";
 import { navLabelKeys } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import "./platform-nav.css";
+
 /**
  * The sidebar carries the places you live in. Business accounts also get
  * Overview and Invoices. Request, Swap, BulkPay and RecurePay are task pages
