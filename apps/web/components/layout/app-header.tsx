@@ -8,7 +8,6 @@ import { SidebarBrand } from "@/components/layout/sidebar-brand";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { SupportLauncher } from "@/components/support/support-launcher";
 import { PlatformNavDrawer } from "@/components/platform-nav-drawer";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { TopBarPoints } from "@/components/layout/top-bar-points";
 import { cn } from "@/lib/utils";
 
@@ -38,9 +37,7 @@ export function AppHeader({ actions, className }: AppHeaderProps) {
           {/* Support lives in Settings on small screens, where the bar is full. */}
           <SupportLauncher className="hidden shrink-0 lg:inline-flex" />
           <NotificationsBell className="shrink-0" />
-          <div className="hidden shrink-0 items-center sm:flex">
-            <ThemeToggle />
-          </div>
+          {/* The theme switch lives in the profile menu. */}
           <TopBarPoints />
           <div className="flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
             {actions}
