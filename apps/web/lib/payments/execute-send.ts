@@ -133,7 +133,7 @@ async function resolveSendRouter(override?: string): Promise<Address> {
   }
 
   throw new Error(
-    "Send router is not configured. Set NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS.",
+    "Send router is not configured. Set NEXT_PUBLIC_SAPHRA_SEND_ADDRESS.",
   );
 }
 

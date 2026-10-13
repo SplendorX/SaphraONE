@@ -1,4 +1,6 @@
 import "@/lib/env-compat";
+import { payrollExecutorAddressValue } from "@/lib/contracts";
+import { payrollFeeUnits } from "@/lib/fees";
 import {
   createPublicClient,
   createWalletClient,
@@ -35,7 +37,7 @@ import { arcTransport } from "@/lib/chains";
 export { swiftPayrollExecutorAbi };
 
 export function payrollExecutorAddress(): Address | null {
-  const value = process.env.NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS?.trim();
+  const value = payrollExecutorAddressValue;
   return value && isAddress(value) ? getAddress(value) : null;
 }
 
@@ -140,9 +142,9 @@ async function settleRun(
   }
 
   const gross = amounts.reduce((total, value) => total + value, BigInt(0));
-  // Mirrors the executor's 1% so the allowance and balance checks match what
+  // Mirrors the executor's fee so the allowance and balance checks match what
   // the contract will actually pull.
-  const required = gross + (gross * BigInt(100)) / BigInt(10_000);
+  const required = gross + payrollFeeUnits(gross, recipients.length, executor);
 
   const [balance, allowance] = await Promise.all([
     ctx.publicClient.readContract({

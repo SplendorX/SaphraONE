@@ -10,10 +10,11 @@ import { privateKeyToAccount } from "viem/accounts";
 
 import {
   erc20Abi,
-  recurringPlatformFeeBasisPoints,
   swiftRecurepayExecutorAbi,
   swiftRecurepayExecutorAddress,
 } from "@/lib/contracts";
+import { recurringFeeUnits } from "@/lib/fees";
+import { legacyRecurepayExecutor } from "@/lib/recurring/executor";
 import { buildAutopayExecutionId } from "@/lib/recurring-utils";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 import { arcChain, arcTransport } from "@/lib/chains";
@@ -50,8 +51,9 @@ export function createRecurringArcClients() {
   return { account, publicClient, walletClient };
 }
 
-export function computeRecurringFeeUnits(amountUnits: bigint) {
-  return (amountUnits * BigInt(recurringPlatformFeeBasisPoints)) / 10_000n;
+/** The fee `executor` (the configured one by default) takes on a payment. */
+export function computeRecurringFeeUnits(amountUnits: bigint, executor?: string) {
+  return recurringFeeUnits(amountUnits, executor);
 }
 
 export type CircleAdapterSubmitInput = {
@@ -59,6 +61,8 @@ export type CircleAdapterSubmitInput = {
   executionId: string;
   /** The payer's on-chain mandate; it fixes the recipient, token and cap. */
   mandateId: Hex;
+  /** The executor holding the mandate (see resolveMandateExecutor). */
+  executor?: Address;
 };
 
 export type CircleAdapterSubmitResult =
@@ -74,7 +78,8 @@ export type CircleAdapterSubmitResult =
 export async function circleAdapterSubmitPayment(
   input: CircleAdapterSubmitInput,
 ): Promise<CircleAdapterSubmitResult> {
-  if (!swiftRecurepayExecutorAddress) {
+  const executor = input.executor ?? (swiftRecurepayExecutorAddress as Address);
+  if (!executor) {
     return { error: "RecurePay executor is not configured.", ok: false };
   }
 
@@ -85,7 +90,7 @@ export async function circleAdapterSubmitPayment(
 
   const onchainOperator = await clients.publicClient.readContract({
     abi: swiftRecurepayExecutorAbi,
-    address: swiftRecurepayExecutorAddress as Address,
+    address: executor,
     functionName: "operator",
   });
 
@@ -100,7 +105,7 @@ export async function circleAdapterSubmitPayment(
   const executionKey = buildAutopayExecutionId(input.executionId);
   const alreadyConsumed = await clients.publicClient.readContract({
     abi: swiftRecurepayExecutorAbi,
-    address: swiftRecurepayExecutorAddress as Address,
+    address: executor,
     args: [executionKey],
     functionName: "consumedExecutionIds",
   });
@@ -112,7 +117,7 @@ export async function circleAdapterSubmitPayment(
   try {
     const hash = await clients.walletClient.writeContract({
       abi: swiftRecurepayExecutorAbi,
-      address: swiftRecurepayExecutorAddress as Address,
+      address: executor,
       args: [executionKey, input.mandateId, input.amountUnits],
       functionName: "executeRecurringPayment",
     });
@@ -132,8 +137,11 @@ export async function circleAdapterSubmitPayment(
 export async function circleAdapterReadBalanceAndAllowance(input: {
   payer: Address;
   tokenSymbol: ArcTokenSymbol;
+  /** The executor to read the allowance for; the configured one by default. */
+  executor?: Address;
 }) {
-  if (!swiftRecurepayExecutorAddress) {
+  const executor = input.executor ?? (swiftRecurepayExecutorAddress as Address);
+  if (!executor) {
     return { allowance: 0n, balance: 0n, configured: false as const };
   }
 
@@ -149,7 +157,7 @@ export async function circleAdapterReadBalanceAndAllowance(input: {
     publicClient.readContract({
       abi: erc20Abi,
       address: tokenInfo.address,
-      args: [input.payer, swiftRecurepayExecutorAddress as Address],
+      args: [input.payer, executor],
       functionName: "allowance",
     }),
   ]);
@@ -166,16 +174,24 @@ export async function circleAdapterGetReceipt(txHash: Hash) {
   }
 }
 
+/** Whether a payment was made, on the configured executor or the old one. */
 export async function circleAdapterWasConsumed(executionId: string) {
   if (!swiftRecurepayExecutorAddress) {
     return false;
   }
 
   const publicClient = createRecurringPublicClient();
-  return publicClient.readContract({
-    abi: swiftRecurepayExecutorAbi,
-    address: swiftRecurepayExecutorAddress as Address,
-    args: [buildAutopayExecutionId(executionId)],
-    functionName: "consumedExecutionIds",
-  });
+  const executors = [swiftRecurepayExecutorAddress as Address, legacyRecurepayExecutor()].filter(
+    (value): value is Address => Boolean(value),
+  );
+  for (const address of executors) {
+    const consumed = await publicClient.readContract({
+      abi: swiftRecurepayExecutorAbi,
+      address,
+      args: [buildAutopayExecutionId(executionId)],
+      functionName: "consumedExecutionIds",
+    });
+    if (consumed) return true;
+  }
+  return false;
 }

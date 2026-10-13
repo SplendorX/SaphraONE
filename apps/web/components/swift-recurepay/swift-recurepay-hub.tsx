@@ -1,5 +1,7 @@
 "use client";
 
+import { recurringFeeUnits } from "@/lib/fees";
+import { resolveMandateExecutor } from "@/lib/recurring/executor";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import { AlertTriangle, CheckCircle2, KeyRound, Loader2, Plus, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,7 +59,6 @@ import {
 } from "@/lib/circle-session";
 import {
   erc20Abi,
-  recurringPlatformFeeBasisPoints,
   swiftBatchFeeRecipient,
   swiftRecurepayExecutorAbi,
   swiftRecurepayExecutorAddress,
@@ -151,11 +152,9 @@ function shortenAddress(value?: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
-const feeBps = BigInt(recurringPlatformFeeBasisPoints);
-const feeDenom = 10_000n;
-
+/** The configured executor's fee on one payment (bands on SaphraRecurePay). */
 function computePlatformFeeUnits(amountUnits: bigint) {
-  return (amountUnits * feeBps) / feeDenom;
+  return recurringFeeUnits(amountUnits);
 }
 
 /**
@@ -796,10 +795,16 @@ export function SwiftRecurepayHub() {
     if (!schedule.authorization_mandate_id || !swiftRecurepayExecutorAddress) {
       return;
     }
+    // Older schedules' mandates live on the old executor.
+    const executor = await resolveMandateExecutor(
+      arcReader,
+      schedule.authorization_mandate_id as Hash,
+    ).catch(() => swiftRecurepayExecutorAddress as Address);
+    if (!executor) return;
     const mandate = await arcReader
       .readContract({
         abi: swiftRecurepayExecutorAbi,
-        address: swiftRecurepayExecutorAddress as Address,
+        address: executor,
         args: [schedule.authorization_mandate_id as Hash],
         functionName: "mandates",
       })
@@ -813,7 +818,7 @@ export function SwiftRecurepayHub() {
     try {
       await sendAutopayCall({
         abi: swiftRecurepayExecutorAbi,
-        address: swiftRecurepayExecutorAddress as Address,
+        address: executor,
         args: [schedule.authorization_mandate_id as Hash],
         functionName: "cancelMandate",
         refId: "RecurePay Autopay cancel",
@@ -1190,7 +1195,7 @@ export function SwiftRecurepayHub() {
 
       const skipHashes: string[] = [];
 
-      // Platform fee (1%) — separate transfer; not shown in user history UI.
+      // Platform fee — separate transfer; not shown in user history UI.
       if (feeUnits > 0n && feeRecipient) {
         const feeChallenge = await callCircleWalletApi<CircleTransferChallenge>(
           "createTransfer",
@@ -1253,7 +1258,7 @@ export function SwiftRecurepayHub() {
 
     const tokenInfo = arcTokens[schedule.token_symbol];
 
-    // Platform fee (1%) to fee recipient — filtered out of dashboard history.
+    // Platform fee to fee recipient — filtered out of dashboard history.
     if (feeUnits > 0n && feeRecipient) {
       await writeContractAsync({
         address: tokenInfo.address,
@@ -1466,7 +1471,6 @@ export function SwiftRecurepayHub() {
           canAutopay={canUseAutopay}
           compose={compose}
           error={composeError}
-          feeBps={recurringPlatformFeeBasisPoints}
           label={beneficiaryLabel}
           narration={narration}
           onAmount={setAmount}
@@ -1519,7 +1523,6 @@ export function SwiftRecurepayHub() {
                   : "When you stop it"
           }
           error={error}
-          feeBps={recurringPlatformFeeBasisPoints}
           label={beneficiaryLabel}
           narration={narration}
           onBack={() => setView("compose")}

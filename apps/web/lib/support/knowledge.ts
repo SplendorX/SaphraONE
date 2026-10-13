@@ -4,7 +4,7 @@
  * code (lib/fees.ts, lib/contracts.ts, referral cashback, ALLIE monetization);
  * change them together.
  */
-import { sendFeeSummary } from "@/lib/fees";
+import { bulkFeeSummary, recurringFeeSummary, sendFeeSummary, usesLegacyPayrollFee } from "@/lib/fees";
 import { multichainEnabled } from "@/lib/multichain/flag";
 
 export type SupportCategory =
@@ -162,7 +162,7 @@ export const supportArticles: SupportArticle[] = [
     title: "How do I pay many people at once?",
     keywords: ["batch", "batchpay", "bulkpay", "bulk", "multiple recipients", "mass payout", "csv", "pay many"],
     answer:
-      "BulkPay sends one token to up to 500 recipients in a single transaction, with a 1% service fee. You can paste a list or upload a CSV.",
+      `BulkPay sends one token to up to 500 recipients in a single transaction, with a service fee of ${bulkFeeSummary()}. You can paste a list or upload a CSV.`,
     links: [{ label: "Open BulkPay", href: "/bulkpay" }],
     paths: ["/bulkpay"],
   },
@@ -184,7 +184,7 @@ export const supportArticles: SupportArticle[] = [
     title: "What are SaphraONE's fees?",
     keywords: ["fee", "fees", "cost", "charge", "pricing", "how much", "service fee", "commission", "percentage"],
     answer:
-      `Sending: ${sendFeeSummary()}. Swaps: 0.3%. BulkPay, RecurePay and Payroll: 1% of what's paid out. Receiving money, requests and invoices you're paid through are free. Every fee is shown before you confirm.`,
+      `Sending: ${sendFeeSummary()}. Swaps: 0.3%. BulkPay and Payroll: ${bulkFeeSummary()}. RecurePay: ${recurringFeeSummary()}. Receiving money, requests and invoices you're paid through are free. Every fee is shown before you confirm.`,
     links: [{ label: "Open Send", href: "/send" }],
   },
 
@@ -269,7 +269,7 @@ export const supportArticles: SupportArticle[] = [
     title: "How do I run payroll?",
     keywords: ["payroll", "pay team", "salaries", "wages", "employees", "run payroll", "approve payroll", "pay staff"],
     answer:
-      "Add your team in Payroll → Team, then start a run. Review each person's amount, approve, and the run pays everyone from your business wallet. A 1% service fee applies to the total paid out.",
+      `Add your team in Payroll → Team, then start a run. Review each person's amount, approve, and the run pays everyone from your business wallet. A service fee of ${bulkFeeSummary(usesLegacyPayrollFee())} applies.`,
     steps: ["Add team members.", "Start a new run (optionally for one group).", "Review, approve, and pay."],
     links: [{ label: "Open Payroll", href: "/business/payroll" }],
     paths: ["/business/payroll"],
@@ -291,7 +291,7 @@ export const supportArticles: SupportArticle[] = [
     title: "How do recurring payments work?",
     keywords: ["recurring", "recurepay", "subscription", "standing order", "every month", "autopay", "schedule payment", "rent"],
     answer:
-      "RecurePay sends the same payment on a schedule. Confirm each one from the Due queue, or authorize Autopay so it runs by itself. Each payment has a 1% service fee.",
+      `RecurePay sends the same payment on a schedule. Confirm each one from the Due queue, or authorize Autopay so it runs by itself. Each payment has a service fee of ${recurringFeeSummary()}.`,
     links: [{ label: "Open RecurePay", href: "/recurepay" }],
     paths: ["/recurepay"],
   },

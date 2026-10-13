@@ -88,7 +88,7 @@ import {
 } from "@/lib/business/provision-wallet";
 import { usePreferredWalletMode } from "@/lib/use-preferred-wallet-mode";
 import { arcChain, arcTransport } from "@/lib/chains";
-import { usesLegacySendFee } from "@/lib/fees";
+import { bulkFeeLabel, bulkFeeNote, bulkFeeUnits, usesLegacyBulkFee, usesLegacySendFee } from "@/lib/fees";
 
 type BulkpayStep = "intro" | "people" | "summary";
 
@@ -148,8 +148,6 @@ type CircleChallengeResult = {
 };
 
 const zeroAmount = BigInt(0);
-const feeBasisPointsDenominator = BigInt(10_000);
-const feeBasisPoints = BigInt(swiftBatchFeeBasisPoints);
 const allowancePollAttempts = 30;
 const allowancePollDelayMs = 2_000;
 const arcPublicClient = createPublicClient({
@@ -254,8 +252,7 @@ export default function BulkPayPage() {
  ),
  [recipients],
  );
- const feeAmountUnits =
- (totalAmountUnits * feeBasisPoints) / feeBasisPointsDenominator;
+ const feeAmountUnits = bulkFeeUnits(totalAmountUnits, recipients.length);
  const requiredAmountUnits = totalAmountUnits + feeAmountUnits;
  const workspaceContext = useOptionalWorkspace();
  const isBusinessWorkspace = workspaceContext?.workspace?.kind === "business";
@@ -572,7 +569,7 @@ export default function BulkPayPage() {
  function requireSwiftBatchAddress() {
  if (!configuredSwiftBatchAddress) {
  throw new Error(
- "BulkPay is not configured. Deploy BulkPay and set NEXT_PUBLIC_SWIFTBATCH_ADDRESS.",
+ "BulkPay is not configured. Deploy SaphraBulkPay and set NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS.",
  );
  }
 
@@ -940,7 +937,7 @@ export default function BulkPayPage() {
  const breakdown: BulkpayBreakdown = {
   available: formatAmount(activeBalance),
   fee: formatAmount(feeAmountUnits),
-  feePercent: swiftBatchFeeBasisPoints / 100,
+  feeLabel: bulkFeeLabel(totalAmountUnits, recipients.length),
   payout: formatAmount(totalAmountUnits),
   people: recipients.length,
   total: formatAmount(requiredAmountUnits),
@@ -1010,7 +1007,7 @@ export default function BulkPayPage() {
    <>
     <BulkpayBar title="BulkPay" />
     <BulkpayIntro
-     feePercent={swiftBatchFeeBasisPoints / 100}
+     feeNote={bulkFeeNote()}
      maxRecipients={swiftBatchMaxRecipients}
      onStart={() => goTo("people")}
     />
@@ -1061,7 +1058,7 @@ export default function BulkPayPage() {
     <p className="bulkpay-hint">
      Paying just one person? A normal send is simpler and usually costs less (
      {usesLegacySendFee() ? "a 0.1% fee" : "a flat fee from 0.01, never more than 5"} instead of{" "}
-     {swiftBatchFeeBasisPoints / 100}%).{" "}
+     {usesLegacyBulkFee() ? `${swiftBatchFeeBasisPoints / 100}%` : "at least 0.10"}).{" "}
      <Link
       href={`/send?to=${encodeURIComponent(
        recipients[0].username ? `@${recipients[0].username}` : recipients[0].address,

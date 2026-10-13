@@ -38,19 +38,23 @@ const OPERATOR_ABI = [
 ] as const;
 
 type RoleDefinition = {
+  /** The executor's env name, then the old name it may still be set under. */
   executorEnv: string;
+  legacyExecutorEnv?: string;
   keyEnv: string;
   role: string;
 };
 
 const ROLES: RoleDefinition[] = [
   {
-    executorEnv: "NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS",
+    executorEnv: "NEXT_PUBLIC_SAPHRA_PAYROLL_ADDRESS",
+    legacyExecutorEnv: "NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS",
     keyEnv: "SAPHRA_PAYROLL_OPERATOR_PRIVATE_KEY",
     role: "payroll",
   },
   {
-    executorEnv: "NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS",
+    executorEnv: "NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS",
+    legacyExecutorEnv: "NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS",
     keyEnv: "SAPHRA_RECURRING_OPERATOR_PRIVATE_KEY",
     role: "recurring",
   },
@@ -113,7 +117,9 @@ async function checkRole(
   threshold: number,
 ): Promise<OperatorHealth> {
   const address = addressForKey(definition.keyEnv);
-  const executorRaw = process.env[definition.executorEnv]?.trim();
+  const executorRaw =
+    process.env[definition.executorEnv]?.trim() ||
+    (definition.legacyExecutorEnv ? process.env[definition.legacyExecutorEnv]?.trim() : undefined);
   const executor =
     executorRaw && isAddress(executorRaw) ? getAddress(executorRaw) : null;
 

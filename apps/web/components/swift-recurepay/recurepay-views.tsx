@@ -50,6 +50,7 @@ import {
   type RecurringFrequency,
   type RecurringScheduleRecord,
 } from "@/lib/recurring-utils";
+import { recurringFeeForAmount, recurringFeeRateNote } from "@/lib/fees";
 import { arcTokenSymbols, type ArcTokenSymbol } from "@/lib/tokens";
 import { useSheetSide } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
@@ -643,7 +644,6 @@ export function RecurepayCompose({
   canAutopay,
   compose,
   error,
-  feeBps,
   label,
   narration,
   onAmount,
@@ -665,7 +665,6 @@ export function RecurepayCompose({
   canAutopay: boolean;
   compose: ComposeSchedule;
   error: string | null;
-  feeBps: number;
   label: string;
   narration: string;
   onAmount: (value: string) => void;
@@ -689,7 +688,7 @@ export function RecurepayCompose({
   }, []);
   const patch = (next: Partial<ComposeSchedule>) => onCompose({ ...compose, ...next });
   const numericAmount = Number(amount);
-  const fee = numericAmount > 0 ? (numericAmount * feeBps) / 10_000 : 0;
+  const fee = recurringFeeForAmount(numericAmount);
 
   const next = (
     <Button className="recurepay-next" onClick={onNext} size="sm">
@@ -824,7 +823,7 @@ export function RecurepayCompose({
           </div>
           {numericAmount > 0 ? (
             <p className="recurepay-fee">
-              + {formatTokenAmount(fee, token)} service fee ({feeBps / 100}%) ·{" "}
+              + {formatTokenAmount(fee, token)} service fee{recurringFeeRateNote()} ·{" "}
               <strong>{formatTokenAmount(numericAmount + fee, token)}</strong> each payment
             </p>
           ) : null}
@@ -929,7 +928,6 @@ export function RecurepayReview({
   cadence,
   ends,
   error,
-  feeBps,
   label,
   narration,
   onBack,
@@ -945,7 +943,6 @@ export function RecurepayReview({
   cadence: string;
   ends: string;
   error: string | null;
-  feeBps: number;
   label: string;
   narration: string;
   onBack: () => void;
@@ -957,7 +954,7 @@ export function RecurepayReview({
   token: ArcTokenSymbol;
 }) {
   const numeric = Number(amount);
-  const fee = (numeric * feeBps) / 10_000;
+  const fee = recurringFeeForAmount(numeric);
   return (
     <div className="recurepay-compose">
       <RecurepayBar onBack={saving ? undefined : onBack} title="Review" />
@@ -978,7 +975,7 @@ export function RecurepayReview({
           {label ? <Fact label="For" value={label} /> : null}
           <Fact label="First payment" value={runs[0] ? `${runs[0].toLocaleDateString(undefined, { day: "numeric", month: "short", weekday: "short", year: "numeric" })} at ${timeOf(runs[0])}` : "—"} />
           <Fact label="Ends" value={ends} />
-          <Fact label="Service fee" value={`${formatTokenAmount(fee, token)} (${feeBps / 100}%)`} />
+          <Fact label="Service fee" value={`${formatTokenAmount(fee, token)}${recurringFeeRateNote()}`} />
           <Fact label="Each payment costs" strong value={formatTokenAmount(numeric + fee, token)} />
           {narration ? <Fact label="Narration" value={narration} /> : null}
           <Fact label="How it's paid" value={autopay ? "Autopay, within an on-chain limit" : "You confirm each payment"} />

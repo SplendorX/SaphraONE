@@ -237,7 +237,9 @@ async function backfillStep(
 function platformContracts() {
   return new Set(
     [
+      process.env.NEXT_PUBLIC_SAPHRA_SEND_ADDRESS,
       process.env.NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS,
+      process.env.NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS,
       process.env.NEXT_PUBLIC_SWIFTBATCH_ADDRESS,
       process.env.NEXT_PUBLIC_SWIFT_SAVE_VAULT_ADDRESS,
     ]

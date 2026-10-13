@@ -6,8 +6,10 @@ import {
   circleAdapterSubmitPayment,
   circleAdapterWasConsumed,
   computeRecurringFeeUnits,
+  createRecurringPublicClient,
   isRecurringOperatorConfigured,
 } from "@/lib/recurring/circle-adapter";
+import { resolveMandateExecutor } from "@/lib/recurring/executor";
 import { requireScheduleReauthorization } from "@/lib/recurring-service";
 import { logRecurringEvent } from "@/lib/recurring/logging";
 import { evaluateAutopayPolicy } from "@/lib/recurring/policy";
@@ -48,8 +50,6 @@ export async function submitAuthorizedPayment(
 ): Promise<PaymentExecutionSubmitResult> {
   const { schedule, occurrence, existingOccurrences } = input;
   const amountUnits = BigInt(occurrence.amount_units ?? schedule.amount_units);
-  const feeUnits = computeRecurringFeeUnits(amountUnits);
-  const requiredUnits = amountUnits + feeUnits;
 
   const policy = evaluateAutopayPolicy({ occurrence, schedule });
   logRecurringEvent("recurring.execution.policy", {
@@ -77,7 +77,27 @@ export async function submitAuthorizedPayment(
     };
   }
 
+  // A schedule authorized on the old executor keeps being paid there (at its
+  // fee) until re-authorized; checking the new one would find no allowance.
+  let executor: Address | null;
+  try {
+    executor = await resolveMandateExecutor(
+      createRecurringPublicClient(),
+      schedule.authorization_mandate_id as Hex | null,
+    );
+  } catch {
+    return {
+      code: "NETWORK_ERROR",
+      permanent: false,
+      reason: "Couldn't read the Autopay mandate. It will be retried.",
+      status: "rejected",
+    };
+  }
+  const feeUnits = computeRecurringFeeUnits(amountUnits, executor ?? undefined);
+  const requiredUnits = amountUnits + feeUnits;
+
   const chainState = await circleAdapterReadBalanceAndAllowance({
+    executor: executor ?? undefined,
     payer: schedule.owner_wallet as Address,
     tokenSymbol: schedule.token_symbol,
   });
@@ -132,6 +152,7 @@ export async function submitAuthorizedPayment(
 
   const submitted = await circleAdapterSubmitPayment({
     amountUnits,
+    executor: executor ?? undefined,
     executionId: occurrence.id,
     mandateId: schedule.authorization_mandate_id as Hex,
   });

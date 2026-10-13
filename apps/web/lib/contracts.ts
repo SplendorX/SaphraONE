@@ -63,27 +63,67 @@ export const erc20Abi = [
   },
 ] as const;
 
+/**
+ * Contract addresses. Each reads its SaphraONE name first and the old SwiftPay
+ * name second, so an environment set before the rename keeps working.
+ */
 export const swiftBatchAddress =
-  process.env.NEXT_PUBLIC_SWIFTBATCH_ADDRESS?.trim() ?? "";
+  process.env.NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS?.trim() ||
+  process.env.NEXT_PUBLIC_SWIFTBATCH_ADDRESS?.trim() ||
+  "";
 
 export const swiftBatchFeeRecipient =
   process.env.NEXT_PUBLIC_PLATFORM_FEE_RECIPIENT?.trim() ?? "";
 
-/** Platform fee for BulkPay and RecurePay: 1% = 100 bps. */
+/** The old BatchPay, RecurePayExecutor and payroll contracts' fee: 1% = 100 bps. */
 export const swiftBatchFeeBasisPoints = 100;
 
-/** Same 1% platform fee for recurring (RecurePay) payments. */
+/** Same 1% on the old RecurePayExecutor. */
 export const recurringPlatformFeeBasisPoints = 100;
 
 export const swiftBatchMaxRecipients = 500;
 
 export const swiftRecurepayExecutorAddress =
-  process.env.NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS?.trim() ?? "";
+  process.env.NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS?.trim() ||
+  process.env.NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS?.trim() ||
+  "";
+
+export const payrollExecutorAddressValue =
+  process.env.NEXT_PUBLIC_SAPHRA_PAYROLL_ADDRESS?.trim() ||
+  process.env.NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS?.trim() ||
+  "";
+
+/**
+ * The 1% contracts the Saphra ones replace, by chain (Arc mainnet 5042, Arc
+ * testnet 5042002). Fees are quoted at 1% while one of these is configured,
+ * and RecurePay mandates made on the old executor keep being paid there.
+ */
+export const legacyFeeContracts = {
+  bulkPay: {
+    5042: "0x4fe71EA6edAa8ac55c134d3de29A6b682Cc398E5",
+    5042002: "0x69d00620ffC46d722922F0F03905788732323304",
+  },
+  recurePay: {
+    5042: "0x23C1565446F57Bb2c12287fE5d8D667a88fe7928",
+    5042002: "0xf71F81084c7a3CFD2e5fc89908F036c0E496ec77",
+  },
+  payroll: {
+    5042: "0xC189c6b4fB836381de9702B9dE957020e630Fc26",
+    5042002: "0x25C1a5423BaDdA3cbf502A8eEC7a99FD8dc6eB83",
+  },
+} as const;
+
+/** Whether `address` is one of the old 1% contracts of `kind`. */
+export function isLegacyContract(address: string, kind: keyof typeof legacyFeeContracts) {
+  const value = address.trim().toLowerCase();
+  return Object.values(legacyFeeContracts[kind]).some((legacy) => legacy.toLowerCase() === value);
+}
 
 /** Direct-send router (SaphraSend: flat fee by amount band; SwiftPaySend: 0.1%) + optional Spend&Save in one call. */
 export function getSaphraSendAddress() {
   // Bracket access so Next does not inline an empty string at compile time.
   return (
+    process.env["NEXT_PUBLIC_SAPHRA_SEND_ADDRESS"]?.trim() ||
     process.env["NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS"]?.trim() ||
     process.env["SWIFTPAY_SEND_ADDRESS"]?.trim() ||
     ""

@@ -90,13 +90,17 @@ function platformAddresses() {
  */
 export function trustedSpenders() {
   const values = [
+    process.env["NEXT_PUBLIC_SAPHRA_SEND_ADDRESS"],
     process.env["NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS"],
     process.env["SWIFTPAY_SEND_ADDRESS"],
+    process.env["NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS"],
     process.env["NEXT_PUBLIC_SWIFTBATCH_ADDRESS"],
     process.env["NEXT_PUBLIC_SWIFT_SAVE_VAULT_ADDRESS"],
     process.env["NEXT_PUBLIC_EARN_VAULT_ADDRESS"],
     process.env["NEXT_PUBLIC_EARN_AUTOSAVE_EXECUTOR_ADDRESS"],
+    process.env["NEXT_PUBLIC_SAPHRA_PAYROLL_ADDRESS"],
     process.env["NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS"],
+    process.env["NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS"],
     process.env["NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS"],
     ...(process.env["NEXT_PUBLIC_EARN_AUTOSAVE_EXECUTORS"] ?? "").split(","),
     ...(process.env["TX_APPROVAL_TRUSTED_SPENDERS"] ?? "").split(","),

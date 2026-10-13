@@ -1,6 +1,6 @@
 "use client";
 
-import { swiftBatchFeeBasisPoints } from "@/lib/contracts";
+import { bulkFeeSummary, usesLegacyPayrollFee } from "@/lib/fees";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -178,8 +178,8 @@ export default function PayrollSchedulesPage() {
 
           <p className="pr-note">
             <Clock className="h-4 w-4 shrink-0" />
-            Schedules create each payroll run for you on time. Every run includes a{" "}
-            {swiftBatchFeeBasisPoints / 100}% service fee on the total paid out, shown on the run before you approve it.
+            Schedules create each payroll run for you on time. Every run includes a service fee of{" "}
+            {bulkFeeSummary(usesLegacyPayrollFee())}, shown on the run before you approve it.
           </p>
 
           <section className="pr-card">

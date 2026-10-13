@@ -1,10 +1,8 @@
 import { formatUnits, parseUnits } from "viem";
-import { swiftBatchFeeBasisPoints } from "@/lib/contracts";
+import { payrollFeeUnits } from "@/lib/fees";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 
 const DEFAULT_DECIMALS = 6; // USDC & EURC on Arc have 6 decimals
-const BPS_DENOMINATOR = BigInt(10_000);
-const FEE_BPS = BigInt(swiftBatchFeeBasisPoints); // 100 bps = 1%
 
 export function getAssetDecimals(asset: string): number {
   if (asset in arcTokens) {
@@ -94,7 +92,9 @@ export function calculateRunTotals(
     totalAmountUnits += parseAssetUnits(item.totalAmount, asset);
   }
 
-  const totalFeesUnits = (totalAmountUnits * FEE_BPS) / BPS_DENOMINATOR;
+  // The payroll contract's fee: its bands, at least 0.01 per person paid
+  // (1% while the old SwiftPayrollExecutor is configured).
+  const totalFeesUnits = payrollFeeUnits(totalAmountUnits, items.length);
   const totalRequiredUnits = totalAmountUnits + totalFeesUnits;
 
   return {

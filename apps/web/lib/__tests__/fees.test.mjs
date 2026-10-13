@@ -41,3 +41,40 @@ test("Max leaves exactly enough for the band fee and Spend&Save", () => {
     }
   }
 });
+
+const { bulkFeeLabel, bulkFeeUnits, payrollFeeUnits, recurringFeeUnits } = await import("../fees.ts");
+const saphraBulk = "0x2222222222222222222222222222222222222222";
+const saphraRecure = "0x3333333333333333333333333333333333333333";
+
+test("SaphraBulkPay: band on the total, at least 0.01 per person", () => {
+  const cases = [
+    // [people, total, fee]
+    [5, "50", "0.1"], [30, "30", "0.3"], [40, "200", "0.5"], [100, "200", "1"],
+    [300, "300", "3"], [20, "2000", "5"], [3, "50.01", "0.5"], [2, "100000.01", "25"],
+    [500, "50000", "20"],
+  ];
+  for (const [people, total, fee] of cases) {
+    assert.equal(bulkFeeUnits(units(total), people, saphraBulk), units(fee), `${people} people, ${total}`);
+    assert.equal(payrollFeeUnits(units(total), people, saphraBulk), units(fee), `payroll ${people}, ${total}`);
+  }
+  assert.equal(bulkFeeLabel(units("30"), 30, false), "Service fee (0.01 per person minimum)");
+  assert.equal(bulkFeeLabel(units("2000"), 20, false), "Service fee");
+});
+
+test("the old BatchPay and payroll contracts keep their 1%", () => {
+  assert.equal(bulkFeeUnits(units("1000"), 10, "0x4fe71EA6edAa8ac55c134d3de29A6b682Cc398E5"), units("10"));
+  assert.equal(payrollFeeUnits(units("1000"), 10, "0xC189c6b4fB836381de9702B9dE957020e630Fc26"), units("10"));
+});
+
+test("SaphraRecurePay: flat fee per payment, edges included", () => {
+  const cases = [
+    ["0.5", "0.02"], ["10", "0.02"], ["10.01", "0.1"], ["50", "0.1"], ["50.01", "0.3"],
+    ["200", "0.3"], ["200.01", "0.75"], ["500", "0.75"], ["500.01", "1.5"], ["1000", "1.5"],
+    ["1000.01", "3"], ["5000", "3"], ["5000.01", "6"], ["20000", "6"], ["20000.01", "8"],
+  ];
+  for (const [amount, fee] of cases) {
+    assert.equal(recurringFeeUnits(units(amount), saphraRecure), units(fee), `fee for ${amount}`);
+  }
+  // The old executor (mainnet) still charges 1%.
+  assert.equal(recurringFeeUnits(units("500"), "0x23C1565446F57Bb2c12287fE5d8D667a88fe7928"), units("5"));
+});

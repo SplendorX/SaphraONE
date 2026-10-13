@@ -76,11 +76,11 @@ export function BulkpaySteps({ step }: { step: 1 | 2 }) {
 
 /** The first page: what BulkPay is, and the way in. */
 export function BulkpayIntro({
-  feePercent,
+  feeNote,
   maxRecipients,
   onStart,
 }: {
-  feePercent: number;
+  feeNote: string;
   maxRecipients: number;
   onStart: () => void;
 }) {
@@ -97,7 +97,7 @@ export function BulkpayIntro({
           <Users className="h-4 w-4" /> Pay by @username or wallet, or import a CSV
         </li>
         <li>
-          <ShieldCheck className="h-4 w-4" /> A {feePercent}% service fee, shown before you confirm
+          <ShieldCheck className="h-4 w-4" /> {feeNote}
         </li>
         <li>
           <Zap className="h-4 w-4" /> One transaction for everyone, settled in seconds
@@ -228,7 +228,7 @@ export function BulkpayContinueBar({
 export type BulkpayBreakdown = {
   available: string;
   fee: string;
-  feePercent: number;
+  feeLabel: string;
   payout: string;
   people: number;
   total: string;
@@ -246,7 +246,7 @@ function BreakdownRows({ breakdown }: { breakdown: BulkpayBreakdown }) {
         <dd>{breakdown.payout}</dd>
       </div>
       <div>
-        <dt>Service fee ({breakdown.feePercent}%)</dt>
+        <dt>{breakdown.feeLabel}</dt>
         <dd>{breakdown.fee}</dd>
       </div>
       <div className="is-total">
@@ -372,7 +372,7 @@ export function BulkpaySummary({
         {contractMissing ? (
           <p className="bulkpay-alert is-warn">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            Set NEXT_PUBLIC_SWIFTBATCH_ADDRESS after deploying the contract.
+            Set NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS after deploying the contract.
           </p>
         ) : null}
         {insufficient ? (

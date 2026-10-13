@@ -1,5 +1,6 @@
 import { parseEventLogs, type Address, type Hash, type Hex } from "viem";
 
+import { recurringFeeUnits } from "@/lib/fees";
 import { createRecurringPublicClient } from "@/lib/recurring/circle-adapter";
 import {
   erc20Abi,
@@ -52,7 +53,7 @@ export async function verifyExecutorAllowance(input: {
     return {
       allowance,
       error:
-        "Approve the RecurePay executor for at least one payment plus the 1% service fee.",
+        "Approve the RecurePay executor for at least one payment plus its service fee.",
       ok: false as const,
     };
   }
@@ -197,7 +198,7 @@ export async function authorizeRecurringSchedule(input: {
     return { error: mandate.error };
   }
 
-  const required = maxUnits + (maxUnits * 100n) / 10_000n;
+  const required = maxUnits + recurringFeeUnits(maxUnits);
   const verified = await verifyExecutorAllowance({
     ownerWallet: input.ownerWallet,
     requiredUnits: required,

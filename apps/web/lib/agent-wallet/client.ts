@@ -531,7 +531,7 @@ export function agentSendRouter(): Address {
 
   if (!isAddress(configured)) {
     throw new Error(
-      "The SaphraONE send router is not configured. Set NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS.",
+      "The SaphraONE send router is not configured. Set NEXT_PUBLIC_SAPHRA_SEND_ADDRESS.",
     );
   }
 

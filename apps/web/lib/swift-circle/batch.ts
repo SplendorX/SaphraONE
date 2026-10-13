@@ -6,7 +6,13 @@ import {
   swiftBatchFeeBasisPoints,
   swiftBatchMaxRecipients,
 } from "@/lib/contracts";
-import { SEND_FEE_BPS, platformFeeUnits } from "@/lib/fees";
+import {
+  bulkFeeUnits,
+  SEND_FEE_BPS,
+  sendFeeUnits,
+  usesLegacyBulkFee,
+  usesLegacySendFee,
+} from "@/lib/fees";
 import { circleErrors } from "@/lib/swift-circle/errors";
 import { sumUnits } from "@/lib/swift-circle/money";
 
@@ -85,7 +91,8 @@ export function buildCirclePayExecution(input: {
   const totalUnits = sumUnits(input.recipients.map((row) => row.units));
 
   if (method === "single") {
-    const feeUnits = platformFeeUnits(totalUnits, SEND_FEE_BPS);
+    // One recipient goes through the send router: its band fee.
+    const feeUnits = sendFeeUnits(totalUnits);
     return {
       method,
       contractAddress: null,
@@ -93,7 +100,7 @@ export function buildCirclePayExecution(input: {
       token: input.token,
       spender: null,
       requiredAllowanceUnits: (totalUnits + feeUnits).toString(),
-      feeBps: SEND_FEE_BPS,
+      feeBps: usesLegacySendFee() ? SEND_FEE_BPS : 0,
       feeUnits: feeUnits.toString(),
       totalUnits: totalUnits.toString(),
       recipientCount,
@@ -108,7 +115,7 @@ export function buildCirclePayExecution(input: {
   }
 
   const batchAddress = requireConfiguredSwiftBatch();
-  const feeUnits = platformFeeUnits(totalUnits, swiftBatchFeeBasisPoints);
+  const feeUnits = bulkFeeUnits(totalUnits, recipientCount, batchAddress);
   const recipients = input.recipients.map((row) => row.wallet as Address);
   const amounts = input.recipients.map((row) => row.units);
   const callData = encodeFunctionData({
@@ -124,7 +131,7 @@ export function buildCirclePayExecution(input: {
     token: input.token,
     spender: batchAddress,
     requiredAllowanceUnits: (totalUnits + feeUnits).toString(),
-    feeBps: swiftBatchFeeBasisPoints,
+    feeBps: usesLegacyBulkFee(batchAddress) ? swiftBatchFeeBasisPoints : 0,
     feeUnits: feeUnits.toString(),
     totalUnits: totalUnits.toString(),
     recipientCount,

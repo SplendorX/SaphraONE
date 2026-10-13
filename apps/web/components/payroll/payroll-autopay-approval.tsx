@@ -1,5 +1,6 @@
 "use client";
 
+import { payrollExecutorAddressValue } from "@/lib/contracts";
 import {
   AlertCircle,
   CalendarClock,
@@ -50,7 +51,7 @@ import { arcTransport } from "@/lib/chains";
  */
 
 function executorAddress(): Address | null {
-  const value = process.env.NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS?.trim();
+  const value = payrollExecutorAddressValue;
   return value && isAddress(value) ? getAddress(value) : null;
 }
 

@@ -67,6 +67,7 @@ import {
 } from "@/lib/business/provision-wallet";
 import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { erc20Abi, swiftBatchAbi, swiftBatchAddress } from "@/lib/contracts";
+import { bulkFeeLabel, bulkFeeUnits, usesLegacyPayrollFee } from "@/lib/fees";
 import { arcTokens, type ArcTokenSymbol } from "@/lib/tokens";
 import { usePreferredWalletMode } from "@/lib/use-preferred-wallet-mode";
 import { arcChain, arcExplorerUrl, arcTransport } from "@/lib/chains";
@@ -499,7 +500,10 @@ export default function PayrollRunDetailPage({
     try {
       const recipientsList = run.items.map((it) => getAddress(it.recipient_destination_snapshot) as Address);
       const amountsList = run.items.map((it) => parseUnits(it.total_amount, tokenInfo.decimals));
-      const requiredTotalUnits = parseUnits(run.total_required, tokenInfo.decimals);
+      // Paid through BulkPay, which takes its own fee on the run total.
+      const payoutUnits = amountsList.reduce((sum, value) => sum + value, BigInt(0));
+      const requiredTotalUnits =
+        payoutUnits + bulkFeeUnits(payoutUnits, amountsList.length, configuredBatchAddress);
 
       let batchHash: Hash | undefined;
       let settlementTxId: string | undefined;
@@ -787,7 +791,7 @@ export default function PayrollRunDetailPage({
                   <p className="mt-1 font-heading text-xl font-bold">{run.total_amount} {run.asset}</p>
                 </div>
                 <div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase">Service Fee (1%)</span>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase">{bulkFeeLabel(parseUnits(run.total_amount, 6), run.items.length, usesLegacyPayrollFee())}</span>
                   <p className="mt-1 font-heading text-xl font-bold text-muted-foreground">{run.total_fees} {run.asset}</p>
                 </div>
                 <div>
@@ -914,7 +918,7 @@ export default function PayrollRunDetailPage({
                     <span className="font-bold text-foreground">{run.total_amount} {run.asset}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Estimated Fees (1%):</span>
+                    <span className="text-muted-foreground">Estimated fees:</span>
                     <span className="font-bold text-foreground">{run.total_fees} {run.asset}</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-sm">
