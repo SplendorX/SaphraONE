@@ -382,8 +382,7 @@ export const pt: Messages = {
     secCommit2: "Logins e códigos com limite de tentativas",
     secCommit3: "Nunca pedimos seu PIN, códigos ou frase de recuperação",
     secCommit4: "Carteiras protegidas pela Circle",
-    footerTagline:
-      "Faça mais com USDC. Troque, envie, peça, pague em lote, poupe e agende pagamentos em stablecoins a partir de uma carteira na Arc.",
+    footerTagline: "Impulsionando possibilidades com USDC.",
     footerSite: "Site",
     footerApp: "App",
     footerResources: "Recursos",

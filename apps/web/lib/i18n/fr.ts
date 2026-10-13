@@ -382,8 +382,7 @@ export const fr: Messages = {
     secCommit2: "Connexions et codes à tentatives limitées",
     secCommit3: "Nous ne demandons jamais votre PIN, vos codes ni votre phrase de récupération",
     secCommit4: "Portefeuilles sécurisés par Circle",
-    footerTagline:
-      "Faites plus avec l’USDC. Échangez, envoyez, demandez, payez par lots, épargnez et planifiez des paiements en stablecoins depuis un seul portefeuille sur Arc.",
+    footerTagline: "Ouvrir de nouvelles possibilités avec l'USDC.",
     footerSite: "Site",
     footerApp: "App",
     footerResources: "Ressources",

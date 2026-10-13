@@ -383,8 +383,7 @@ export const en = {
     secCommit2: "Rate-limited sign-ins and codes",
     secCommit3: "We never ask for your PIN, codes or recovery phrase",
     secCommit4: "Wallets secured by Circle",
-    footerTagline:
-      "Do more with USDC. Swap, send, request, batch, save, and schedule stablecoin payments from one wallet on Arc.",
+    footerTagline: "Powering possibilities with USDC.",
     footerSite: "Site",
     footerApp: "App",
     footerResources: "Resources",

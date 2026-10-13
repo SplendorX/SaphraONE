@@ -360,8 +360,7 @@ export const zh: Messages = {
     secCommit2: "登录与验证码限制尝试次数",
     secCommit3: "我们绝不会索要你的 PIN、验证码或恢复短语",
     secCommit4: "钱包由 Circle 保护",
-    footerTagline:
-      "用 USDC 做更多。从一个 Arc 钱包兑换、发送、收款、批量付款、储蓄并安排稳定币支付。",
+    footerTagline: "用 USDC 释放无限可能。",
     footerSite: "网站",
     footerApp: "应用",
     footerResources: "资源",

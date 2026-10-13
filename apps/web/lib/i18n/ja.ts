@@ -360,8 +360,7 @@ export const ja: Messages = {
     secCommit2: "サインインとコードの試行回数を制限",
     secCommit3: "PIN、コード、リカバリーフレーズを尋ねることはありません",
     secCommit4: "ウォレットは Circle が保護",
-    footerTagline:
-      "USDC でもっとできる。Arc 上の1つのウォレットからスワップ、送金、リクエスト、一括、貯蓄、予定支払い。",
+    footerTagline: "USDC で、可能性を広げる。",
     footerSite: "サイト",
     footerApp: "アプリ",
     footerResources: "リソース",

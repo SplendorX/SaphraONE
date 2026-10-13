@@ -360,8 +360,7 @@ export const ko: Messages = {
     secCommit2: "로그인 및 코드 시도 횟수 제한",
     secCommit3: "PIN, 코드, 복구 문구를 절대 요청하지 않습니다",
     secCommit4: "Circle이 보호하는 지갑",
-    footerTagline:
-      "USDC로 더 많이 하세요. Arc의 한 지갑에서 스왑, 송금, 요청, 일괄, 저축, 예약 스테이블코인 결제.",
+    footerTagline: "USDC로 가능성을 넓히다.",
     footerSite: "사이트",
     footerApp: "앱",
     footerResources: "리소스",

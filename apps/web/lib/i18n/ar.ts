@@ -382,8 +382,7 @@ export const ar: Messages = {
     secCommit2: "محاولات محدودة لتسجيل الدخول والرموز",
     secCommit3: "لن نطلب أبدًا رمز PIN أو الرموز أو عبارة الاسترداد",
     secCommit4: "محافظ مؤمّنة بواسطة Circle",
-    footerTagline:
-      "افعل المزيد مع USDC. بدّل وأرسل واطلب وادفع على دفعات وادّخر وجدول مدفوعات العملات المستقرة من محفظة واحدة على Arc.",
+    footerTagline: "نفتح آفاقًا جديدة مع USDC.",
     footerSite: "الموقع",
     footerApp: "التطبيق",
     footerResources: "الموارد",
