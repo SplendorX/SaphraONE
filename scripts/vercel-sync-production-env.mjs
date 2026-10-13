@@ -52,11 +52,22 @@ function vercelEntry() {
 }
 const VERCEL = vercelEntry();
 
-function vercel(args) {
-  const result = spawnSync(process.execPath, [VERCEL, ...args, "--non-interactive"], {
-    encoding: "utf8",
-  });
-  return { ok: result.status === 0, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+/**
+ * Vercel sometimes fails a call with no message (rate limit or a dropped
+ * request) after many changes in a row, so retry with a growing pause.
+ */
+function vercel(args, attempts = 4) {
+  for (let attempt = 1; ; attempt++) {
+    const result = spawnSync(process.execPath, [VERCEL, ...args, "--non-interactive"], {
+      encoding: "utf8",
+    });
+    const output = `${result.stdout ?? ""}${result.stderr ?? ""}${result.error ? `\n${result.error.message}` : ""}`;
+    if (result.status === 0) return { ok: true, output };
+    if (attempt >= attempts) {
+      return { ok: false, output: `${output}\n(exit code ${result.status ?? result.signal})` };
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, attempt * 5000);
+  }
 }
 
 /** Stop at the first failure, showing Vercel's own message. */
