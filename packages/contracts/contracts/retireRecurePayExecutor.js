@@ -35,7 +35,7 @@ async function main() {
   if (!rpcUrl || !privateKey) {
     throw new Error("Missing ARC_TESTNET_RPC_URL or PRIVATE_KEY.");
   }
-  const newExecutor = process.env.NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS?.trim();
+  const newExecutor = process.env.NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS?.trim();
   if (newExecutor && newExecutor.toLowerCase() === oldExecutor.toLowerCase()) {
     throw new Error("That is the executor the app currently uses. Retire only the old one.");
   }

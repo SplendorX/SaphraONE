@@ -21,12 +21,12 @@ async function main() {
   const rpcUrl =
     process.env.ARC_TESTNET_RPC_URL || "https://rpc.testnet.arc.network";
   const executorAddress =
-    process.argv[2] || process.env.NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS?.trim();
+    process.argv[2] || process.env.NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS?.trim();
   const key = process.env.SAPHRA_RECURRING_OPERATOR_PRIVATE_KEY?.trim();
   const listed = process.env.SAPHRA_RECURRING_OPERATOR_ADDRESS?.trim();
 
   if (!executorAddress || !ethers.isAddress(executorAddress)) {
-    throw new Error("Pass the executor address or set NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS.");
+    throw new Error("Pass the executor address or set NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS.");
   }
   if (!key) {
     throw new Error("SAPHRA_RECURRING_OPERATOR_PRIVATE_KEY is not set in .env.");
@@ -62,7 +62,7 @@ async function main() {
 
   if (!keyMatchesChain) {
     console.log(
-      "\nFix: point NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS at this executor and run",
+      "\nFix: point NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS at this executor and run",
       "\n  pnpm run rotate:recurring:operator",
       "\n(it creates a new key, saves it to .env, funds it, and calls setOperator).",
     );

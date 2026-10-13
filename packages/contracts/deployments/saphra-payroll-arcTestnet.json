@@ -1,0 +1,32 @@
+{
+  "network": "arcTestnet",
+  "contract": "SaphraPayroll",
+  "address": "0x9cEF9ECC1979B7A6782738116857eF872D5427da",
+  "owner": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77",
+  "guardian": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77",
+  "operator": "0x77C34d3b88Eb0Ac86b59a7A0DF60FBdDeB75C94E",
+  "feeRecipient": "0x0387a671fCB1634bA38E4BBF69eB0b2b0e1fb56d",
+  "feeTiers": {
+    "note": "SaphraBulkPay and SaphraPayroll fee bands on the batch/run total, in 6-decimal units. Band i covers totals up to and including upTo[i] and charges fees[i]; above the last bound pays the last fee. The fee is never less than recipientFeeMin x people paid. Keep in step with apps/web/lib/fees.ts (bulkFeeTiers).",
+    "upTo": [
+      "50000000",
+      "200000000",
+      "1000000000",
+      "5000000000",
+      "20000000000",
+      "100000000000"
+    ],
+    "fees": [
+      "100000",
+      "500000",
+      "2000000",
+      "5000000",
+      "10000000",
+      "20000000",
+      "25000000"
+    ],
+    "recipientFeeMin": "10000"
+  },
+  "deployedAt": "2026-10-13T13:52:11.416Z",
+  "deployer": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77"
+}

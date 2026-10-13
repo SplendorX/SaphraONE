@@ -14,7 +14,7 @@
  *
  *   ARC_TESTNET_RPC_URL / ARC_MAINNET_RPC_URL   RPC to use
  *   PRIVATE_KEY                                 contract owner (signs)
- *   NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS           the live SwiftPaySend
+ *   NEXT_PUBLIC_SAPHRA_SEND_ADDRESS           the live SwiftPaySend
  *   PLATFORM_FEE_RECIPIENT                      default new recipient
  */
 import dotenv from "dotenv";
@@ -62,7 +62,7 @@ async function main() {
     : process.env.ARC_TESTNET_RPC_URL?.trim() ||
       "https://rpc.testnet.arc.network";
   const ownerKey = process.env.PRIVATE_KEY;
-  const sendAddress = process.env.NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS?.trim();
+  const sendAddress = process.env.NEXT_PUBLIC_SAPHRA_SEND_ADDRESS?.trim();
 
   const requested =
     process.argv.slice(2).find((arg) => !arg.startsWith("--")) ??
@@ -77,7 +77,7 @@ async function main() {
 
   if (!sendAddress || !ethers.isAddress(sendAddress)) {
     throw new Error(
-      "NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS is not set to a deployed SwiftPaySend.",
+      "NEXT_PUBLIC_SAPHRA_SEND_ADDRESS is not set to a deployed send router (SaphraSend).",
     );
   }
 

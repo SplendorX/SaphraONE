@@ -66,7 +66,7 @@ async function main() {
 
   console.log("SwiftPaySend deployed to:", address);
   console.log("\nUpdate your .env:");
-  console.log(`NEXT_PUBLIC_SWIFTPAY_SEND_ADDRESS=${address}`);
+  console.log(`NEXT_PUBLIC_SAPHRA_SEND_ADDRESS=${address}`);
   console.log(`NEXT_PUBLIC_PLATFORM_FEE_RECIPIENT=${feeRecipient}`);
 
   const outDir = join(__dirname, "..", "deployments");

@@ -80,7 +80,7 @@ async function main() {
 
   console.log("RecurePayExecutor deployed to:", address);
   console.log("\nUpdate your .env:");
-  console.log(`NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS=${address}`);
+  console.log(`NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS=${address}`);
 }
 
 main().catch((error) => {

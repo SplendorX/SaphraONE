@@ -95,8 +95,7 @@ export const payrollExecutorAddressValue =
 
 /**
  * The 1% contracts the Saphra ones replace, by chain (Arc mainnet 5042, Arc
- * testnet 5042002). Fees are quoted at 1% while one of these is configured,
- * and RecurePay mandates made on the old executor keep being paid there.
+ * testnet 5042002). Fees are quoted at 1% while one of these is configured.
  */
 export const legacyFeeContracts = {
   bulkPay: {

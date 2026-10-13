@@ -1,0 +1,33 @@
+{
+  "network": "arcTestnet",
+  "contract": "SaphraRecurePay",
+  "address": "0x61cd1E0d7fe3b5fb5643bE793d465d5e8fB66403",
+  "owner": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77",
+  "guardian": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77",
+  "operator": "0xAe0e5AA8E2f11b09bd8098f115525925635341fB",
+  "feeRecipient": "0x0387a671fCB1634bA38E4BBF69eB0b2b0e1fb56d",
+  "feeTiers": {
+    "note": "SaphraRecurePay fee bands per payment, in 6-decimal units. Band i covers amounts up to and including upTo[i] and charges fees[i]; above the last bound pays the last fee. Keep in step with apps/web/lib/fees.ts (recurringFeeTiers).",
+    "upTo": [
+      "10000000",
+      "50000000",
+      "200000000",
+      "500000000",
+      "1000000000",
+      "5000000000",
+      "20000000000"
+    ],
+    "fees": [
+      "20000",
+      "100000",
+      "300000",
+      "750000",
+      "1500000",
+      "3000000",
+      "6000000",
+      "8000000"
+    ]
+  },
+  "deployedAt": "2026-10-13T13:52:02.823Z",
+  "deployer": "0x6Aa30a03D7F0c7928CD9CaCFd8c765FCcB2efD77"
+}

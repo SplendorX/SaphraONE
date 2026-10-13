@@ -32,13 +32,13 @@ const ROLES = {
     label: "EarnAutoSaveExecutor",
   },
   payroll: {
-    executorEnv: "NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS",
+    executorEnv: "NEXT_PUBLIC_SAPHRA_PAYROLL_ADDRESS",
     keyEnv: "SAPHRA_PAYROLL_OPERATOR_PRIVATE_KEY",
     addressEnv: "SAPHRA_PAYROLL_OPERATOR_ADDRESS",
     label: "SwiftPayrollExecutor",
   },
   recurring: {
-    executorEnv: "NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS",
+    executorEnv: "NEXT_PUBLIC_SAPHRA_RECUREPAY_ADDRESS",
     keyEnv: "SAPHRA_RECURRING_OPERATOR_PRIVATE_KEY",
     addressEnv: "SAPHRA_RECURRING_OPERATOR_ADDRESS",
     label: "RecurePayExecutor",

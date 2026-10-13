@@ -76,7 +76,7 @@ async function main() {
 
   console.log("\nSwiftPayrollExecutor deployed to:", address);
   console.log("\nAdd to your .env:");
-  console.log(`NEXT_PUBLIC_SWIFTPAY_PAYROLL_EXECUTOR_ADDRESS=${address}`);
+  console.log(`NEXT_PUBLIC_SAPHRA_PAYROLL_ADDRESS=${address}`);
   console.log(
     "SAPHRA_PAYROLL_OPERATOR_PRIVATE_KEY=<key for the operator address above>",
   );

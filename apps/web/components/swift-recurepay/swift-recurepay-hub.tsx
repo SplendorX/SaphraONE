@@ -1,7 +1,6 @@
 "use client";
 
 import { recurringFeeUnits } from "@/lib/fees";
-import { resolveMandateExecutor } from "@/lib/recurring/executor";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import { AlertTriangle, CheckCircle2, KeyRound, Loader2, Plus, Wallet } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -795,12 +794,7 @@ export function SwiftRecurepayHub() {
     if (!schedule.authorization_mandate_id || !swiftRecurepayExecutorAddress) {
       return;
     }
-    // Older schedules' mandates live on the old executor.
-    const executor = await resolveMandateExecutor(
-      arcReader,
-      schedule.authorization_mandate_id as Hash,
-    ).catch(() => swiftRecurepayExecutorAddress as Address);
-    if (!executor) return;
+    const executor = swiftRecurepayExecutorAddress as Address;
     const mandate = await arcReader
       .readContract({
         abi: swiftRecurepayExecutorAbi,

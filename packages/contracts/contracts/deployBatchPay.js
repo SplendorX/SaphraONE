@@ -54,7 +54,7 @@ async function main() {
 
   console.log("BatchPay deployed to:", address);
   console.log("\nUpdate your .env:");
-  console.log(`NEXT_PUBLIC_SWIFTBATCH_ADDRESS=${address}`);
+  console.log(`NEXT_PUBLIC_SAPHRA_BULKPAY_ADDRESS=${address}`);
   console.log(`NEXT_PUBLIC_PLATFORM_FEE_RECIPIENT=${feeRecipient}`);
 }
 
