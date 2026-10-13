@@ -88,6 +88,7 @@ import {
 } from "@/lib/business/provision-wallet";
 import { usePreferredWalletMode } from "@/lib/use-preferred-wallet-mode";
 import { arcChain, arcTransport } from "@/lib/chains";
+import { usesLegacySendFee } from "@/lib/fees";
 
 type BulkpayStep = "intro" | "people" | "summary";
 
@@ -1058,7 +1059,8 @@ export default function BulkPayPage() {
    </BulkpayPeopleCard>
    {recipients.length === 1 ? (
     <p className="bulkpay-hint">
-     Paying just one person? A normal send is simpler and costs less (a 0.1% fee instead of{" "}
+     Paying just one person? A normal send is simpler and usually costs less (
+     {usesLegacySendFee() ? "a 0.1% fee" : "a flat fee from 0.01, never more than 5"} instead of{" "}
      {swiftBatchFeeBasisPoints / 100}%).{" "}
      <Link
       href={`/send?to=${encodeURIComponent(

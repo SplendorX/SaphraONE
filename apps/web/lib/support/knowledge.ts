@@ -4,6 +4,7 @@
  * code (lib/fees.ts, lib/contracts.ts, referral cashback, ALLIE monetization);
  * change them together.
  */
+import { sendFeeSummary } from "@/lib/fees";
 import { multichainEnabled } from "@/lib/multichain/flag";
 
 export type SupportCategory =
@@ -117,7 +118,7 @@ export const supportArticles: SupportArticle[] = [
     title: "How do I send money?",
     keywords: ["send", "pay someone", "transfer", "username", "@", "pay a friend", "send usdc", "send eurc"],
     answer:
-      "Go to Send, enter a @username or wallet address, the amount and the token, then confirm. A 0.1% service fee is added and shown before you confirm.",
+      `Go to Send, enter a @username or wallet address, the amount and the token, then confirm. A service fee (${sendFeeSummary()}) is added and shown before you confirm.`,
     steps: ["Open Send.", "Enter the recipient and amount.", "Review the total, then confirm in your wallet."],
     links: [{ label: "Open Send", href: "/send" }],
     paths: ["/send", "/dashboard"],
@@ -183,7 +184,7 @@ export const supportArticles: SupportArticle[] = [
     title: "What are SaphraONE's fees?",
     keywords: ["fee", "fees", "cost", "charge", "pricing", "how much", "service fee", "commission", "percentage"],
     answer:
-      "Sending: 0.1%. Swaps: 0.3%. BulkPay, RecurePay and Payroll: 1% of what's paid out. Receiving money, requests and invoices you're paid through are free. Every fee is shown before you confirm.",
+      `Sending: ${sendFeeSummary()}. Swaps: 0.3%. BulkPay, RecurePay and Payroll: 1% of what's paid out. Receiving money, requests and invoices you're paid through are free. Every fee is shown before you confirm.`,
     links: [{ label: "Open Send", href: "/send" }],
   },
 

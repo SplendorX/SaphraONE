@@ -67,6 +67,13 @@ export function maxSendableUnits(spendableUnits: bigint, saveBps: bigint, router
   return best;
 }
 
+/** The send fee in a sentence, for help answers and marketing copy. */
+export function sendFeeSummary() {
+  return usesLegacySendFee()
+    ? "0.1%"
+    : "a flat fee by amount: 0.01 up to 10, 0.05 up to 50, 0.20 up to 200, 0.50 up to 500, 1 up to 1,000, 2 up to 5,000, 4 up to 20,000, and never more than 5";
+}
+
 /** How the send fee is named next to its amount. */
 export function sendFeeLabel(router?: string) {
   return usesLegacySendFee(router) ? `${feePercentLabel(SEND_FEE_BPS)} service fee` : "Service fee";

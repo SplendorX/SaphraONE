@@ -1,6 +1,7 @@
 "use client";
 
 import { arcChain } from "@/lib/chains";
+import { usesLegacySendFee } from "@/lib/fees";
 import {
   ArrowDownLeft,
   ArrowRight,
@@ -532,7 +533,7 @@ export function BusinessShowcase() {
     },
     {
       icon: Zap,
-      title: "0.1% Flat Fee vs 3% Card Interchange",
+      title: usesLegacySendFee() ? "0.1% Flat Fee vs 3% Card Interchange" : "Fees Capped at 5 USDC vs 3% Card Interchange",
       description:
         "Slash payment acceptance and operational overhead by up to 90%. Gas is paid directly in stablecoins on Arc with predictable, sub-cent execution.",
     },
@@ -559,7 +560,9 @@ export function BusinessShowcase() {
     {
       feature: "Processing Fees",
       legacy: "2.9% + $0.30 per payment + wire fees ($25-$50)",
-      saphra: "0.1% flat protocol fee with sub-cent gas",
+      saphra: usesLegacySendFee()
+        ? "0.1% flat protocol fee with sub-cent gas"
+        : "From 0.01 per payment, never more than 5 USDC, with sub-cent gas",
     },
     {
       feature: "Custody & Control",
