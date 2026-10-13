@@ -22,8 +22,11 @@ All paths are relative to `apps/web/` unless they start with `packages/` or are 
 
 ### How this was verified
 
-Part A was checked against the official documentation pages at `vtpass.com/documentation`, read directly
-on 2026-10-11 (31 pages, listed under Sources and cited inline as `[docs: page]`). Five community SDKs from
+Part A was checked against every page linked from the documentation index at `vtpass.com/documentation`,
+read directly on 2026-10-11 and 2026-10-13: all 60 Bills Payment and Messaging API pages plus the three
+landing pages they link to, listed under Sources and cited inline as `[docs: page]`. Each per-provider page
+(every network, every DisCo, every TV service) was read on its own rather than assumed to match its
+siblings, because several do not (see A4). Five community SDKs from
 npm were read in full as a cross-check on how integrators actually call the API: `@obipascal/vtpass-nodejs-sdk`
 1.0.15 (Dec 2025), `billpay` 0.2.0 (Apr 2026), `@braynexservices/nigeria-mcp-electricity` 0.3.0 (Oct 2026),
 `vtpassnodejs` 1.0.9 and `vtpass-node` 1.0.6 (2022). Where a page and an SDK disagree, the page wins and
@@ -120,11 +123,11 @@ are what the documentation and SDKs show today.
 | Category | serviceID | Notes |
 | --- | --- | --- |
 | Airtime | `mtn`, `glo`, `airtel`, `etisalat` (9mobile), `foreign-airtime` | `amount` + `phone`; `product_type` flexible |
-| Data | `mtn-data`, `glo-data`, `airtel-data`, `etisalat-data`, `9mobile-sme-data`, `glo-sme-data`, `smile-direct`, `spectranet` | `billersCode` = phone (Smile: account/email, verify first); `amount` ignored, the variation sets the price |
-| TV | `dstv`, `gotv`, `startimes`, `showmax` | `billersCode` = smartcard (Showmax: phone). Verify first: returns `Customer_Name`, `Status`, `Due_Date`, `Customer_Number`, `Customer_Type`, and for DStv/GOtv `Current_Bouquet` and `Renewal_Amount`. Two purchase shapes: **change** (`variation_code` + `subscription_type: "change"`, optional `amount` and `quantity` months) and **renew** (`amount` = `Renewal_Amount` from verify + `subscription_type: "renew"`, no `variation_code`) |
-| Electricity | `ikeja-electric`, `eko-electric`, `abuja-electric`, `kano-electric`, `portharcourt-electric`, `jos-electric`, `kaduna-electric`, `enugu-electric`, `ibadan-electric`, `benin-electric`, `aba-electric`, `yola-electric` | `billersCode` = meter, `variation_code` = `prepaid`\|`postpaid`, `amount` in naira. Verify returns `Customer_Name`, `Address`, `Meter_Number`, `Customer_Arrears`, `Min_Purchase_Amount`, `Can_Vend`, `Customer_Account_Type` (`MD`\|`NMD`, commission differs), `Meter_Type`, `WrongBillersCode`. Prepaid response carries the token; show it, and send it by SMS/email too |
-| Education | `waec` (variation `waecdirect`, optional `quantity`), `waec-registration`, `jamb` (`utme-mock`, `utme-no-mock`) | JAMB: verify Profile ID via `/merchant-verify` with `type` = the variation code (sandbox `0123456789`); never sell above JAMB's approved price. PINs: WAEC returns `purchased_code` plus `cards[]{Serial, Pin}`; JAMB returns `purchased_code` plus `Pin` |
-| Insurance | `ui-insure` (third-party motor, Universal Insurance), personal accident | `billersCode` = plate number, `variation_code` 1–4 (Private, Commercial, Tricycles, Motorcycle), `amount` ignored, plus `Insured_Name`, `engine_capacity`, `Chasis_Number`, `Plate_Number`, `vehicle_make`, `vehicle_color`, `vehicle_model`, `YearofMake`, `state`, `lga`, `email`, all codes from the options endpoints. Response adds `certUrl` (certificate download) |
+| Data | `mtn-data`, `glo-data`, `airtel-data`, `etisalat-data`, `glo-sme-data`, `9mobile-sme-data`, `smile-direct`, `spectranet` | `billersCode` = phone; `amount` ignored, the variation sets the price. **Spectranet** also takes `quantity`. **Smile** is different: verify the customer's Smile email at `POST /merchant-verify/smile/email` (`billersCode` = email), which returns `Customer_Name` and `AccountList.Account[]{AccountId, FriendlyName}`; the purchase `billersCode` is the chosen `AccountId`. The 9mobile SME page exists but is not linked from the index, a reminder to build the catalogue from `/services`, not from the docs |
+| TV | `dstv`, `gotv`, `startimes`, `showmax` | **DStv / GOtv**: `billersCode` = smartcard; verify first, returns `Customer_Name`, `Status`, `Due_Date`, `Customer_Number`, `Customer_Type`, `Current_Bouquet`, `Renewal_Amount`. Two purchase shapes: **change** (`variation_code` + `subscription_type: "change"`, optional `amount` and `quantity` months) and **renew** (`amount` = `Renewal_Amount` from verify + `subscription_type: "renew"`, no `variation_code`). **Startimes**: `billersCode` = smartcard or e-wallet number; verify returns `Customer_Name`, `Balance`, `Smartcard_Number`; purchase takes `variation_code` and optional `amount`, no `subscription_type`. **Showmax**: `billersCode` = phone, no verify; the voucher code comes back in `purchased_code` |
+| Electricity | `ikeja-electric`, `eko-electric`, `abuja-electric`, `kano-electric`, `portharcourt-electric`, `jos-electric`, `kaduna-electric`, `enugu-electric`, `ibadan-electric`, `benin-electric`, `aba-electric`, `yola-electric` | Same request shape for all twelve: verify with `billersCode` = meter and `type`, purchase with `variation_code` = `prepaid`\|`postpaid` and `amount` in naira. The **responses differ per DisCo**: verify returns `Customer_Name` and `Address` everywhere, then any of `Meter_Number` or `MeterNumber`, `Customer_Arrears`, `Outstanding`, `Min_Purchase_Amount` (number, numeric string, or empty), `Can_Vend`, `Business_Unit`, `Customer_District`, `Customer_Phone`, `Customer_Account_Type` (`MD`\|`NMD`\|`PRIME`\|null; commission differs), `Meter_Type` (`PREPAID` or `prepaid`), `WrongBillersCode`. The prepaid token arrives as `token` or `Token`, bare or prefixed `"Token : "` (AEDC: `"Token : token: …"`), digits grouped by hyphens (Jos, Yola) or spaces (Ibadan) or not at all; `units` or `Units` is a number, a string, or a string with a unit (`"79.9 kWh"`, `"61.2kwH"`). Postpaid returns no token except in the Kaduna and Yola samples. Ibadan notes a ₦5,000 minimum for Band A prepaid; Eko's sample verify shows a `Min_Purchase_Amount` of ₦12,041.38 driven by arrears. Show the token to the customer and send it by SMS and email too (IKEDC page) |
+| Education | `waec` (variation `waecdirect`, optional `quantity`), `waec-registration` (optional `quantity`), `jamb` (`utme-mock`, `utme-no-mock`) | JAMB: verify Profile ID via `/merchant-verify` with `type` = the variation code (sandbox `0123456789`); never sell above JAMB's approved price. PINs: WAEC result checker returns `purchased_code` plus `cards[]{Serial, Pin}`; WAEC registration returns `purchased_code` as `"Token: …"`; JAMB returns `purchased_code` plus `Pin` |
+| Insurance | `ui-insure` (third-party motor, Universal Insurance), `personal-accident-insurance` | **Motor**: `billersCode` = plate number, `variation_code` 1–4 (Private, Commercial, Tricycles, Motorcycle), `amount` ignored, plus `Insured_Name`, `engine_capacity`, `Chasis_Number`, `Plate_Number`, `vehicle_make`, `vehicle_color`, `vehicle_model`, `YearofMake`, `state`, `lga`, `email`, all codes from the options endpoints; response adds `certUrl`. **Personal accident**: `billersCode` = the insured's full name, variations `option-a` / `option-b` (yearly), plus `full_name`, `address`, `dob` (`YYYY-mm-dd`), `next_kin_name`, `next_kin_phone`, `business_occupation` |
 | Other | `bank-deposit` | variation = bank code (`gtb`, `uba`, `zenith`, `providus`…); verify (`type` = bank code) returns `account_name`; sandbox account `1234567890`; `025` invalid bank, `026` account not verified. Moves naira out of the VTpass wallet, so it competes with Send and is out of scope here |
 
 ### A5. The request ID
@@ -175,8 +178,11 @@ older ones; parse both. Requery adds `extras` and `product_id` inside `transacti
 Electricity prepaid adds top-level `token`, `tokenAmount`, `units`, `customerName`, `customerAddress`,
 `meterNumber`, `exchangeReference`, `tariff`, `fixChargeAmount`, `taxAmount`, `debtAmount`, `kct1`, `kct2`
 and more, with `purchased_code` as `"Token : 2636…"`. Postpaid adds `customerName`, `customerAddress`,
-`utilityName`, `exchangeReference`, `balance`. WAEC adds `cards[]{Serial, Pin}`; JAMB adds `Pin`; insurance
-adds `certUrl`.
+`utilityName`, `exchangeReference`, `balance`. The exact keys and formats vary by DisCo (A4), so the
+client must normalise: take `token` or `Token`, else parse `purchased_code`; strip any `Token :` /
+`token:` prefix; keep the grouping characters as the DisCo printed them, since customers key the token in
+as shown; read `units` or `Units` as text. WAEC adds `cards[]{Serial, Pin}`; JAMB adds `Pin`; Showmax
+puts the voucher in `purchased_code`; motor insurance adds `certUrl`.
 
 **`000` is not success.** It means "processed"; the real state is `content.transactions.status`:
 
@@ -258,13 +264,14 @@ and the smartcard (TV):
 
 | Product | Success value |
 | --- | --- |
-| Airtime / data phone | `08011111111` |
-| Electricity meter | `1111111111111` prepaid, `1010101010101` postpaid |
+| Airtime / data phone (all networks, Spectranet, Showmax) | `08011111111` |
+| Smile | the sandbox email shown on the Smile page for verify; `08011111111` as the `AccountId` for purchase |
+| Electricity meter (all twelve DisCos) | `1111111111111` prepaid, `1010101010101` postpaid |
 | Smartcard (DStv / GOtv / Startimes) | `1212121212` |
 | JAMB Profile ID | `0123456789` |
 | Bank account (`bank-deposit`) | `1234567890` |
 
-`[docs: mtn-airtime-vtu-api, mtn-data, ikedc, dstv-subscription-api, jamb-pin-vending-api, bank-transfer-api, foreign-airtime]`
+`[docs: mtn-airtime-vtu-api, mtn-data, smile-network-payment-api-2, ikedc, dstv-subscription-api, startimes-subscription-api, jamb-pin-vending-api, bank-transfer-api, foreign-airtime]`
 
 ### A9. Commercials
 
@@ -283,7 +290,22 @@ and the smartcard (TV):
 - `convinience_fee` is returned per service (`/services`, `/service-variations`) and per transaction; `0 %`,
   `N0` and `N0.00` all appear and mean zero.
 - `amount` is ignored for data, education and insurance (the variation prices them), optional for DStv/GOtv
-  change (bouquet price used if absent), and mandatory for airtime, electricity and DStv renew.
+  change and Startimes (bouquet price used if absent), and mandatory for airtime, electricity and DStv/GOtv
+  renew.
+
+### A10. The Messaging API (separate product, noted for the receipt SMS)
+
+`[docs: introduction-to-vtpass-messaging-api, messaging-api-authentication, learn-how-to-use-messaging, send-sms-normal-v2, sms-unit-balance, vtpass-messaging-response-codes-2]`
+
+VTpass also sells bulk SMS through a separate service at `messaging.vtpass.com`, with its own account,
+wallet (SMS units), keys and dashboard. Authentication is two headers, `X-Token` (public key) and
+`X-Secret` (secret key). Send is `POST https://messaging.vtpass.com/v2/api/sms/sendsms` with `sender`,
+`recipient` (comma-joined numbers), `message`, optional `responsetype`, `dlr`, `clientbatchid`; there are
+DND, DND-fallback and SIM-host variants. Balance is `GET /api/sms/balance`. Responses are pipe-delimited
+strings: `TG00` means processed, anything else rejected; per-recipient codes `0000` sent, `1111` delivered,
+`2222` rejected, `3333` DND-rejected. The electricity pages ask that tokens be sent to the customer by SMS
+and email as well as shown. SaphraONE already sends email through Resend (`lib/email/`); if an SMS channel
+is wanted for tokens, this API is one option, but it is out of scope for Pay Bills itself.
 
 ---
 
@@ -459,6 +481,7 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 | `lib/bills/request-id.ts` | Lagos-time `YYYYMMDDHHmm` + ULID; pure, tested |
 | `lib/bills/codes.ts` | Response-code table from A6 as a typed map; pure, tested |
 | `lib/bills/status.ts` | Envelope → `delivered` / `pending` / `failed` / `paused` / `unknown`; pure, tested |
+| `lib/bills/receipt.ts` | Per-category extraction of what the receipt shows: electricity token and units across the DisCo variants in A4, WAEC `cards`, JAMB `Pin`, Showmax voucher, insurance `certUrl`; pure, tested against the sample responses from each DisCo page |
 | `lib/bills/money-rules.ts` | Bounds, spread, fee and quote math in bigint; pure, tested |
 | `lib/bills/catalogue.ts` | Cached categories, services, variations |
 | `lib/bills/service.ts` | quote → pay → settle orchestration over the ledger |
@@ -496,7 +519,8 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 
 - Unit: `request-id` (Lagos midnight edge, 12 numeric chars, uniqueness), `codes` and `status` (every
   code in A6 maps to one outcome; `000` + `pending` is not success), `money-rules` (bounds, spread, fee,
-  rounding in bigint). `pnpm --filter @saphra/web test:bills`.
+  rounding in bigint), `receipt` (one fixture per DisCo sample response, each yielding a token and units).
+  `pnpm --filter @saphra/web test:bills`.
 - Sandbox: the A8 matrix end to end, plus a forced duplicate `request_id` (`014`) and a yesterday-dated id
   (`085`).
 - Ledger: every bill has one intent, one attempt with `provider_transaction_id` = `request_id`, and one
@@ -530,8 +554,9 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
 
 ## Sources
 
-Official documentation pages, read directly on 2026-10-11 (the index links 60 API and Messaging pages;
-these are the ones this document draws on):
+Official documentation pages, read directly on 2026-10-11 and 2026-10-13. This is every page the index at
+https://vtpass.com/documentation/ links to, plus four pages it does not link but that exist (the TV and
+electricity landing pages, personal accident insurance, 9mobile SME data):
 
 - https://vtpass.com/documentation/introduction/
 - https://vtpass.com/documentation/
@@ -590,8 +615,19 @@ these are the ones this document draws on):
 - https://vtpass.com/documentation/third-party-insurance/
 - https://vtpass.com/documentation/personal-accident-insurance-api-2/
 - https://vtpass.com/documentation/bank-transfer-api/
-- https://vtpass.com/documentation/introduction-to-vtpass-messaging-api/
 - https://vtpass.com/developers and https://sandbox.vtpass.com/developers
+
+Messaging API pages (A10):
+
+- https://vtpass.com/documentation/introduction-to-vtpass-messaging-api/
+- https://vtpass.com/documentation/messaging-api-authentication/
+- https://vtpass.com/documentation/learn-how-to-use-messaging/
+- https://vtpass.com/documentation/send-sms-normal/ and https://vtpass.com/documentation/send-sms-normal-v2/
+- https://vtpass.com/documentation/send-sms-dnd/, https://vtpass.com/documentation/send-sms-dnd-v2/,
+  https://vtpass.com/documentation/send-sms-dnd-fallback/, https://vtpass.com/documentation/v2-send-sms-dnd-fallback/
+- https://vtpass.com/documentation/send-sms-simhost/ and https://vtpass.com/documentation/send-sms-simhost-dnd-fallback/
+- https://vtpass.com/documentation/sms-unit-balance/
+- https://vtpass.com/documentation/vtpass-messaging-response-codes-2/
 - https://vtpass.com/blog/index.php/2023/07/21/vtpass-agent-commission-rates/
 
 Community SDKs read in full (npm), as a cross-check only:
@@ -602,4 +638,4 @@ Community SDKs read in full (npm), as a cross-check only:
 - `vtpassnodejs` 1.0.9, https://github.com/Chibuokem/vtpassnodejs
 - `vtpass-node` 1.0.6, https://github.com/seyi-js/vtpass-node
 
-Investigated 2026-10-11.
+Investigated 2026-10-11, full index pass 2026-10-13.
