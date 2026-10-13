@@ -175,6 +175,38 @@ async function confirmOnChain(chainId: number, hash: Hash, what: "approval" | "p
   }
 }
 
+/**
+ * A Circle wallet reports its approval as soon as Circle accepts it, not once
+ * it is mined, and the payment must not go out before then: Circle checks the
+ * call first, and a router that cannot pull the funds yet makes the payment
+ * fail without a word. Waits on the receipt when the hash is known, and on
+ * the allowance itself when it can be read.
+ */
+async function waitForCircleApproval(
+  input: BundledSendInput,
+  router: Address,
+  total: bigint,
+  approval: { txHash?: string },
+) {
+  if (approval.txHash && /^0x[0-9a-fA-F]{64}$/.test(approval.txHash)) {
+    await confirmOnChain(input.chainId, approval.txHash as Hash, "approval");
+  }
+  if (!input.readAllowance) return;
+
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    try {
+      if ((await input.readAllowance(router)) >= total) return;
+    } catch {
+      // keep waiting
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+  }
+  throw new Error(
+    "The approval is taking longer than usual to confirm. Wait a moment, then try the payment again.",
+  );
+}
+
 async function runBundledSend(
   input: BundledSendInput,
 ): Promise<BundledSendResult> {
@@ -219,11 +251,12 @@ async function runBundledSend(
     if (!input.circleExecutor) {
       throw new Error("Circle wallet is not ready.");
     }
-    await input.circleExecutor.execute(
+    const approval = await input.circleExecutor.execute(
       encodeErc20Approve(router, maxUint256),
       input.token,
       "send-approve",
     );
+    await waitForCircleApproval(input, router, total, approval);
   }
 
   if (needsApproval) {

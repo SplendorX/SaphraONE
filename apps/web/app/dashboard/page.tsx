@@ -125,9 +125,10 @@ import {
   writeCircleWallets,
 } from "@/lib/circle-session";
 import {
+  describeCircleTxFailure,
   extractCircleTransactionId,
   extractCircleTxHash,
-  recoverCircleTxHash,
+  recoverCircleTxDetails,
 } from "@/lib/circle-tx";
 import {
   arcTokens,
@@ -2154,7 +2155,7 @@ export function DashboardContent({
     });
 
     return {
-      transactionId: challenge.id || challenge.challengeId || executed.transactionId,
+      transactionId: executed.transactionId || challenge.id || challenge.challengeId,
       txHash: executed.txHash,
     };
   }
@@ -2457,12 +2458,21 @@ export function DashboardContent({
           : circleWallet?.id) ?? circleWallet?.id;
 
       if (txIdToPoll && circleLogin && walletIdForPoll) {
-        void recoverCircleTxHash({
+        void recoverCircleTxDetails({
           attempts: 15,
           transactionId: txIdToPoll,
           userToken: circleLogin.userToken,
           walletId: walletIdForPoll,
-        }).then((hash) => {
+        }).then((recovered) => {
+          // Circle gave up on it after the confirmation: say so, rather than
+          // leave "payment submitted" on a payment that never left.
+          if (recovered.failure) {
+            setCircleSendSettled(false);
+            setPaymentStatus("Circle transfer failed");
+            setPaymentError(describeCircleTxFailure(recovered.failure));
+            return;
+          }
+          const hash = recovered.txHash;
           if (hash) {
             setTransactionHash(hash as Hash);
             void recordBusinessOutgoing(hash);
@@ -2830,15 +2840,21 @@ export function DashboardContent({
       return executed;
     }
 
-    const recovered = await recoverCircleTxHash({
+    const recovered = await recoverCircleTxDetails({
+      challengeId,
       transactionId: executed.transactionId,
       userToken: circleLogin.userToken,
       walletId: targetWalletId,
     });
+    // Circle accepts a call before checking it; a call it then gives up on
+    // (funds, gas, a revert) must read as a failure, not a sent payment.
+    if (recovered.failure) {
+      throw new Error(describeCircleTxFailure(recovered.failure));
+    }
 
     return {
-      transactionId: executed.transactionId,
-      txHash: recovered ?? executed.txHash,
+      transactionId: recovered.transactionId ?? executed.transactionId,
+      txHash: recovered.txHash ?? executed.txHash,
     };
   }
 
