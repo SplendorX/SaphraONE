@@ -22,6 +22,18 @@ export const runtime = "nodejs";
 const circleRequestAttempts = 3;
 const circleRetryDelayMs = 400;
 
+/**
+ * The fee level for user-wallet transfers and contract calls. Circle's Gas
+ * Station pays these fees within its policy's per-transaction limit, and a
+ * higher level asks for more; CIRCLE_FEE_LEVEL pins one for the whole
+ * deployment, else the page's choice (MEDIUM when it has none).
+ */
+function circleFeeLevel(requested: CircleActionBody["feeLevel"]) {
+  const pinned = process.env.CIRCLE_FEE_LEVEL?.trim().toUpperCase();
+  if (pinned === "LOW" || pinned === "MEDIUM" || pinned === "HIGH") return pinned;
+  return requested ?? "MEDIUM";
+}
+
 type CircleAction =
   | "createTransfer"
   | "createContractExecution"
@@ -583,7 +595,7 @@ async function handleCircleAction(request: Request) {
         body: {
           amounts: [body.amount],
           destinationAddress: body.destinationAddress,
-          feeLevel: body.feeLevel ?? "MEDIUM",
+          feeLevel: circleFeeLevel(body.feeLevel),
           idempotencyKey: crypto.randomUUID(),
           refId: body.refId,
           tokenAddress: body.tokenId ? undefined : body.tokenAddress,
@@ -618,7 +630,7 @@ async function handleCircleAction(request: Request) {
           amount: body.amount,
           callData: body.callData,
           contractAddress: body.contractAddress,
-          feeLevel: body.feeLevel ?? "MEDIUM",
+          feeLevel: circleFeeLevel(body.feeLevel),
           idempotencyKey: crypto.randomUUID(),
           refId: body.refId,
           walletId: body.walletId,

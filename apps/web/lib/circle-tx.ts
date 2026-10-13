@@ -67,6 +67,18 @@ export function extractCircleTxFailure(result: unknown): CircleTxFailure | undef
 /** A sentence for a failed Circle transaction; says nothing was sent. */
 export function describeCircleTxFailure(failure: CircleTxFailure) {
   const reason = failure.reason ?? "";
+  // Circle's Gas Station pays the network fee for these wallets, within the
+  // limits of its policy (Circle Console → Gas Station). Over a limit, the
+  // transaction fails before it is sent; the wallet's own balance is beside
+  // the point.
+  if (/PAYMASTER_POLICY/i.test(reason)) {
+    const limit = /MAX_SPEND_USD_PER_TX/i.test(reason)
+      ? "its per-transaction spend limit"
+      : /PER_DAY|DAILY/i.test(reason)
+        ? "its daily limit"
+        : "a limit in its policy";
+    return `Circle's Gas Station wouldn't cover the network fee for this payment: it is over ${limit}. Nothing was sent. Raise the limit in Circle Console → Gas Station → Policy, then try again.`;
+  }
   if (/INSUFFICIENT_NATIVE_TOKEN|gas|fee/i.test(reason)) {
     return "Not enough USDC to cover the network fee. Top up this wallet and try again — nothing was sent.";
   }

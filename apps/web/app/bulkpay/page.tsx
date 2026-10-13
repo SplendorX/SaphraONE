@@ -513,7 +513,7 @@ export default function BulkPayPage() {
  {
  callData,
  contractAddress,
- feeLevel: "HIGH",
+ feeLevel: "MEDIUM",
  refId,
  userToken: circleLogin.userToken,
  walletId: circleWallet.id,

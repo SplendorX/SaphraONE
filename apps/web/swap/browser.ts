@@ -1225,7 +1225,7 @@ export async function createCircleUserWalletAdapter(
                 : undefined,
             callData: data,
             contractAddress: params.address,
-            feeLevel: "HIGH",
+            feeLevel: "MEDIUM",
             refId,
             userToken: request.userToken,
             walletId: request.walletId,

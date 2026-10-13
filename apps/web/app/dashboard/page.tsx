@@ -2138,7 +2138,7 @@ export function DashboardContent({
       {
         callData,
         contractAddress,
-        feeLevel: "HIGH",
+        feeLevel: "MEDIUM",
         refId: trimmedPaymentNarration.slice(0, 50) || refId,
         userToken: circleLogin.userToken,
         walletId: effectiveWallet.id,
@@ -2458,8 +2458,10 @@ export function DashboardContent({
           : circleWallet?.id) ?? circleWallet?.id;
 
       if (txIdToPoll && circleLogin && walletIdForPoll) {
+        // Long enough (about a minute) to catch Circle giving up on it, which
+        // can come well after the confirmation.
         void recoverCircleTxDetails({
-          attempts: 15,
+          attempts: 40,
           transactionId: txIdToPoll,
           userToken: circleLogin.userToken,
           walletId: walletIdForPoll,

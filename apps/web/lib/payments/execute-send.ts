@@ -322,7 +322,7 @@ export async function executeCircleContract(params: {
   }>("createContractExecution", {
     callData: params.callData,
     contractAddress: params.contractAddress,
-    feeLevel: "HIGH",
+    feeLevel: "MEDIUM",
     refId: params.refId,
     userToken: params.userToken,
     walletId: params.walletId,

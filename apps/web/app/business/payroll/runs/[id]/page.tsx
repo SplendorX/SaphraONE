@@ -421,7 +421,7 @@ export default function PayrollRunDetailPage({
       {
         callData,
         contractAddress,
-        feeLevel: "HIGH",
+        feeLevel: "MEDIUM",
         refId,
         userToken: circleLogin.userToken,
         walletId: activeCircle.id,

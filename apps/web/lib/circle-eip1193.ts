@@ -199,7 +199,7 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
       amount: hexValueToDecimalString(tx.value),
       callData: tx.data ?? "0x",
       contractAddress: tx.to,
-      feeLevel: "HIGH",
+      feeLevel: "MEDIUM",
       userToken: config.userToken,
       walletId: config.walletId,
     });
