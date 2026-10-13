@@ -1,0 +1,5 @@
+{
+  "note": "SaphraSend fee bands, in units of a 6-decimal token (USDC/EURC). Band i covers amounts up to and including upTo[i] and charges fees[i]; above the last bound pays the last fee. Keep in step with apps/web/lib/fees.ts (sendFeeTiers).",
+  "upTo": ["10000000", "50000000", "200000000", "500000000", "1000000000", "5000000000", "20000000000"],
+  "fees": ["10000", "50000", "200000", "500000", "1000000", "2000000", "4000000", "5000000"]
+}

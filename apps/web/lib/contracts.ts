@@ -80,7 +80,7 @@ export const swiftBatchMaxRecipients = 500;
 export const swiftRecurepayExecutorAddress =
   process.env.NEXT_PUBLIC_SWIFTRECUREPAY_EXECUTOR_ADDRESS?.trim() ?? "";
 
-/** Direct-send router: 0.1% platform fee + optional Spend&Save in one call. */
+/** Direct-send router (SaphraSend: flat fee by amount band; SwiftPaySend: 0.1%) + optional Spend&Save in one call. */
 export function getSaphraSendAddress() {
   // Bracket access so Next does not inline an empty string at compile time.
   return (
@@ -117,6 +117,14 @@ export const swiftPaySendAbi = [
     name: "PLATFORM_FEE_BASIS_POINTS",
     stateMutability: "view",
     inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  // SaphraSend: the flat fee for an amount, from its fee bands.
+  {
+    type: "function",
+    name: "feeFor",
+    stateMutability: "view",
+    inputs: [{ name: "amount", type: "uint256" }],
     outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;

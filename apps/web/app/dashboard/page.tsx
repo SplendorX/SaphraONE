@@ -94,10 +94,9 @@ import {
 import type { WalletTransfer } from "@/lib/arcscan-history";
 import { erc20Abi } from "@/lib/contracts";
 import {
-  feePercentLabel,
   platformFeeRecipient,
-  platformFeeUnits,
-  SEND_FEE_BPS,
+  sendFeeLabel,
+  sendFeeUnits as sendRouterFeeUnits,
 } from "@/lib/fees";
 import { executeBundledSend } from "@/lib/payments/execute-send";
 import { useDisplayCurrency } from "@/lib/display-currency";
@@ -1022,7 +1021,7 @@ export function DashboardContent({
     if (paymentAmountUnits === null) {
       return zeroAmount;
     }
-    return platformFeeUnits(paymentAmountUnits, SEND_FEE_BPS);
+    return sendRouterFeeUnits(paymentAmountUnits);
   }, [paymentAmountUnits, paymentQuote]);
 
   const totalPaymentRequiredUnits = useMemo(() => {
@@ -3067,7 +3066,7 @@ export function DashboardContent({
                   feeAmount:
                     paymentQuote?.platformFeeAmount ??
                     formatUnits(sendFeeUnits, selectedTokenInfo.decimals),
-                  feeLabel: `${feePercentLabel(SEND_FEE_BPS)} service fee`,
+                  feeLabel: sendFeeLabel(paymentQuote?.sendRouter || undefined),
                   saveAmount: paymentQuote?.spendSave.active
                     ? paymentQuote.spendSave.saveAmount
                     : undefined,

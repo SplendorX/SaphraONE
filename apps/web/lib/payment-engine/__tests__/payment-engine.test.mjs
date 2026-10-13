@@ -307,12 +307,13 @@ describe("routeIntent", () => {
     }
   });
 
-  it("charges the 0.1% platform fee on live rails", () => {
+  it("charges the send router's band fee on live rails", () => {
     const decision = routeIntent(baseIntent({ amountUnits: usdc(100) }), {
       initiatorType: "human",
       walletMode: "external",
     });
 
-    assert.equal(decision.estimatedFeeUnits, usdc(0.1));
+    // SaphraSend: over 50, up to 200 → 0.20.
+    assert.equal(decision.estimatedFeeUnits, usdc(0.2));
   });
 });

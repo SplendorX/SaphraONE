@@ -5,7 +5,7 @@ import {
   evaluateSpendSaveForPayment,
   readSavingsSupabaseError,
 } from "@/lib/save/service";
-import { platformFeeUnits, SEND_FEE_BPS } from "@/lib/fees";
+import { sendFeeUnits } from "@/lib/fees";
 import {
   normalizeAmount,
   normalizeCurrency,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       currency,
       paymentKind:
         typeof body.paymentKind === "string" ? body.paymentKind : "outgoing",
-      platformFeeUnits: platformFeeUnits(paymentAmountUnits, SEND_FEE_BPS),
+      platformFeeUnits: sendFeeUnits(paymentAmountUnits),
     });
 
     if (!evaluation) {

@@ -51,7 +51,7 @@ import { fetchProfile } from "@/lib/profile";
 import { formatUsernameLabel } from "@/lib/profile-utils";
 import { calculateTransactionCashback } from "@/lib/referral/cashback-service";
 import { cashbackPointsFor, rewardsV2Enabled } from "@/lib/rewards/config";
-import { SEND_FEE_BPS } from "@/lib/fees";
+import { maxSendableUnits } from "@/lib/fees";
 import { arcTokens, arcTokenSymbols } from "@/lib/tokens";
 import { useConversionRates, usdPerUnit } from "@/lib/use-conversion-rates";
 import { bottomSheetClassName, useSheetSide } from "@/lib/use-media-query";
@@ -993,7 +993,7 @@ function ChatView(
       !isEmbeddedWalletMode && selectedToken === "USDC" ? parseUnits(EXTERNAL_GAS_RESERVE_USDC, decimals) : BigInt(0);
     const spendable = units > reserve ? units - reserve : BigInt(0);
     const saveBps = BigInt(Math.ceil(savePercent * 100));
-    return (spendable * BigInt(10_000)) / (BigInt(10_000) + BigInt(SEND_FEE_BPS) + saveBps);
+    return maxSendableUnits(spendable, saveBps);
   }
 
   function fillPercent(percent: number) {
@@ -1377,7 +1377,7 @@ function ChatView(
                   </div>
                   <div>
                     <dt>{settlementQuote?.feeLabel ?? "Service fee"}</dt>
-                    <dd>{settlementQuote ? `${settlementQuote.feeAmount} ${selectedToken}` : "0.1%"}</dd>
+                    <dd>{settlementQuote ? `${settlementQuote.feeAmount} ${selectedToken}` : "Shown with the amount"}</dd>
                   </div>
                   {settlementQuote?.saveAmount ? (
                     <div>

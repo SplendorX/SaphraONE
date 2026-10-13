@@ -81,7 +81,7 @@ import {
 import { erc20Abi } from "@/lib/contracts";
 import { swiftSaveVaultAbi } from "@/lib/save/abis";
 import { swiftSaveVaultAddress } from "@/lib/save/config";
-import { SEND_FEE_BPS, platformFeeRecipient, platformFeeUnits } from "@/lib/fees";
+import { platformFeeRecipient, sendFeeUnits } from "@/lib/fees";
 import { executeBundledSend } from "@/lib/payments/execute-send";
 import {
   archiveCircleSavePocket,
@@ -558,7 +558,7 @@ export function SwiftCircleHub() {
       token: token.address,
       recipient: destination,
       paymentUnits: units,
-      feeUnits: platformFeeUnits(units, SEND_FEE_BPS),
+      feeUnits: sendFeeUnits(units),
       feeRecipient,
       mode: isCircleMode ? "circle" : "external",
       writeContractAsync: isCircleMode

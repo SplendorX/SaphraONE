@@ -15,6 +15,8 @@
     "deploy:batchpay": "node contracts/deployBatchPay.js",
     "deploy:swiftpaysend": "node contracts/deploySwiftPaySend.js",
     "deploy:swiftpaysend:mainnet": "node contracts/deploySwiftPaySend.js --mainnet",
+    "deploy:saphrasend": "node contracts/deploySaphraSend.js",
+    "deploy:saphrasend:mainnet": "node contracts/deploySaphraSend.js --mainnet",
     "set:feerecipient": "node contracts/setFeeRecipient.js",
     "set:feerecipient:mainnet": "node contracts/setFeeRecipient.js --mainnet",
     "deploy:recurepay": "node contracts/deployRecurePayExecutor.js",

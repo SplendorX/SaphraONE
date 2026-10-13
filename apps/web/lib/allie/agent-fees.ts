@@ -2,7 +2,7 @@
 // execute route (what actually leaves the wallet) so the two cannot drift.
 import { isAddress, getAddress, type Address } from "viem";
 
-import { platformFeeRecipient, platformFeeUnits, SEND_FEE_BPS } from "@/lib/fees";
+import { platformFeeRecipient, sendFeeUnits, usesLegacySendFee } from "@/lib/fees";
 
 import {
   alliePerPaymentFeeUnits,
@@ -56,15 +56,15 @@ export function computeAgentFees(
   const fees: AgentFee[] = [];
   const skipped: string[] = [];
 
-  // Platform send fee — 0.1%, taken by the router in the same transaction.
+  // Platform send fee (the router's band fee), taken in the same transaction.
   // It needs no recipient here: SwiftPaySend holds its own on-chain, so this
   // cannot be skipped by a missing env var the way a transfer could.
-  const platformUnits = platformFeeUnits(paymentUnits, SEND_FEE_BPS);
+  const platformUnits = sendFeeUnits(paymentUnits);
 
   if (platformUnits > 0n) {
     fees.push({
       kind: "platform",
-      label: "Service fee (0.1%)",
+      label: usesLegacySendFee() ? "Service fee (0.1%)" : "Service fee",
       recipient: readRecipient(platformFeeRecipient()),
       units: platformUnits,
       via: "router",

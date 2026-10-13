@@ -1,4 +1,4 @@
-import { platformFeeUnits, SEND_FEE_BPS } from "@/lib/fees";
+import { sendFeeUnits } from "@/lib/fees";
 
 import type { PaymentIntent, PaymentIntentRail } from "@/lib/payment-engine/intent";
 
@@ -83,7 +83,7 @@ export function routeIntent(
   context: RouterContext,
 ): RouteDecision {
   const executor = executorForWalletMode(context.walletMode);
-  const estimatedFeeUnits = platformFeeUnits(intent.amountUnits, SEND_FEE_BPS);
+  const estimatedFeeUnits = sendFeeUnits(intent.amountUnits);
 
   if (context.requestedRail) {
     return {

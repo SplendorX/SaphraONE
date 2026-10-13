@@ -1,8 +1,8 @@
 /**
  * Agent-payment fees.
  *
- * Agent payments settle through SwiftPaySend, which takes the 0.1% platform
- * fee on-chain in the same call. ALLIE's own fee is a separate transfer.
+ * Agent payments settle through the send router (SaphraSend), which takes
+ * its band fee on-chain in the same call (100 USDC → 0.20). ALLIE's own fee is a separate transfer.
  * These tests pin the arithmetic and which fees need a leg of their own.
  *
  * Run: pnpm --filter @saphra/web test:allie
@@ -27,21 +27,21 @@ before(async () => {
 const usdc = (value) => BigInt(Math.round(value * 1_000_000));
 
 describe("computeAgentFees", () => {
-  it("charges the 0.1% platform fee and the ALLIE fee on free tier", () => {
+  it("charges the platform band fee and the ALLIE fee on free tier", () => {
     const breakdown = computeAgentFees(usdc(100), "free");
 
     assert.equal(breakdown.fees.length, 2);
     assert.equal(breakdown.fees[0].kind, "platform");
-    assert.equal(breakdown.fees[0].units, usdc(0.1), "0.1% of 100");
+    assert.equal(breakdown.fees[0].units, usdc(0.2), "band fee for 100");
     assert.equal(breakdown.fees[0].via, "router", "taken inside the send call");
     assert.equal(breakdown.fees[1].kind, "allie");
     assert.equal(breakdown.fees[1].units, 3_000n);
     assert.equal(breakdown.fees[1].via, "transfer");
 
-    assert.equal(breakdown.totalFeeUnits, usdc(0.1) + 3_000n);
+    assert.equal(breakdown.totalFeeUnits, usdc(0.2) + 3_000n);
     assert.equal(
       breakdown.totalDebitUnits,
-      usdc(100) + usdc(0.1) + 3_000n,
+      usdc(100) + usdc(0.2) + 3_000n,
       "payment plus every fee",
     );
   });
@@ -51,7 +51,7 @@ describe("computeAgentFees", () => {
 
     assert.equal(breakdown.fees.length, 1);
     assert.equal(breakdown.fees[0].kind, "platform");
-    assert.equal(breakdown.totalFeeUnits, usdc(0.1));
+    assert.equal(breakdown.totalFeeUnits, usdc(0.2));
   });
 
   it("still charges the platform fee on Pro", () => {
@@ -69,7 +69,7 @@ describe("computeAgentFees", () => {
       const breakdown = computeAgentFees(usdc(100), "pro");
 
       assert.equal(breakdown.fees.length, 1);
-      assert.equal(breakdown.totalFeeUnits, usdc(0.1));
+      assert.equal(breakdown.totalFeeUnits, usdc(0.2));
       assert.deepEqual(breakdown.skipped, []);
     } finally {
       process.env.NEXT_PUBLIC_PLATFORM_FEE_RECIPIENT = saved;
@@ -88,7 +88,7 @@ describe("computeAgentFees", () => {
       assert.deepEqual(breakdown.skipped, ["allie"]);
       assert.equal(
         breakdown.totalFeeUnits,
-        usdc(0.1),
+        usdc(0.2),
         "an unconfigured fee is skipped, never folded into the payment",
       );
     } finally {
@@ -97,15 +97,15 @@ describe("computeAgentFees", () => {
     }
   });
 
-  it("omits a platform fee that rounds away on dust payments", () => {
-    // 0.1% of 0.0005 USDC is below one unit.
+  it("charges the 0.01 minimum on dust payments", () => {
+    // Up to 10 USDC pays the flat 0.01, which covers the network's gas.
     const breakdown = computeAgentFees(500n, "pro");
 
-    assert.equal(breakdown.totalFeeUnits, 0n);
-    assert.equal(breakdown.totalDebitUnits, 500n);
+    assert.equal(breakdown.totalFeeUnits, usdc(0.01));
+    assert.equal(breakdown.totalDebitUnits, 500n + usdc(0.01));
   });
 
-  it("scales the platform fee with the payment, not the leg count", () => {
+  it("steps the platform fee up with the payment, not the leg count", () => {
     const small = computeAgentFees(usdc(10), "pro").totalFeeUnits;
     const large = computeAgentFees(usdc(1000), "pro").totalFeeUnits;
 

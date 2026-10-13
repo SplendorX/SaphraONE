@@ -5,8 +5,9 @@ import { getSaphraSendAddress, swiftBatchFeeRecipient } from "@/lib/contracts";
 import {
   feePercentLabel,
   formatFeeAmount,
-  platformFeeUnits,
   SEND_FEE_BPS,
+  sendFeeUnits,
+  usesLegacySendFee,
 } from "@/lib/fees";
 import { assertSavingsAccess, normalizeOwnerWallet } from "@/lib/save/auth";
 import { swiftSaveVaultAddress } from "@/lib/save/config";
@@ -60,9 +61,9 @@ export async function POST(request: NextRequest) {
 
   const decimals = arcTokens[currency].decimals;
   const paymentAmountUnits = BigInt(amount.amount_units);
-  const feeUnits = platformFeeUnits(paymentAmountUnits, SEND_FEE_BPS);
-  const feeRecipient = swiftBatchFeeRecipient;
   const sendRouter = getSaphraSendAddress();
+  const feeUnits = sendFeeUnits(paymentAmountUnits, sendRouter);
+  const feeRecipient = swiftBatchFeeRecipient;
   const vault = swiftSaveVaultAddress();
 
   try {
@@ -83,8 +84,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       paymentAmount: amount.amount,
       paymentAmountUnits: paymentAmountUnits.toString(),
-      platformFeeBps: SEND_FEE_BPS,
-      platformFeeLabel: feePercentLabel(SEND_FEE_BPS),
+      // A flat band fee has no rate: 0 bps, and the label names it.
+      platformFeeBps: usesLegacySendFee(sendRouter) ? SEND_FEE_BPS : 0,
+      platformFeeLabel: usesLegacySendFee(sendRouter) ? feePercentLabel(SEND_FEE_BPS) : "Service fee",
       platformFeeAmount: formatFeeAmount(feeUnits, decimals),
       platformFeeUnits: feeUnits.toString(),
       feeRecipient: isAddress(feeRecipient) ? feeRecipient : "",
