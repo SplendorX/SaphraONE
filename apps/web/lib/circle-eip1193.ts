@@ -237,9 +237,9 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
 
     // Circle usually returns the id first and the hash once mined; the caller
     // is a viem client that expects a hash back from eth_sendTransaction.
-    // Circle can take a while to index the hash on a busy network: ~25s.
+    // Circle can take a while to index the hash on a busy network: up to ~60s.
     const recovered = await recoverCircleTxDetails({
-      attempts: 20,
+      attempts: 40,
       skipHashes: [...(returnedHashes.get(config.walletId) ?? [])],
       // Without a transaction id, the challenge names the transaction it made.
       challengeId,

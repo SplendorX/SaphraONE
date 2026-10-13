@@ -15,6 +15,13 @@ import {
 export const appUnlockCookieName = "saphra_app_unlock";
 
 export const appLockTimeouts = [1, 5, 15] as const;
+/**
+ * Extra life on the pass past the auto-lock time. The app itself locks on
+ * time when it comes back (and drops the pass); this only keeps a renewal
+ * that was late or lost (a frozen phone tab, a network blip) from locking an
+ * app that is open and in use.
+ */
+export const appUnlockGraceMs = 2 * 60_000;
 export type AppLockTimeout = (typeof appLockTimeouts)[number];
 
 type UnlockPayload = {
@@ -26,7 +33,7 @@ type UnlockPayload = {
 
 export function createUnlockToken(wallet: string, timeoutMinutes: number) {
   const payload: UnlockPayload = {
-    expiresAt: new Date(Date.now() + timeoutMinutes * 60_000).toISOString(),
+    expiresAt: new Date(Date.now() + timeoutMinutes * 60_000 + appUnlockGraceMs).toISOString(),
     timeoutMinutes,
     type: "app-unlock",
     wallet: wallet.toLowerCase(),

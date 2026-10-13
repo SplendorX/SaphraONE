@@ -137,7 +137,11 @@ async function resolveSendRouter(override?: string): Promise<Address> {
   );
 }
 
-/** Arc client for confirming external-wallet transactions. */
+function isTxHash(value: unknown): value is Hash {
+  return typeof value === "string" && /^0x[0-9a-fA-F]{64}$/.test(value);
+}
+
+/** Arc client for confirming wallet transactions. */
 let arcClient: ReturnType<typeof createPublicClient> | null = null;
 
 function arcReceiptClient(chainId: number) {
@@ -219,11 +223,20 @@ async function runBundledSend(
     if (!input.circleExecutor) {
       throw new Error("Circle wallet is not ready.");
     }
-    await input.circleExecutor.execute(
+    const approval = await input.circleExecutor.execute(
       encodeErc20Approve(router, maxUint256),
       input.token,
       "send-approve",
     );
+    // Circle queues the payment straight after; sent before the approval is
+    // mined, the router can't pull the funds and the payment reverts after
+    // Circle has already reported it as sent.
+    if (!isTxHash(approval.txHash)) {
+      throw new Error(
+        "The approval is taking longer than usual to confirm. Wait a moment, then try the payment again.",
+      );
+    }
+    await confirmOnChain(input.chainId, approval.txHash, "approval");
   }
 
   if (needsApproval) {
@@ -269,8 +282,16 @@ async function runBundledSend(
     router,
     "send-bundle",
   );
+  // Circle answers once the person confirms, not once the payment lands:
+  // only a mined, successful payment counts as sent.
+  if (!isTxHash(result.txHash)) {
+    throw new Error(
+      "Your transfer was submitted and is still confirming. Your balance will update shortly — no need to send it again.",
+    );
+  }
+  await confirmOnChain(input.chainId, result.txHash, "payment");
   return {
-    txHash: result.txHash as Hash | undefined,
+    txHash: result.txHash,
     transactionId: result.transactionId,
     bundledSave,
   };

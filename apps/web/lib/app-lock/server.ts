@@ -6,6 +6,7 @@ import type { NextResponse } from "next/server";
 import {
   appLockTimeouts,
   appUnlockCookieName,
+  appUnlockGraceMs,
   createUnlockToken,
   type AppLockTimeout,
 } from "@/lib/app-lock/cookie";
@@ -212,7 +213,7 @@ export async function setUnlockCookie(
 ) {
   response.cookies.set(appUnlockCookieName, createUnlockToken(wallet, timeoutMinutes), {
     httpOnly: true,
-    maxAge: timeoutMinutes * 60,
+    maxAge: timeoutMinutes * 60 + appUnlockGraceMs / 1000,
     path: "/",
     sameSite: "lax",
     secure: await secureCookieFor(),

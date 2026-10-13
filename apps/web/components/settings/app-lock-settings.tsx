@@ -112,7 +112,7 @@ export function AppLockSettings({
         setPin("");
         return;
       }
-      void run(() => postAppLock("setup", { pin: value, timeoutMinutes: 1 }), "App lock is on.");
+      void run(() => postAppLock("setup", { pin: value, timeoutMinutes: 5 }), "App lock is on.");
       return;
     }
     if (flow.kind === "change") {

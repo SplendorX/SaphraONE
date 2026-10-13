@@ -19,6 +19,18 @@ const TOUCH_INTERVAL_MS = 20_000;
 
 type GateState = "checking" | "open" | "locked" | "two-factor";
 
+/** Renew the pass as the app is left; keepalive lets it finish in the background. */
+function touchOnLeave() {
+  void fetch("/api/app-lock", {
+    body: JSON.stringify({ action: "touch" }),
+    cache: "no-store",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    keepalive: true,
+    method: "POST",
+  }).catch(() => undefined);
+}
+
 /**
  * Keeps a locked account's pages covered until the PIN or Face ID /
  * fingerprint opens them. The server enforces the lock (the API answers 423
@@ -122,26 +134,33 @@ export function AppLockGate({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [state, status?.enabled]);
 
-  // Coming back after the auto-lock time: check, which shows the lock.
+  // The auto-lock time counts from leaving the app. Leaving renews the pass,
+  // so it runs from now rather than from the last renewal up to 20s earlier
+  // (which locked a quick trip to another app). Coming back after the time
+  // drops the pass and shows the lock; sooner, the pass is renewed.
   useEffect(() => {
     function onVisibility() {
       if (document.visibilityState === "hidden") {
         hiddenAtRef.current = Date.now();
+        if (status?.enabled && state === "open") touchOnLeave();
         return;
       }
       const hiddenAt = hiddenAtRef.current;
       hiddenAtRef.current = null;
-      const timeoutMs = (status?.timeoutMinutes ?? 1) * 60_000;
-      if (status?.enabled && hiddenAt && Date.now() - hiddenAt >= timeoutMs) {
+      if (!status?.enabled || state !== "open") return;
+      const timeoutMs = (status.timeoutMinutes ?? 1) * 60_000;
+      if (hiddenAt && Date.now() - hiddenAt >= timeoutMs) {
         setState("locked");
-        void refresh();
-      } else if (status?.enabled) {
+        void postAppLock("lock")
+          .catch(() => undefined)
+          .finally(() => void refresh());
+      } else {
         void postAppLock("touch").catch(() => undefined);
       }
     }
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [refresh, status?.enabled, status?.timeoutMinutes]);
+  }, [refresh, state, status?.enabled, status?.timeoutMinutes]);
 
   function onUnlocked() {
     setState("open");

@@ -126,8 +126,10 @@ import {
   writeCircleWallets,
 } from "@/lib/circle-session";
 import {
+  describeCircleTxFailure,
   extractCircleTransactionId,
   extractCircleTxHash,
+  recoverCircleTxDetails,
   recoverCircleTxHash,
 } from "@/lib/circle-tx";
 import {
@@ -2840,15 +2842,21 @@ export function DashboardContent({
       return executed;
     }
 
-    const recovered = await recoverCircleTxHash({
+    // Circle can take up to ~60s to index the hash on a busy network.
+    const recovered = await recoverCircleTxDetails({
+      attempts: 40,
+      challengeId,
       transactionId: executed.transactionId,
       userToken: circleLogin.userToken,
       walletId: targetWalletId,
     });
+    if (recovered.failure) {
+      throw new Error(describeCircleTxFailure(recovered.failure));
+    }
 
     return {
-      transactionId: executed.transactionId,
-      txHash: recovered ?? executed.txHash,
+      transactionId: recovered.transactionId ?? executed.transactionId,
+      txHash: recovered.txHash ?? executed.txHash,
     };
   }
 
