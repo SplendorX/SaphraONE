@@ -22,6 +22,7 @@ import {
   getCircleErrorMessage as getClientErrorMessage,
   getCircleLoginIdentity,
   isArcCircleWallet,
+  isCircleDeviceIdError,
   preferArcCircleWallets,
   readCircleLogin as readStoredLogin,
   readCircleSessionStorage as readStorage,
@@ -53,6 +54,10 @@ type DeviceTokenResponse = {
 type CircleEntityConfigResponse = {
   appId?: string;
 };
+
+type LoginCompleteCallback = NonNullable<
+  Parameters<W3SSdk["updateConfigs"]>[1]
+>;
 
 type GoogleOAuthDiagnostic = {
   audienceMatches?: boolean;
@@ -213,7 +218,7 @@ function isDeviceIdTimeout(error: unknown) {
 
 function getDeviceIdFailureMessage(hasIdToken = false) {
   if (hasIdToken) {
-    return "Google login was approved, but the device session could not be established with Circle. Click 'Clear and Retry Google Login' below to establish a fresh device session.";
+    return "Google approved the sign-in, but Circle could not verify this device. Tap Continue with Google to try again.";
   }
   return "Circle could not create a device ID. The Circle Web SDK requires a frame at pw-auth.circle.com to establish device security. If you are using Brave Shields, an ad blocker, or third-party cookie blocking, please allow pw-auth.circle.com, then retry Continue with Google.";
 }
@@ -226,6 +231,13 @@ function getGoogleLoginErrorMessage(
   appId?: string,
   googleClientId?: string,
 ) {
+  // Nobody is signed in yet, so the generic wording ("you'll be signed out
+  // next time") does not apply; checked before getClientErrorMessage, which
+  // would also mark the (nonexistent) session stale.
+  if (isCircleDeviceIdError(error)) {
+    return "Circle could not verify this device, so the Google sign-in was not completed. Tap Continue with Google to try again.";
+  }
+
   const message = getClientErrorMessage(error, fallback);
   const normalized = message.toLowerCase();
 
@@ -341,16 +353,10 @@ export function CircleGoogleLogin({
   const setupChallengePendingRef = useRef(false);
   const enterAppAfterLoginRef = useRef(false);
   const deviceIdRequestRef = useRef<Promise<string> | null>(null);
-  const deviceTokenRequestRef = useRef<Promise<DeviceTokenResponse> | null>(
-    null,
-  );
-  // Device credentials minted on this page load and not yet used for a login.
-  // A Google login must never reuse credentials from an earlier attempt:
-  // Circle binds them to the device ID its own frame holds, and rejects the
-  // Google token on return when they no longer match.
-  const unusedDeviceTokensRef = useRef<Promise<DeviceTokenResponse> | null>(
-    null,
-  );
+  // The SDK is one shared instance for the whole page, and email sign-in
+  // puts its own settings and callback on it. Ours are restored from here
+  // before a Google login starts.
+  const onLoginCompleteRef = useRef<LoginCompleteCallback | null>(null);
   const envAppId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
   const googleClientId =
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() ?? "";
@@ -363,8 +369,6 @@ export function CircleGoogleLogin({
   >("checking");
   const [sdkReady, setSdkReady] = useState(false);
 
-  const [deviceToken, setDeviceToken] = useState("");
-  const [deviceEncryptionKey, setDeviceEncryptionKey] = useState("");
   const [loginResult, setLoginResult] = useState<CircleLoginResult | null>(
     null,
   );
@@ -377,9 +381,11 @@ export function CircleGoogleLogin({
   const [oauthDiagnostic, setOauthDiagnostic] =
     useState<GoogleOAuthDiagnostic | null>(null);
   const [isBusy, setIsBusy] = useState(false);
-  // True while the SDK verifies the Google token it just read from the URL.
-  // Nothing may touch device credentials or the SDK iframe until it finishes.
+  // True from the moment the page opens on Google's return URL until the
+  // sign-in is confirmed or fails. Nothing may touch the SDK iframe meanwhile.
   const [googleReturnPending, setGoogleReturnPending] = useState(false);
+  // True once the SDK has been handed the Google token to verify with Circle.
+  const [googleVerifying, setGoogleVerifying] = useState(false);
   const appId = resolvedAppId || envAppId;
   const primaryWallet = personalCircleWallet(wallets);
   const isConfigured = Boolean(appId && googleClientId);
@@ -458,31 +464,13 @@ export function CircleGoogleLogin({
           setOauthDiagnostic(nextOauthDiagnostic);
         }
 
-        const storedDeviceToken = readStorage(storageKeys.deviceToken);
-        const storedDeviceEncryptionKey = readStorage(
-          storageKeys.deviceEncryptionKey,
-        );
-
         const storedLogin = readStoredLogin();
-        const sdkConfigs = {
-          appSettings: {
-            appId,
-          },
-          loginConfigs: {
-            deviceEncryptionKey: storedDeviceEncryptionKey,
-            deviceToken: storedDeviceToken,
-            google: {
-              clientId: googleClientId,
-              redirectUri,
-              selectAccountPrompt: true,
-            },
-          },
-        };
-        const onLoginComplete = (loginError: unknown, result: unknown) => {
+        const onLoginComplete: LoginCompleteCallback = (loginError, result) => {
           if (cancelled) {
             return;
           }
 
+          setGoogleVerifying(false);
           setGoogleReturnPending(false);
 
           if (loginError) {
@@ -561,33 +549,49 @@ export function CircleGoogleLogin({
               if (!cancelled) setIsBusy(false);
             });
         };
-        // The SDK reads the Google token from the hash and clears it as soon
-        // as it is constructed, so check for it first.
-        const isGoogleReturn = window.location.hash.includes("id_token");
+        onLoginCompleteRef.current = onLoginComplete;
+
+        // Google's return URL. The SDK verifies the token in it the moment it
+        // is constructed, with whatever device token it has been given, so
+        // the hash comes off the URL first and goes back on once this device
+        // has a token minted for it (verifyGoogleReturn below).
+        const returnHash = window.location.hash;
+        const isGoogleReturn = returnHash.includes("id_token");
         if (isGoogleReturn) {
-          const idToken = new URLSearchParams(window.location.hash.slice(1)).get("id_token");
+          const idToken = new URLSearchParams(returnHash.slice(1)).get("id_token");
           googleReturnRef.current = idToken
             ? { idToken, nonce: window.localStorage.getItem("nonce") }
             : null;
+          window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}${window.location.search}`,
+          );
         }
-        const sdk = new CircleW3SSdk(sdkConfigs, onLoginComplete);
+        const sdk = new CircleW3SSdk(sdkConfigsFor(), onLoginComplete);
 
-        sdk.updateConfigs(sdkConfigs, onLoginComplete);
+        // One shared instance: constructing it again hands back the first one
+        // with its old settings, so ours are set explicitly.
+        sdk.updateConfigs(sdkConfigsFor(), onLoginComplete);
 
         sdkRef.current = sdk;
 
-        if (!cancelled) {
-          setDeviceToken(storedDeviceToken);
-          setDeviceEncryptionKey(storedDeviceEncryptionKey);
-          setLoginResult(storedLogin);
-          if (isGoogleReturn) {
-            setGoogleReturnPending(true);
-          }
-          setSdkReady(true);
+        if (cancelled) {
+          return;
+        }
 
-          if (!isConfigured) {
-            setStatus("Add Circle and Google credentials");
-          }
+        setLoginResult(storedLogin);
+        if (isGoogleReturn) {
+          setGoogleReturnPending(true);
+        }
+        setSdkReady(true);
+
+        if (!isConfigured) {
+          setStatus("Add Circle and Google credentials");
+        }
+
+        if (isGoogleReturn) {
+          await verifyGoogleReturn(sdk, returnHash, onLoginComplete);
         }
       } catch (sdkError) {
         if (!cancelled) {
@@ -602,6 +606,62 @@ export function CircleGoogleLogin({
       }
     }
 
+    /**
+     * Back from Google: mint a device token for the device ID Circle's frame
+     * holds right now, then let the SDK verify the Google token with it.
+     * Both happen on this page load, so the frame's device ID need not have
+     * survived the trip to Google (phones keep it apart from the page's own
+     * storage), and no token from an earlier attempt is ever reused: Circle
+     * answers "device ID is not found" to either.
+     */
+    async function verifyGoogleReturn(
+      sdk: W3SSdk,
+      returnHash: string,
+      onLoginComplete: LoginCompleteCallback,
+    ) {
+      setStatus("Confirming Google sign-in");
+
+      let tokens: DeviceTokenResponse;
+      try {
+        tokens = await mintDeviceToken();
+      } catch (deviceError) {
+        if (cancelled) {
+          return;
+        }
+
+        const diagnostic = readGoogleOAuthDiagnostic();
+        removeStorage(storageKeys.setupIntent);
+        setGoogleReturnPending(false);
+        setOauthDiagnostic(diagnostic);
+        setError(
+          getGoogleLoginErrorMessage(
+            deviceError,
+            "Google login failed.",
+            redirectUri,
+            diagnostic,
+            appId,
+            googleClientId,
+          ),
+        );
+        setStatus("Google login failed");
+        return;
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}${returnHash}`,
+      );
+      setGoogleVerifying(true);
+      // Reads the token back off the URL and sends it to Circle with the
+      // device token it was just given.
+      sdk.updateConfigs(sdkConfigsFor(tokens), onLoginComplete);
+    }
+
     const initializationTimer = window.setTimeout(() => {
       void initializeSdk();
     }, 0);
@@ -612,17 +672,12 @@ export function CircleGoogleLogin({
     };
   }, [appConfigChecked, appId, googleClientId, isConfigured, redirectUri]);
 
+  /**
+   * The device ID Circle's frame holds right now. Always asked of the frame,
+   * never read back from this page's storage: the two can drift apart, and a
+   * device token minted for a stale ID is rejected at sign-in.
+   */
   const resolveDeviceId = useCallback(async () => {
-    const storedDeviceId =
-      readStorage(storageKeys.deviceId) ||
-      (typeof window !== "undefined"
-        ? window.localStorage.getItem(storageKeys.deviceId) || ""
-        : "");
-
-    if (storedDeviceId) {
-      return storedDeviceId;
-    }
-
     if (deviceIdRequestRef.current) {
       return deviceIdRequestRef.current;
     }
@@ -644,12 +699,8 @@ export function CircleGoogleLogin({
             throw new Error("Circle did not return a device ID.");
           }
 
+          // Kept for renewing the login later (refreshCircleLogin).
           writeStorage(storageKeys.deviceId, nextDeviceId);
-          if (typeof window !== "undefined") {
-            try {
-              window.localStorage.setItem(storageKeys.deviceId, nextDeviceId);
-            } catch {}
-          }
           return nextDeviceId;
         } catch (error) {
           lastError = error;
@@ -676,53 +727,15 @@ export function CircleGoogleLogin({
     }
   }, []);
 
-  useEffect(() => {
-    if (
-      !sdkReady ||
-      !sdkRef.current ||
-      loginResult?.userToken ||
-      googleReturnPending
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function prepareCircleLogin() {
-      const request = ensureDeviceToken({ forceRefresh: true });
-      unusedDeviceTokensRef.current = request;
-
-      try {
-        await request;
-      } catch (deviceError) {
-        if (unusedDeviceTokensRef.current === request) {
-          unusedDeviceTokensRef.current = null;
-        }
-
-        if (!cancelled) {
-          console.warn(
-            "[prepareCircleLogin] Background device token preparation:",
-            deviceError,
-          );
-        }
-      }
-    }
-
-    void prepareCircleLogin();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [googleReturnPending, loginResult?.userToken, sdkReady]);
-
   // The SDK gives up on verification after 10s without reporting it through
   // onLoginComplete; stop waiting so the button is usable again.
   useEffect(() => {
-    if (!googleReturnPending) {
+    if (!googleVerifying) {
       return;
     }
 
     const timer = window.setTimeout(() => {
+      setGoogleVerifying(false);
       setGoogleReturnPending(false);
       setError("Google sign-in could not be confirmed. Please try again.");
       removeStorage(storageKeys.setupIntent);
@@ -731,7 +744,7 @@ export function CircleGoogleLogin({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [googleReturnPending]);
+  }, [googleVerifying]);
 
   async function loadBalances(userToken: string, walletId: string) {
     const payload = await callCircleWalletApi<{
@@ -865,92 +878,42 @@ export function CircleGoogleLogin({
     }).catch(() => undefined);
   }, [loginResult, primaryWallet?.address]);
 
-  function updateSdkLoginConfig(tokens: DeviceTokenResponse) {
-    sdkRef.current?.updateConfigs({
+  /** SDK settings for Google sign-in, with device credentials once minted. */
+  function sdkConfigsFor(tokens?: DeviceTokenResponse) {
+    return {
       appSettings: {
         appId,
       },
       loginConfigs: {
-        deviceEncryptionKey: tokens.deviceEncryptionKey,
-        deviceToken: tokens.deviceToken,
+        deviceEncryptionKey: tokens?.deviceEncryptionKey ?? "",
+        deviceToken: tokens?.deviceToken ?? "",
         google: {
           clientId: googleClientId,
           redirectUri,
           selectAccountPrompt: true,
         },
       },
-    });
+    };
   }
 
-  async function ensureDeviceToken(options: { forceRefresh?: boolean } = {}) {
-    if (!options.forceRefresh) {
-      const storedToken = deviceToken || readStorage(storageKeys.deviceToken);
-      const storedKey =
-        deviceEncryptionKey || readStorage(storageKeys.deviceEncryptionKey);
+  /**
+   * A device token for the device ID Circle's frame holds right now. Minted
+   * on the way back from Google, never before leaving for it: Circle ties it
+   * to that ID, and the token is also stored for the other pages' SDKs.
+   */
+  async function mintDeviceToken(): Promise<DeviceTokenResponse> {
+    const deviceId = await resolveDeviceId();
+    const tokens = await callCircleWalletApi<DeviceTokenResponse>(
+      "createDeviceToken",
+      {
+        deviceId,
+      },
+    );
 
-      if (storedToken && storedKey) {
-        const payload = decodeJwtPayload(storedToken);
-        const isExpired =
-          Boolean(payload?.exp && Date.now() >= payload.exp * 1000 - 30000);
-        if (!isExpired) {
-          const stored = {
-            deviceEncryptionKey: storedKey,
-            deviceToken: storedToken,
-          } satisfies DeviceTokenResponse;
-          setDeviceToken(stored.deviceToken);
-          setDeviceEncryptionKey(stored.deviceEncryptionKey);
-          updateSdkLoginConfig(stored);
-          return stored;
-        }
-      }
+    writeStorage(storageKeys.deviceToken, tokens.deviceToken);
+    writeStorage(storageKeys.deviceEncryptionKey, tokens.deviceEncryptionKey);
 
-      if (deviceTokenRequestRef.current) {
-        return deviceTokenRequestRef.current;
-      }
-    } else {
-      removeStorage(storageKeys.deviceToken);
-      removeStorage(storageKeys.deviceEncryptionKey);
-      removeStorage(storageKeys.deviceId);
-      if (typeof window !== "undefined") {
-        try {
-          window.localStorage.removeItem("deviceId");
-        } catch {}
-      }
-
-      setDeviceToken("");
-      setDeviceEncryptionKey("");
-    }
-
-    const request = (async () => {
-      const nextDeviceId = await resolveDeviceId();
-
-      writeStorage(storageKeys.deviceId, nextDeviceId);
-
-      const tokens = await callCircleWalletApi<DeviceTokenResponse>(
-        "createDeviceToken",
-        {
-          deviceId: nextDeviceId,
-        },
-      );
-
-      setDeviceToken(tokens.deviceToken);
-      setDeviceEncryptionKey(tokens.deviceEncryptionKey);
-      writeStorage(storageKeys.deviceToken, tokens.deviceToken);
-      writeStorage(storageKeys.deviceEncryptionKey, tokens.deviceEncryptionKey);
-      updateSdkLoginConfig(tokens);
-
-      return tokens;
-    })();
-
-    deviceTokenRequestRef.current = request;
-
-    try {
-      return await request;
-    } finally {
-      if (deviceTokenRequestRef.current === request) {
-        deviceTokenRequestRef.current = null;
-      }
-    }
+    return tokens;
   }
 
   async function handleGoogleLogin() {
@@ -995,15 +958,17 @@ export function CircleGoogleLogin({
       window.localStorage.removeItem("nonce");
     }
 
+    // Device credentials from an earlier attempt never carry into this one:
+    // fresh ones are minted when Google sends the person back
+    // (verifyGoogleReturn), for the device ID Circle's frame holds then.
+    removeStorage(storageKeys.deviceToken);
+    removeStorage(storageKeys.deviceEncryptionKey);
+    removeStorage(storageKeys.deviceId);
+
     try {
-      // Use the credentials prefetched on this page load if there are any,
-      // otherwise mint fresh ones. Either way, never a stored earlier set.
-      const prefetched = unusedDeviceTokensRef.current;
-      unusedDeviceTokensRef.current = null;
-      const tokens = prefetched
-        ? await prefetched.catch(() => ensureDeviceToken({ forceRefresh: true }))
-        : await ensureDeviceToken({ forceRefresh: true });
-      updateSdkLoginConfig(tokens);
+      // Email sign-in shares this SDK instance and may have left its own
+      // settings and callback on it.
+      sdk.updateConfigs(sdkConfigsFor(), onLoginCompleteRef.current ?? undefined);
       setupCompletionStartedRef.current = false;
       writeStorage(storageKeys.setupIntent, "true");
       writeStorage(storageKeys.enterApp, "true");
