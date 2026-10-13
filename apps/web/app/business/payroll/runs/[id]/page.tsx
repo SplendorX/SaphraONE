@@ -51,6 +51,7 @@ import type {
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import {
   executeCircleChallenge as runCircleChallenge,
+  readCircleAppId,
   callCircleWalletApi,
   findCircleTokenBalance,
   readCircleLogin,
@@ -357,7 +358,7 @@ export default function PayrollRunDetailPage({
     if (circleSdkRef.current) {
       return circleSdkRef.current;
     }
-    const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+    const appId = readCircleAppId();
     if (!appId) {
       throw new Error("Circle wallet confirmation is not configured.");
     }

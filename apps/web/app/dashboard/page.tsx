@@ -111,6 +111,7 @@ import {
 import {
   circleDeviceIdHelp,
   executeCircleChallenge as runCircleChallenge,
+  readCircleAppId,
   callCircleWalletApi,
   isCircleDeviceIdError,
   friendlyCircleSdkMessage,
@@ -1182,7 +1183,7 @@ export function DashboardContent({
       }
 
       try {
-        const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+        const appId = readCircleAppId();
 
         if (appId) {
           const { W3SSdk: CircleW3SSdk } = await import(

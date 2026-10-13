@@ -64,6 +64,7 @@ import { type HubSection } from "@/components/layout/section-hub";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   executeCircleChallenge,
+  readCircleAppId,
   callCircleWalletApi,
   getCircleLoginIdentity,
   readCircleLogin,
@@ -442,7 +443,7 @@ export function SwiftCircleHub() {
       setCircleSdkReady(false);
       return;
     }
-    const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+    const appId = readCircleAppId();
     if (!appId) return;
     let cancelled = false;
     void import("@circle-fin/w3s-pw-web-sdk").then(({ W3SSdk }) => {

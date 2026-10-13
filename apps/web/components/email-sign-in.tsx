@@ -14,7 +14,9 @@ import {
   getCircleErrorMessage,
   isArcCircleWallet,
   preferArcCircleWallets,
+  readCircleAppId,
   readCircleSessionStorage,
+  writeCircleAppId,
   writeCircleLogin,
   writeCircleSessionStorage,
   writeCircleWallets,
@@ -108,12 +110,14 @@ export function EmailSignIn({
   async function loadSdk() {
     if (sdkRef.current) return sdkRef.current;
     const config = await callCircleWalletApi<{ appId?: string }>("getEntityConfig");
-    const appId = config.appId?.trim() || process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim();
+    const appId = config.appId?.trim() || readCircleAppId();
     if (!appId) {
       throw new Error("Circle wallets are not configured.");
     }
     const { W3SSdk: CircleW3SSdk } = await import("@circle-fin/w3s-pw-web-sdk");
     appIdRef.current = appId;
+    // The other pages' SDKs must use this same App ID (readCircleAppId).
+    writeCircleAppId(appId);
     sdkRef.current = new CircleW3SSdk({ appSettings: { appId } });
     return sdkRef.current;
   }

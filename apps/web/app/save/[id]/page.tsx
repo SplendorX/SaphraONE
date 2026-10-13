@@ -37,6 +37,7 @@ import { PlatformProfileControls } from "@/components/platform-profile-controls"
 import { Button } from "@/components/ui/button";
 import {
   executeCircleChallenge,
+  readCircleAppId,
   getCircleLoginIdentity,
   readCircleLogin,
   type CircleLoginResult,
@@ -297,7 +298,7 @@ export default function SavingsPocketDetailPage() {
       return;
     }
 
-    const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+    const appId = readCircleAppId();
     if (!appId) {
       circleSdkRef.current = null;
       setCircleSdkReady(false);

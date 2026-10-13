@@ -28,6 +28,7 @@ import {
   readCircleSessionStorage as readStorage,
   readCircleWallets,
   removeCircleSessionStorage as removeStorage,
+  writeCircleAppId,
   writeCircleLogin,
   writeCircleSessionStorage as writeStorage,
   writeCircleWallets,
@@ -501,6 +502,8 @@ export function CircleGoogleLogin({
           const acceptGoogleWallet = () => {
             setLoginResult(nextLogin);
             writeCircleLogin(nextLogin);
+            // The other pages' SDKs must use this same App ID (readCircleAppId).
+            writeCircleAppId(appId);
             removeStorage(googleOAuthDiagnosticStorageKey);
             setOauthDiagnostic(null);
             setError(null);

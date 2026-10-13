@@ -24,6 +24,7 @@ import { TransferProgressOverlay } from "@/components/send/transfer-progress";
 import { recordPlatformTransactionActivity } from "@/lib/referral/activity-client";
 import {
   executeCircleChallenge as runCircleChallenge,
+  readCircleAppId,
  callCircleWalletApi,
  circleSessionEventName,
  readCircleLogin,
@@ -288,7 +289,7 @@ export function SwapPanel() {
  return circleSdkRef.current;
  }
 
- const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+ const appId = readCircleAppId();
 
  if (!appId) {
  throw new Error("Circle wallet confirmation is not configured.");

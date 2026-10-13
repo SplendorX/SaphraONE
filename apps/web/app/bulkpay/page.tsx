@@ -39,6 +39,7 @@ import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { ProfileMenu } from "@/components/profile-menu";
 import {
   executeCircleChallenge as runCircleChallenge,
+  readCircleAppId,
   callCircleWalletApi,
   circleStorageKeys,
   findCircleTokenBalance,
@@ -370,7 +371,7 @@ export default function BulkPayPage() {
  throw new Error("Circle wallet confirmation is not ready.");
  }
 
- const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+ const appId = readCircleAppId();
 
  if (!appId) {
  throw new Error("Circle wallet confirmation is not configured.");

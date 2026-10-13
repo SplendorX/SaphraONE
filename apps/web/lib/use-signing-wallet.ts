@@ -7,6 +7,7 @@ import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import { activeCircleWallet } from "@/lib/business/provision-wallet";
 import {
   circleSessionEventName,
+  readCircleAppId,
   readCircleLogin,
   readCircleWallets,
   type CircleLoginResult,
@@ -69,7 +70,7 @@ export function useSigningWallet(): SigningWallet {
     if (sdkRef.current) return sdkRef.current;
     if (!circleLogin) return null;
 
-    const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim();
+    const appId = readCircleAppId();
     if (!appId) return null;
 
     const { W3SSdk: CircleW3SSdk } = await import("@circle-fin/w3s-pw-web-sdk");
@@ -87,7 +88,7 @@ export function useSigningWallet(): SigningWallet {
     // A Circle session is preferred: it is where a Google user's funds are.
     const circleAddress = circleWallet?.address;
     if (circleLogin && circleAddress) {
-      const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim();
+      const appId = readCircleAppId();
       if (!appId) {
         return {
           address: circleAddress,

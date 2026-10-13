@@ -45,6 +45,7 @@ import { personalCircleWallet } from "@/lib/business/provision-wallet";
 import {
   circleSessionEventName,
   executeCircleChallenge as runCircleChallenge,
+  readCircleAppId,
   callCircleWalletApi,
   getCircleErrorMessage,
   findCircleTokenBalance,
@@ -562,7 +563,7 @@ export function SwiftRecurepayHub() {
         return;
       }
 
-      const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim() ?? "";
+      const appId = readCircleAppId();
 
       if (!appId) {
         return;
