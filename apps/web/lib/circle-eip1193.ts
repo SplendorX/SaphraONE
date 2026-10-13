@@ -2,8 +2,7 @@
 
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 
-import {
-  currentCircleAuth, callCircleWalletApi } from "@/lib/circle-session";
+import { callCircleWalletApi, executeCircleChallenge } from "@/lib/circle-session";
 import {
   extractCircleTransactionId,
   extractCircleTxHash,
@@ -213,23 +212,16 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
       );
     }
 
-    sdk.setAuthentication(currentCircleAuth(config));
-
-    const executed = await new Promise<{
-      transactionId?: string;
-      txHash?: string;
-    }>((resolve, reject) => {
-      sdk.execute(challengeId, (error, result) => {
-        if (error) {
-          reject(challengeError(error));
-          return;
-        }
-        resolve({
-          transactionId: extractCircleTransactionId(result),
-          txHash: extractCircleTxHash(result),
-        });
-      });
-    });
+    let result: unknown;
+    try {
+      result = await executeCircleChallenge(sdk, config, challengeId);
+    } catch (error) {
+      throw challengeError(error as { code?: unknown; message?: string });
+    }
+    const executed = {
+      transactionId: extractCircleTransactionId(result),
+      txHash: extractCircleTxHash(result),
+    };
 
     if (executed.txHash) {
       return rememberHash(config.walletId, executed.txHash);
@@ -299,17 +291,12 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
       );
     }
 
-    sdk.setAuthentication(currentCircleAuth(config));
-
-    const signature = await new Promise<string | undefined>((resolve, reject) => {
-      sdk.execute(challengeId, (error, result) => {
-        if (error) {
-          reject(challengeError(error));
-          return;
-        }
-        resolve(extractSignature(result));
-      });
-    });
+    let signature: string | undefined;
+    try {
+      signature = extractSignature(await executeCircleChallenge(sdk, config, challengeId));
+    } catch (error) {
+      throw challengeError(error as { code?: unknown; message?: string });
+    }
 
     if (!signature) {
       throw new ProviderRpcError(

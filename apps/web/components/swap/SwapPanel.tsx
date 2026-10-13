@@ -23,7 +23,7 @@ import { TokenIcon } from "@/components/token-icon";
 import { TransferProgressOverlay } from "@/components/send/transfer-progress";
 import { recordPlatformTransactionActivity } from "@/lib/referral/activity-client";
 import {
-  currentCircleAuth,
+  executeCircleChallenge as runCircleChallenge,
  callCircleWalletApi,
  circleSessionEventName,
  readCircleLogin,
@@ -411,32 +411,29 @@ export function SwapPanel() {
 
  const sdk = await ensureCircleSdk(circleLogin);
 
- sdk.setAuthentication(currentCircleAuth(circleLogin));
-
  if (label) {
  setSwapStatus(`Confirm ${label} in Circle wallet`);
  }
 
- return new Promise<{ transactionId?: string; txHash?: string }>(
- (resolve, reject) => {
- sdk.execute(challengeId, (error, result) => {
- if (error) {
- reject(new Error(getErrorMessage(error)));
- return;
+ let challengeResult: CircleChallengeResult | undefined;
+ try {
+ challengeResult = (await runCircleChallenge(
+ sdk,
+ circleLogin,
+ challengeId,
+ )) as CircleChallengeResult | undefined;
+ } catch (error) {
+ throw new Error(getErrorMessage(error));
  }
 
- const challengeResult = result as CircleChallengeResult | undefined;
- resolve({
+ return {
  transactionId:
  challengeResult?.data?.transactionId ??
  challengeResult?.transactionId ??
  challengeResult?.data?.id ??
  challengeResult?.id,
  txHash: challengeResult?.data?.txHash,
- });
- });
- },
- );
+ };
  }
 
  async function handleEstimateSwap() {

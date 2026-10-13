@@ -38,7 +38,7 @@ import { PlatformAccessGate } from "@/components/platform-access-gate";
 import { PlatformChrome } from "@/components/layout/platform-chrome";
 import { ProfileMenu } from "@/components/profile-menu";
 import {
-  currentCircleAuth,
+  executeCircleChallenge as runCircleChallenge,
   callCircleWalletApi,
   circleStorageKeys,
   findCircleTokenBalance,
@@ -483,20 +483,14 @@ export default function BulkPayPage() {
 
  const sdk = await ensureCircleSdk(circleLogin);
 
- sdk.setAuthentication(currentCircleAuth(circleLogin));
-
  setStatus(`Confirm ${label} in Circle wallet`);
 
- return new Promise<CircleChallengeResult>((resolve, reject) => {
- sdk.execute(challengeId, (challengeError, result) => {
- if (challengeError) {
- reject(new Error(getErrorMessage(challengeError)));
- return;
+ try {
+ const result = await runCircleChallenge(sdk, circleLogin, challengeId);
+ return (result ?? {}) as CircleChallengeResult;
+ } catch (challengeError) {
+ throw new Error(getErrorMessage(challengeError));
  }
-
- resolve((result ?? {}) as CircleChallengeResult);
- });
- });
  }
 
  async function executeCircleContract({

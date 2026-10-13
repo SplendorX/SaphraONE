@@ -63,7 +63,7 @@ import { StyledSelect } from "@/components/ui/styled-select";
 import { type HubSection } from "@/components/layout/section-hub";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
-  currentCircleAuth,
+  executeCircleChallenge,
   callCircleWalletApi,
   getCircleLoginIdentity,
   readCircleLogin,
@@ -499,53 +499,48 @@ export function SwiftCircleHub() {
       throw new Error("Circle did not return a transfer challenge.");
     }
     const sdk = circleSdkRef.current;
-    sdk.setAuthentication(currentCircleAuth(circleLogin));
-    return new Promise<{ txHash?: string; transactionId?: string }>(
-      (resolve, reject) => {
-        sdk.execute(challengeId, async (sdkError, result) => {
-          if (sdkError) {
-            reject(new Error(errorMessage(sdkError)));
-            return;
-          }
-          const immediateHash =
-            extractCircleTxHash(result) ?? extractCircleTxHash(challenge);
-          const rawTxId =
-            extractCircleTransactionId(result) ??
-            challenge.transactionId ??
-            challenge.data?.transactionId ??
-            challenge.id ??
-            challenge.challengeId ??
-            challengeId;
+    let result: unknown;
+    try {
+      result = await executeCircleChallenge(sdk, circleLogin, challengeId);
+    } catch (sdkError) {
+      throw new Error(errorMessage(sdkError));
+    }
+    const immediateHash =
+      extractCircleTxHash(result) ?? extractCircleTxHash(challenge);
+    const rawTxId =
+      extractCircleTransactionId(result) ??
+      challenge.transactionId ??
+      challenge.data?.transactionId ??
+      challenge.id ??
+      challenge.challengeId ??
+      challengeId;
 
-          let txHash = immediateHash;
-          let transactionId = rawTxId;
+    let txHash = immediateHash;
+    let transactionId = rawTxId;
 
-          if (!txHash && transactionId) {
-            try {
-              const recovered = await recoverCircleTxDetails({
-                attempts: 10,
-                transactionId,
-                userToken: circleLogin.userToken,
-                walletId: circleWallet.id,
-              });
-              if (recovered.txHash) {
-                txHash = recovered.txHash;
-              }
-              if (recovered.transactionId) {
-                transactionId = recovered.transactionId;
-              }
-            } catch {
-              // Non-blocking: transactionId is preserved
-            }
-          }
-
-          resolve({
-            txHash,
-            transactionId,
-          });
+    if (!txHash && transactionId) {
+      try {
+        const recovered = await recoverCircleTxDetails({
+          attempts: 10,
+          transactionId,
+          userToken: circleLogin.userToken,
+          walletId: circleWallet.id,
         });
-      },
-    );
+        if (recovered.txHash) {
+          txHash = recovered.txHash;
+        }
+        if (recovered.transactionId) {
+          transactionId = recovered.transactionId;
+        }
+      } catch {
+        // Non-blocking: transactionId is preserved
+      }
+    }
+
+    return {
+      txHash,
+      transactionId,
+    };
   }
 
   async function sendUnits(destination: Address, units: bigint) {

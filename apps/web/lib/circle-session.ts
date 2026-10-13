@@ -1,5 +1,7 @@
 "use client";
 
+import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
+
 import { isArcMainnet } from "@/lib/network";
 import { type ArcTokenSymbol } from "@/lib/tokens";
 import { withApproval } from "@/lib/tx-approval/client";
@@ -476,6 +478,65 @@ const supersededUserTokens = new Set<string>();
  */
 let lastRefreshRefused = false;
 
+/**
+ * Renew a login. Email logins ask the server; Google logins trade their
+ * refresh token with Circle for the given device. Sets lastRefreshRefused.
+ */
+async function renewCircleLogin(
+  login: CircleLoginResult,
+  deviceId: string,
+): Promise<CircleLoginResult | null> {
+  try {
+    const circleUserId = login.oAuthInfo?.socialUserUUID;
+    if (login.oAuthInfo?.provider === "Email" && circleUserId) {
+      const response = await fetch("/api/auth/email", {
+        body: JSON.stringify({ action: "refresh", circleUserId }),
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      if (!response.ok) {
+        lastRefreshRefused = response.status >= 400 && response.status < 500;
+        return null;
+      }
+      const next = (await response.json()) as { encryptionKey?: string; userToken?: string };
+      if (!next.userToken || !next.encryptionKey) return null;
+      const renewed = { ...login, encryptionKey: next.encryptionKey, userToken: next.userToken };
+      supersededUserTokens.add(login.userToken);
+      writeCircleLogin(renewed);
+      return renewed;
+    }
+
+    if (!login.refreshToken || !deviceId) {
+      lastRefreshRefused = true;
+      return null;
+    }
+    const next = await callCircleWalletApiOnce<{
+      encryptionKey?: string;
+      refreshToken?: string;
+      userToken?: string;
+    }>("refreshUserToken", {
+      deviceId,
+      refreshToken: login.refreshToken,
+      userToken: login.userToken,
+    });
+    if (!next.userToken || !next.encryptionKey) return null;
+    const renewed: CircleLoginResult = {
+      ...login,
+      encryptionKey: next.encryptionKey,
+      refreshToken: next.refreshToken ?? login.refreshToken,
+      userToken: next.userToken,
+    };
+    supersededUserTokens.add(login.userToken);
+    writeCircleLogin(renewed);
+    return renewed;
+  } catch (error) {
+    // A network error (TypeError) is a blip; anything else is Circle's no.
+    lastRefreshRefused = !(error instanceof TypeError);
+    return null;
+  }
+}
+
 export function refreshCircleLogin(): Promise<CircleLoginResult | null> {
   if (refreshInFlight) return refreshInFlight;
 
@@ -484,61 +545,101 @@ export function refreshCircleLogin(): Promise<CircleLoginResult | null> {
     const login = readCircleLogin();
     if (!login) return null;
 
-    try {
-      const circleUserId = login.oAuthInfo?.socialUserUUID;
-      if (login.oAuthInfo?.provider === "Email" && circleUserId) {
-        const response = await fetch("/api/auth/email", {
-          body: JSON.stringify({ action: "refresh", circleUserId }),
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        });
-        if (!response.ok) {
-          lastRefreshRefused = response.status >= 400 && response.status < 500;
-          return null;
-        }
-        const next = (await response.json()) as { encryptionKey?: string; userToken?: string };
-        if (!next.userToken || !next.encryptionKey) return null;
-        const renewed = { ...login, encryptionKey: next.encryptionKey, userToken: next.userToken };
-        supersededUserTokens.add(login.userToken);
-        writeCircleLogin(renewed);
-        return renewed;
-      }
+    const storedDeviceId = readCircleSessionStorage(circleStorageKeys.deviceId);
+    const renewed = await renewCircleLogin(login, storedDeviceId);
+    if (renewed || !lastRefreshRefused) return renewed;
 
-      const deviceId = readCircleSessionStorage(circleStorageKeys.deviceId);
-      if (!login.refreshToken || !deviceId) {
-        lastRefreshRefused = true;
-        return null;
-      }
-      const next = await callCircleWalletApiOnce<{
-        encryptionKey?: string;
-        refreshToken?: string;
-        userToken?: string;
-      }>("refreshUserToken", {
-        deviceId,
-        refreshToken: login.refreshToken,
-        userToken: login.userToken,
-      });
-      if (!next.userToken || !next.encryptionKey) return null;
-      const renewed: CircleLoginResult = {
-        ...login,
-        encryptionKey: next.encryptionKey,
-        refreshToken: next.refreshToken ?? login.refreshToken,
-        userToken: next.userToken,
-      };
-      supersededUserTokens.add(login.userToken);
-      writeCircleLogin(renewed);
-      return renewed;
-    } catch (error) {
-      // A network error (TypeError) is a blip; anything else is Circle's no.
-      lastRefreshRefused = !(error instanceof TypeError);
-      return null;
-    }
+    // Circle refused the device this page remembers. Its frame may hold a
+    // different one by now (phones lose it when the app restarts): try that.
+    const currentDeviceId = await readCircleDeviceId();
+    if (!currentDeviceId || currentDeviceId === storedDeviceId) return null;
+    lastRefreshRefused = false;
+    const rebound = await renewCircleLogin(login, currentDeviceId);
+    if (rebound) writeCircleSessionStorage(circleStorageKeys.deviceId, currentDeviceId);
+    return rebound;
   })().finally(() => {
     refreshInFlight = null;
   });
 
   return refreshInFlight;
+}
+
+/**
+ * The device ID Circle's frame holds right now, or null if it cannot be
+ * asked. The SDK is one instance per page, so this reaches the page's own.
+ */
+export async function readCircleDeviceId(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  const appId = process.env.NEXT_PUBLIC_CIRCLE_APP_ID?.trim();
+  if (!appId) return null;
+  try {
+    const { W3SSdk: CircleW3SSdk } = await import("@circle-fin/w3s-pw-web-sdk");
+    const sdk = new CircleW3SSdk({ appSettings: { appId } });
+    // The SDK only times out its own request while its frame has never
+    // answered; after that a silent frame would hang it forever.
+    const deviceId = await Promise.race([
+      sdk.getDeviceId(),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 15_000)),
+    ]);
+    return deviceId || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Circle no longer recognises this device: its frame's device ID is not the
+ * one the login was made on (phones drop it when the app restarts). Renew the
+ * login on the device ID the frame holds now. Resolves the renewed login, or
+ * null when Circle refuses, in which case signing in again is the only way.
+ */
+export async function rebindCircleLoginToDevice(): Promise<CircleLoginResult | null> {
+  const login = readCircleLogin();
+  if (!login) return null;
+  const deviceId = await readCircleDeviceId();
+  if (!deviceId) return null;
+  const renewed = await renewCircleLogin(login, deviceId);
+  if (renewed) writeCircleSessionStorage(circleStorageKeys.deviceId, deviceId);
+  return renewed;
+}
+
+/**
+ * Run a Circle challenge (PIN or confirmation screen) for a login. If Circle
+ * answers "device ID is not found", the login is renewed on the device ID
+ * the frame holds now and the challenge is asked once more; if that is
+ * refused, the session is marked stale (signed out on the next open) and the
+ * original error is thrown. Any other error is thrown as the SDK gave it.
+ */
+export async function executeCircleChallenge(
+  sdk: W3SSdk,
+  login: { encryptionKey: string; userToken: string },
+  challengeId: string,
+): Promise<unknown> {
+  const run = (auth: { encryptionKey: string; userToken: string }) =>
+    new Promise<unknown>((resolve, reject) => {
+      sdk.setAuthentication(auth);
+      sdk.execute(challengeId, (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(result);
+      });
+    });
+
+  try {
+    return await run(currentCircleAuth(login));
+  } catch (error) {
+    if (!isCircleDeviceIdError(error)) throw error;
+    // The SDK leaves its frame up after an error; a retry re-adds it.
+    document.getElementById("sdkIframe")?.remove();
+    const renewed = await rebindCircleLoginToDevice();
+    if (!renewed) {
+      markCircleSessionStale();
+      throw error;
+    }
+    return run({ encryptionKey: renewed.encryptionKey, userToken: renewed.userToken });
+  }
 }
 
 /**

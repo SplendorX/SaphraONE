@@ -110,8 +110,7 @@ import {
 } from "@/lib/use-conversion-rates";
 import {
   circleDeviceIdHelp,
-  currentCircleAuth,
-  markCircleSessionStale,
+  executeCircleChallenge as runCircleChallenge,
   callCircleWalletApi,
   isCircleDeviceIdError,
   friendlyCircleSdkMessage,
@@ -1730,28 +1729,27 @@ export function DashboardContent({
                       "Circle wallet confirmation is not ready for Spend&Save.",
                     );
                   }
-                  sdk.setAuthentication(currentCircleAuth(circleLogin));
                   setPaymentStatus(
                     "Confirm Spend&Save deposit in Circle wallet…",
                   );
-                  return new Promise((resolve, reject) => {
-                    sdk.execute(challengeId, (error, result) => {
-                      if (error) {
-                        reject(new Error(getErrorMessage(error)));
-                        return;
-                      }
-                      const challengeResult =
-                        result as CircleChallengeResult | undefined;
-                      resolve({
-                        transactionId:
-                          challengeResult?.data?.transactionId ??
-                          challengeResult?.transactionId ??
-                          challengeResult?.data?.id ??
-                          challengeResult?.id,
-                        txHash: challengeResult?.data?.txHash,
-                      });
-                    });
-                  });
+                  let challengeResult: CircleChallengeResult | undefined;
+                  try {
+                    challengeResult = (await runCircleChallenge(
+                      sdk,
+                      circleLogin,
+                      challengeId,
+                    )) as CircleChallengeResult | undefined;
+                  } catch (error) {
+                    throw new Error(getErrorMessage(error));
+                  }
+                  return {
+                    transactionId:
+                      challengeResult?.data?.transactionId ??
+                      challengeResult?.transactionId ??
+                      challengeResult?.data?.id ??
+                      challengeResult?.id,
+                    txHash: challengeResult?.data?.txHash,
+                  };
                 },
               }
             : undefined,
@@ -2776,29 +2774,20 @@ export function DashboardContent({
       throw new Error("Circle wallet confirmation is not ready.");
     }
 
-    sdk.setAuthentication(currentCircleAuth(circleLogin));
-
     if (label) {
     }
 
-    const runChallenge = (client: W3SSdk) =>
-      new Promise<{
-        transactionId?: string;
-        txHash?: string;
-      }>((resolve, reject) => {
-        client.execute(challengeId, (error, result) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          const challengeResult = result as CircleChallengeResult | undefined;
-          resolve({
-            transactionId: extractCircleTransactionId(challengeResult),
-            txHash: extractCircleTxHash(challengeResult),
-          });
-        });
-      });
+    const runChallenge = async (client: W3SSdk) => {
+      const challengeResult = (await runCircleChallenge(
+        client,
+        circleLogin,
+        challengeId,
+      )) as CircleChallengeResult | undefined;
+      return {
+        transactionId: extractCircleTransactionId(challengeResult),
+        txHash: extractCircleTxHash(challengeResult),
+      };
+    };
 
     let executed: { transactionId?: string; txHash?: string };
     try {
@@ -2828,8 +2817,9 @@ export function DashboardContent({
         headers: { "content-type": "application/json" },
         method: "POST",
       }).catch(() => undefined);
+      // executeCircleChallenge already tried renewing the login on this device
+      // and marked the session stale.
       if (isCircleDeviceIdError(error)) {
-        markCircleSessionStale();
         throw new Error(circleDeviceIdHelp);
       }
       throw new Error(getErrorMessage(error));

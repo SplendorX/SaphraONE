@@ -44,7 +44,7 @@ import {
 import { personalCircleWallet } from "@/lib/business/provision-wallet";
 import {
   circleSessionEventName,
-  currentCircleAuth,
+  executeCircleChallenge as runCircleChallenge,
   callCircleWalletApi,
   getCircleErrorMessage,
   findCircleTokenBalance,
@@ -577,7 +577,7 @@ export function SwiftRecurepayHub() {
 
         // One SDK instance for the page's lifetime: each instance adds its own
         // iframe and listeners, and several confuse Circle's PIN screen. The
-        // current token is applied before every challenge (currentCircleAuth).
+        // current token is applied before every challenge (executeCircleChallenge).
         if (!circleSdkRef.current) {
           circleSdkRef.current = new CircleW3SSdk({
             appSettings: { appId },
@@ -1077,35 +1077,30 @@ export function SwiftRecurepayHub() {
       throw new Error("Circle wallet confirmation is not ready.");
     }
 
-    circleSdkRef.current.setAuthentication(currentCircleAuth(circleLogin));
-
-    const executed = await new Promise<{
-      transactionId?: string;
-      txHash?: string;
-    }>((resolve, reject) => {
-      circleSdkRef.current?.execute(challengeId, (executeError, result) => {
-        if (executeError) {
-          // The SDK's error keeps code/message in non-enumerable fields, so a
-          // plain log prints "{}". Spell them out. warn, not error: a closed
-          // PIN window is not a crash and should not raise the dev overlay.
-          const details = executeError as unknown as Record<string, unknown> | null;
-          console.warn("[Recurepay] Circle challenge failed", {
-            code: details?.code,
-            message: details?.message,
-            name: details?.name,
-            fields: details ? Object.getOwnPropertyNames(details) : [],
-          });
-          reject(executeError);
-          return;
-        }
-
-        const challengeResult = result as CircleChallengeResult | undefined;
-        resolve({
-          transactionId: extractCircleTransactionId(challengeResult),
-          txHash: extractCircleTxHash(challengeResult),
-        });
+    let challengeResult: CircleChallengeResult | undefined;
+    try {
+      challengeResult = (await runCircleChallenge(
+        circleSdkRef.current,
+        circleLogin,
+        challengeId,
+      )) as CircleChallengeResult | undefined;
+    } catch (executeError) {
+      // The SDK's error keeps code/message in non-enumerable fields, so a
+      // plain log prints "{}". Spell them out. warn, not error: a closed
+      // PIN window is not a crash and should not raise the dev overlay.
+      const details = executeError as Record<string, unknown> | null;
+      console.warn("[Recurepay] Circle challenge failed", {
+        code: details?.code,
+        message: details?.message,
+        name: details?.name,
+        fields: details ? Object.getOwnPropertyNames(details) : [],
       });
-    });
+      throw executeError;
+    }
+    const executed = {
+      transactionId: extractCircleTransactionId(challengeResult),
+      txHash: extractCircleTxHash(challengeResult),
+    };
 
     let txHash = executed.txHash;
     if (!txHash) {

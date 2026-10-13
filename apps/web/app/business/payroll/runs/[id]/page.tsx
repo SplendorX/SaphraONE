@@ -50,7 +50,7 @@ import type {
 } from "@/lib/payroll/types";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import {
-  currentCircleAuth,
+  executeCircleChallenge as runCircleChallenge,
   callCircleWalletApi,
   findCircleTokenBalance,
   readCircleLogin,
@@ -378,17 +378,13 @@ export default function PayrollRunDetailPage({
       throw new Error("Circle wallet confirmation is not ready.");
     }
     const sdk = await ensureCircleSdk(circleLogin);
-    sdk.setAuthentication(currentCircleAuth(circleLogin));
     setProcessingStatus(`Confirm ${label} in Circle wallet…`);
-    return new Promise<CircleChallengeResult>((resolve, reject) => {
-      sdk.execute(challengeId, (challengeError, result) => {
-        if (challengeError) {
-          reject(new Error((challengeError as { message?: string }).message || "Circle confirmation failed."));
-          return;
-        }
-        resolve((result ?? {}) as CircleChallengeResult);
-      });
-    });
+    try {
+      const result = await runCircleChallenge(sdk, circleLogin, challengeId);
+      return (result ?? {}) as CircleChallengeResult;
+    } catch (challengeError) {
+      throw new Error((challengeError as { message?: string }).message || "Circle confirmation failed.");
+    }
   }
 
   /** The Circle wallet that pays this run. */

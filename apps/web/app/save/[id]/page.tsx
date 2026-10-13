@@ -36,7 +36,7 @@ import { PlatformAccessGate } from "@/components/platform-access-gate";
 import { PlatformProfileControls } from "@/components/platform-profile-controls";
 import { Button } from "@/components/ui/button";
 import {
-  currentCircleAuth,
+  executeCircleChallenge,
   getCircleLoginIdentity,
   readCircleLogin,
   type CircleLoginResult,
@@ -444,21 +444,16 @@ export default function SavingsPocketDetailPage() {
       login,
       walletId: circleWallet.id,
       executeChallenge: async (challengeId: string) => {
-        sdk.setAuthentication(currentCircleAuth(login));
-        return new Promise<{ transactionId?: string; txHash?: string }>(
-          (resolve, reject) => {
-            sdk.execute(challengeId, (error, result) => {
-              if (error) {
-                reject(new Error(getErrorMessage(error)));
-                return;
-              }
-              resolve({
-                transactionId: extractCircleTransactionId(result),
-                txHash: extractCircleTxHash(result),
-              });
-            });
-          },
-        );
+        let result: unknown;
+        try {
+          result = await executeCircleChallenge(sdk, login, challengeId);
+        } catch (error) {
+          throw new Error(getErrorMessage(error));
+        }
+        return {
+          transactionId: extractCircleTransactionId(result),
+          txHash: extractCircleTxHash(result),
+        };
       },
     };
   }
