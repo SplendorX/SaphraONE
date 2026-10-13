@@ -552,6 +552,24 @@ file to `ORDER` in `packages/database/build-setup.mjs`. Note that script current
   response removes the need to know it in advance.
 - Whether the sandbox honours `variations-update` and reversal webhooks, or only `transaction-update`.
 
+### B15. Build order, end to end
+
+Each step is one pull request, lands behind `NEXT_PUBLIC_BILLS_ENABLED`, and has a done check. Steps 1 to
+4 are server-only and have no user-visible effect; the screen arrives in step 5.
+
+| # | Step | Touches | Done when |
+| --- | --- | --- | --- |
+| 0 | Accounts and decisions | VTpass sandbox account, API keys (auth type "API keys"), products whitelisted, callback URL; owner answers B13 items 1 to 3 | `/balance` answers from a script with the sandbox keys |
+| 1 | Pure modules | `lib/bills/request-id.ts`, `codes.ts`, `status.ts`, `money-rules.ts`, `receipt.ts`, `flag.ts`; `test:bills` in `apps/web/package.json` | tests pass on the sample responses copied from every DisCo page |
+| 2 | Client and catalogue | `lib/bills/client.ts` (headers by method, timeout, no retry on `/pay`), `catalogue.ts`, `bill_service_cache`; `GET /api/bills/catalogue` | sandbox categories, services and variations render as JSON from the route |
+| 3 | Schema and store | `packages/database/supabase/bill-payments.sql` (four tables, RLS, grants), `ORDER` in `build-setup.mjs`, `lib/bills/store.ts` | SQL applied on the dev project; `build-setup.mjs` runs clean |
+| 4 | Quote, pay, settle | `lib/bills/service.ts`; `POST /api/bills/quote` (verify + price), `POST /api/bills/pay` (confirm USDC, `/pay`, ledger rows); `"bills"` rail in `intent.ts` and `router.ts`; `GET /api/cron/bills`; `POST /api/bills/webhooks/vtpass` + `proxy.ts` exemption; refund job | a scripted sandbox airtime purchase to `08011111111` ends `delivered` with intent, attempt and settlement rows; `201000000000` ends via cron; a failed number ends `refunded` |
+| 5 | Screens | `app/bills/page.tsx` (category grid), `app/bills/[category]/page.tsx` (provider, number, verify card, plan or amount, quote with countdown), confirm sheet reusing the Send signing flow, receipt with token / PIN / voucher, "Pay bills" tile in `dashboard-home.tsx` `services` | airtime and data purchased from the UI on Arc testnet against the sandbox |
+| 6 | TV and electricity | verify step in the quote screen (customer name, bouquet, renewal amount, arrears), change vs renew, token on the receipt and in Activity | `1212121212` and `1111111111111` flows delivered from the UI |
+| 7 | Activity, ALLIE, Spend&Save | bill rows in `GET /api/activity` merge, insight category, ALLIE capability "pay a bill" behind the same policy engine, `bills` Spend&Save type if the owner wants it | a bill shows in Activity with its receipt; ALLIE can quote one |
+| 8 | Operations | `/balance` low-float alert, daily reconciliation in the cron, `bills_paused` kill switch, runbook for `stuck` rows and manual VTpass support cases | one simulated low-balance and one simulated `040` reversal both alert and refund |
+| 9 | Live canary | live VTpass account provisioned, naira float funded, live keys, `BILLS_ALLOWED_WALLETS`, real quote source from B6, Arc mainnet | a week of canary volume with zero unreconciled rows, then flag on for everyone |
+
 ## Sources
 
 Official documentation pages, read directly on 2026-10-11 and 2026-10-13. This is every page the index at
