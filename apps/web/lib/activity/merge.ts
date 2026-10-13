@@ -173,8 +173,34 @@ const receiptTokens = new Set(["USDC", "EURC"]);
  * transfer (not indexed yet, or past the history window), the receipt is
  * built from the activity's own record of the confirmed transaction.
  */
+/**
+ * A send to another network burns on Arc, so its Arc transfer goes to Circle's
+ * bridge contract. The receipt names the address the person paid, and where.
+ */
+function crossNetworkReceipt(item: AccountActivityItem, transfer: WalletTransfer): WalletTransfer | null {
+  const recipient = item.counterparty;
+  const network = / on (.+)$/.exec(item.title)?.[1]?.trim();
+  if (
+    item.source !== "send" ||
+    item.direction !== "out" ||
+    !network ||
+    !recipient ||
+    !/^0x[0-9a-fA-F]{40}$/.test(recipient) ||
+    recipient.toLowerCase() === transfer.counterparty.toLowerCase()
+  ) {
+    return null;
+  }
+  return {
+    ...transfer,
+    counterparty: recipient as WalletTransfer["counterparty"],
+    counterpartyIsContract: false,
+    counterpartyLabel: undefined,
+    destinationNetwork: network,
+  };
+}
+
 export function receiptTransferFor(item: AccountActivityItem): WalletTransfer | null {
-  if (item.transfer) return item.transfer;
+  if (item.transfer) return crossNetworkReceipt(item, item.transfer) ?? item.transfer;
   const hash = item.txHashes[0];
   const token = item.token?.toUpperCase();
   if (!hash || !item.amount || !token || !receiptTokens.has(token)) return null;

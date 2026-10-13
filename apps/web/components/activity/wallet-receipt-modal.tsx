@@ -110,7 +110,12 @@ export function WalletReceiptModal({
             mono: true,
           },
           { label: "Date", value: formatTransferTime(transfer.timestamp) },
-          { label: "Network", value: `${arcChain.name}` },
+          {
+            label: "Network",
+            value: transfer.destinationNetwork
+              ? `${arcChain.name} → ${transfer.destinationNetwork}`
+              : arcChain.name,
+          },
           {
             label: "Block",
             value: transfer.blockNumber ? `#${transfer.blockNumber}` : "See ArcScan",

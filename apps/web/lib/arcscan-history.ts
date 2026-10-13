@@ -21,6 +21,9 @@ export type WalletTransfer = {
   /** A receipt built from an activity record whose other party is a name
    *  ("@ada", a pocket) rather than an address. */
   counterpartyLabel?: string;
+  /** A send paid out on another network (e.g. "Base"): `counterparty` is the
+   *  recipient there, not the bridge contract the Arc transfer went to. */
+  destinationNetwork?: string;
 };
 
 type ArcScanAddress = {

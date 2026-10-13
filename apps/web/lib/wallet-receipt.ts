@@ -100,6 +100,9 @@ export function buildReceiptRows(
       label: "Counterparty",
       value: receiptCounterpartyName(transfer, counterpartyUsername),
     },
+    ...(transfer.destinationNetwork
+      ? [{ label: "Delivered on", value: transfer.destinationNetwork }]
+      : []),
     { label: "Transaction hash", value: transfer.hash },
     {
       label: "Block number",
