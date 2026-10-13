@@ -22,6 +22,17 @@ nav.app-nav {
   padding: 0.9rem 0.85rem;
 }
 
+/* The list still scrolls when the window is short, just without a bar. */
+nav.app-nav,
+.nav-drawer-root nav {
+  scrollbar-width: none;
+}
+
+nav.app-nav::-webkit-scrollbar,
+.nav-drawer-root nav::-webkit-scrollbar {
+  display: none;
+}
+
 nav.app-nav > a.app-nav-link {
   position: relative;
   display: flex;

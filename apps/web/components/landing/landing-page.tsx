@@ -1,21 +1,13 @@
 "use client";
 
-import { arcChain } from "@/lib/chains";
 import {
   ArrowRight,
   ArrowUpRight,
-  CalendarClock,
-  CheckCircle2,
-  CircleDollarSign,
-  Layers,
+  Check,
   PiggyBank,
-  ReceiptText,
-  RefreshCw,
-  ShieldCheck,
-  TrendingUp,
-  Users,
+  Send,
   UsersRound,
-  Wallet,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -38,124 +30,85 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 
+import "./landing-home.css";
+
+/** The rails SaphraONE runs on, shown under the hero. Names, not translated. */
+const partners: { logo?: string; name: string }[] = [
+  { name: "Circle" },
+  { name: "Arc" },
+  { logo: "/tokens/usdc.svg", name: "USDC" },
+  { logo: "/tokens/eurc.svg", name: "EURC" },
+  { name: "Morpho" },
+];
+
+/**
+ * The landing page: hero, the rails it runs on, the numbers that matter, the
+ * platform in three pillars, ALLIE, stories, business, security, getting
+ * started, questions, and one last invitation.
+ */
 export function LandingPage() {
   const t = useT();
-  const productFlows = [
+  const metrics = [
+    { label: t("landing.home.metric1Label"), value: "<1s" },
+    { label: t("landing.home.metric2Label"), value: "<$0.01" },
+    { label: t("landing.home.metric3Label"), value: "24/7" },
+    { label: t("landing.home.metric4Label"), value: "9" },
+  ];
+  const pillars: { body: string; href: string; icon: LucideIcon; items: string[]; title: string }[] = [
     {
-      body: t("landing.flowDashboardBody"),
-      href: "/dashboard",
-      icon: Wallet,
-      title: t("landing.flowDashboardTitle"),
+      body: t("landing.home.payBody"),
+      href: "/send",
+      icon: Send,
+      items: [
+        t("landing.home.pay1"),
+        t("landing.home.pay2"),
+        t("landing.home.pay3"),
+        t("landing.home.pay4"),
+        t("landing.home.pay5"),
+      ],
+      title: t("landing.home.payTitle"),
     },
     {
-      body: t("landing.flowCircleBody"),
-      href: "/circle",
-      icon: UsersRound,
-      title: t("landing.flowCircleTitle"),
-    },
-    {
-      body: t("landing.flowSaveBody"),
+      body: t("landing.home.growBody"),
       href: "/save",
       icon: PiggyBank,
-      title: t("landing.flowSaveTitle"),
+      items: [
+        t("landing.home.grow1"),
+        t("landing.home.grow2"),
+        t("landing.home.grow3"),
+        t("landing.home.grow4"),
+        t("landing.home.grow5"),
+      ],
+      title: t("landing.home.growTitle"),
     },
     {
-      body: t("landing.flowEarnBody"),
-      href: "/earn",
-      icon: TrendingUp,
-      title: t("landing.flowEarnTitle"),
-    },
-    {
-      body: t("landing.flowSwapBody", { network: arcChain.name }),
-      href: "/swap",
-      icon: RefreshCw,
-      title: t("landing.flowSwapTitle"),
-    },
-    {
-      body: t("landing.flowBatchBody"),
-      href: "/bulkpay",
-      icon: Users,
-      title: t("landing.flowBatchTitle"),
-    },
-    {
-      body: t("landing.flowRequestBody"),
-      href: "/pay",
-      icon: ReceiptText,
-      title: t("landing.flowRequestTitle"),
-    },
-    {
-      body: t("landing.flowRecureBody"),
-      href: "/recurepay",
-      icon: CalendarClock,
-      title: t("landing.flowRecureTitle"),
+      body: t("landing.home.togetherBody"),
+      href: "/circle",
+      icon: UsersRound,
+      items: [
+        t("landing.home.together1"),
+        t("landing.home.together2"),
+        t("landing.home.together3"),
+        t("landing.home.together4"),
+      ],
+      title: t("landing.home.togetherTitle"),
     },
   ];
-  const demos = [
-    {
-      description: t("landing.demoRoutingBody"),
-      stat: t("landing.demoRoutingStat"),
-      title: t("landing.demoRoutingTitle"),
-    },
-    {
-      description: t("landing.demoBatchBody"),
-      stat: t("landing.demoBatchStat"),
-      title: t("landing.demoBatchTitle"),
-    },
-    {
-      description: t("landing.demoRequestBody"),
-      stat: t("landing.demoRequestStat"),
-      title: t("landing.demoRequestTitle"),
-    },
-    {
-      description: t("landing.demoAutoBody"),
-      stat: t("landing.demoAutoStat"),
-      title: t("landing.demoAutoTitle"),
-    },
-  ];
-  const howItWorksSteps = [
-    {
-      detail: t("landing.howStep1Detail"),
-      label: t("landing.howStep1Label"),
-      step: "01",
-    },
-    {
-      detail: t("landing.howStep2Detail"),
-      label: t("landing.howStep2Label"),
-      step: "02",
-    },
-    {
-      detail: t("landing.howStep3Detail"),
-      label: t("landing.howStep3Label"),
-      step: "03",
-    },
+  const steps = [
+    { body: t("landing.home.step1Body"), title: t("landing.home.step1Title") },
+    { body: t("landing.home.step2Body"), title: t("landing.home.step2Title") },
+    { body: t("landing.home.step3Body"), title: t("landing.home.step3Title") },
   ];
   const faqItems = [
-    { answer: t("landing.faq1A"), question: t("landing.faq1Q") },
-    { answer: t("landing.faq2A"), question: t("landing.faq2Q") },
-    { answer: t("landing.faq3A"), question: t("landing.faq3Q") },
-    { answer: t("landing.faq4A"), question: t("landing.faq4Q") },
-    { answer: t("landing.faq5A"), question: t("landing.faq5Q") },
-    { answer: t("landing.faq6A", { network: arcChain.name }), question: t("landing.faq6Q") },
+    { answer: t("landing.home.faq1A"), question: t("landing.home.faq1Q") },
+    { answer: t("landing.home.faq2A"), question: t("landing.home.faq2Q") },
+    { answer: t("landing.home.faq3A"), question: t("landing.home.faq3Q") },
+    { answer: t("landing.home.faq4A"), question: t("landing.home.faq4Q") },
+    { answer: t("landing.home.faq5A"), question: t("landing.home.faq5Q") },
+    { answer: t("landing.home.faq6A"), question: t("landing.home.faq6Q") },
   ];
-  const whyItems = [
-    {
-      body: t("landing.whyStableBody"),
-      icon: CircleDollarSign,
-      title: t("landing.whyStableTitle"),
-    },
-    {
-      body: t("landing.whyUnifiedBody"),
-      icon: Layers,
-      title: t("landing.whyUnifiedTitle"),
-    },
-    {
-      body: t("landing.whyTrustBody"),
-      icon: ShieldCheck,
-      title: t("landing.whyTrustTitle"),
-    },
-  ];
+
   useEffect(() => {
     // Sign-in has its own page. Google returns to the site root (its redirect
     // URI), and older links say /#sign-in: send both there, keeping the query
@@ -191,31 +144,63 @@ export function LandingPage() {
         <ProductShowcase placement="hero" />
       </section>
 
-      {/* ── Meet ALLIE ── */}
-      <AllieShowcase />
+      {/* ── The rails it runs on ── */}
+      <section aria-label={t("landing.home.partnersLabel")} className="lp-partners">
+        <p className="lp-partners-label">{t("landing.home.partnersLabel")}</p>
+        <ul className="lp-partners-row">
+          {partners.map((partner) => (
+            <li key={partner.name}>
+              {partner.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt="" aria-hidden height={22} src={partner.logo} width={22} />
+              ) : null}
+              {partner.name}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      {/* ── Products ── */}
+      {/* ── The numbers ── */}
+      <section className="lp-metrics-wrap">
+        <Stagger className="lp-metrics">
+          {metrics.map((metric) => (
+            <StaggerItem className="lp-metric" key={metric.value}>
+              <p className="lp-metric-value">{metric.value}</p>
+              <p className="lp-metric-label">{metric.label}</p>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </section>
+
+      {/* ── The platform ── */}
       <section className="marketing-section" id="products">
         <div className="marketing-section-header">
-          <p className="section-eyebrow">{t("landing.productEyebrow")}</p>
-          <h2 className="section-title">{t("landing.productTitle")}</h2>
-          <p className="section-copy">{t("landing.productCopy")}</p>
+          <p className="section-eyebrow">{t("landing.home.platformEyebrow")}</p>
+          <h2 className="section-title">{t("landing.home.platformTitle")}</h2>
+          <p className="section-copy">{t("landing.home.platformCopy")}</p>
         </div>
-        <Stagger className="marketing-bento">
-          {productFlows.map((flow) => {
-            const Icon = flow.icon;
+        <Stagger className="lp-pillars">
+          {pillars.map((pillar) => {
+            const Icon = pillar.icon;
             return (
-              <StaggerItem key={flow.title}>
-                <Link className="marketing-bento-card group" href={flow.href}>
-                  <div className="feature-icon">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-3 font-heading text-base font-semibold">{flow.title}</h3>
-                  <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{flow.body}</p>
-                  <span className="marketing-bento-explore">
-                    {t("common.explore")}
-                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </span>
+              <StaggerItem className="lp-pillar" key={pillar.href}>
+                <span aria-hidden className="lp-pillar-glow" />
+                <span className="lp-pillar-icon">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="lp-pillar-title">{pillar.title}</h3>
+                <p className="lp-pillar-body">{pillar.body}</p>
+                <ul className="lp-pillar-list">
+                  {pillar.items.map((item) => (
+                    <li key={item}>
+                      <Check aria-hidden className="h-4 w-4" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <Link className="lp-pillar-link group" href={pillar.href}>
+                  {t("common.explore")}
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </Link>
               </StaggerItem>
             );
@@ -223,147 +208,84 @@ export function LandingPage() {
         </Stagger>
       </section>
 
-      {/* ── Demonstrations ── */}
-      <section className="marketing-section marketing-section-muted">
-        <div className="marketing-section-header">
-          <p className="section-eyebrow">{t("landing.demosEyebrow")}</p>
-          <h2 className="section-title">{t("landing.demosTitle")}</h2>
-          <p className="section-copy">{t("landing.demosCopy")}</p>
-        </div>
-        <Stagger className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {demos.map((demo) => (
-            <StaggerItem key={demo.title}>
-              <article className="marketing-demo-card h-full">
-                <Badge className="mb-3" variant="outline">
-                  {demo.stat}
-                </Badge>
-                <h3 className="font-heading font-semibold">{demo.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {demo.description}
-                </p>
-              </article>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
+      {/* ── Meet ALLIE ── */}
+      <AllieShowcase />
 
       <FeatureStories />
       <BusinessShowcase />
 
-      {/* ── Why SaphraONE ── */}
-      <section className="marketing-section">
-        <div className="marketing-split">
-          <FadeUp>
-            <p className="section-eyebrow">{t("landing.whyEyebrow")}</p>
-            <h2 className="section-title">{t("landing.whyTitle")}</h2>
-            <p className="section-copy">{t("landing.whyCopy")}</p>
-          </FadeUp>
-          <Stagger className="marketing-value-grid">
-            {whyItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <StaggerItem key={item.title}>
-                  <div className="marketing-value-card">
-                    <div className="feature-icon mb-2">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="font-heading font-semibold">{item.title}</h3>
-                    <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{item.body}</p>
-                  </div>
-                </StaggerItem>
-              );
-            })}
-          </Stagger>
-        </div>
-      </section>
+      {/* ── Security ── */}
+      <SecuritySection />
 
-      {/* ── How It Works ── */}
+      {/* ── Get started ── */}
       <section className="marketing-section marketing-section-muted" id="how-it-works">
         <div className="marketing-section-header">
-          <p className="section-eyebrow">{t("landing.howEyebrow")}</p>
-          <h2 className="section-title">{t("landing.howTitle")}</h2>
-          <p className="section-copy">{t("landing.howCopy")}</p>
+          <p className="section-eyebrow">{t("landing.home.howEyebrow")}</p>
+          <h2 className="section-title">{t("landing.home.howTitle")}</h2>
+          <p className="section-copy">{t("landing.home.howCopy")}</p>
         </div>
-
-        <Stagger className="hiw-flow">
-          {howItWorksSteps.map((s, i) => (
-            <StaggerItem className="hiw-step" key={s.step}>
-              {/* connector line, hidden on the last item */}
-              {i < howItWorksSteps.length - 1 && (
-                <div className="hiw-connector" aria-hidden />
-              )}
-              <div className="hiw-step-number" aria-label={`Step ${s.step}`}>
-                {s.step}
-              </div>
-              <div className="hiw-step-body">
-                <div className="hiw-step-check" aria-hidden>
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                </div>
-                <h3 className="hiw-step-label">{s.label}</h3>
-                <p className="hiw-step-detail">{s.detail}</p>
-              </div>
+        <Stagger className="lp-steps">
+          {steps.map((step, index) => (
+            <StaggerItem className="lp-step" key={step.title}>
+              <span className="lp-step-number">{String(index + 1).padStart(2, "0")}</span>
+              <h3 className="lp-step-title">{step.title}</h3>
+              <p className="lp-step-body">{step.body}</p>
             </StaggerItem>
           ))}
         </Stagger>
       </section>
 
-      {/* ── Security ── */}
-      <SecuritySection />
-
       {/* ── FAQ ── */}
-      <section className="marketing-section marketing-section-muted" id="faq">
-        <div className="marketing-section-header">
-          <p className="section-eyebrow">{t("landing.faqEyebrow")}</p>
-          <h2 className="section-title">{t("landing.faqTitle")}</h2>
-          <p className="section-copy">{t("landing.faqCopy")}</p>
+      <section className="marketing-section" id="faq">
+        <div className="lp-faq">
+          <FadeUp className="lp-faq-intro">
+            <p className="section-eyebrow">{t("landing.home.faqEyebrow")}</p>
+            <h2 className="section-title">{t("landing.home.faqTitle")}</h2>
+            <p className="section-copy">{t("landing.home.faqCopy")}</p>
+          </FadeUp>
+          <Accordion className="marketing-faq-accordion" collapsible type="single">
+            {faqItems.map((item, i) => (
+              <AccordionItem key={item.question} value={`faq-${i}`}>
+                <AccordionTrigger className="marketing-faq-trigger">{item.question}</AccordionTrigger>
+                <AccordionContent className="marketing-faq-content">{item.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
-        <Accordion className="marketing-faq-accordion" collapsible type="single">
-          {faqItems.map((item, i) => (
-            <AccordionItem key={item.question} value={`faq-${i}`}>
-              <AccordionTrigger className="marketing-faq-trigger">
-                {item.question}
-              </AccordionTrigger>
-              <AccordionContent className="marketing-faq-content">
-                {item.answer}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
       </section>
 
-      {/* ── Footer CTA ── */}
-      <section className="marketing-cta">
-        <div className="marketing-cta-inner">
-          <div className="marketing-cta-copy">
-            <p className="section-eyebrow">{t("landing.ctaEyebrow")}</p>
-            <h2>{t("landing.ctaTitle")}</h2>
-            <p className="mt-3 max-w-xl text-sm leading-7 sm:text-base">
-              {t("landing.ctaCopy")}
-            </p>
-            <ul className="marketing-cta-points">
-              <li>{t("landing.ctaPoint1")}</li>
-              <li>{t("landing.ctaPoint2")}</li>
-              <li>{t("landing.ctaPoint3")}</li>
+      {/* ── Last invitation ── */}
+      <section className="lp-cta-wrap">
+        <div className="lp-cta">
+          <span aria-hidden className="lp-cta-glow" />
+          <span aria-hidden className="lp-cta-grain" />
+          <div className="lp-cta-copy">
+            <p className="lp-cta-eyebrow">{t("landing.home.ctaEyebrow")}</p>
+            <h2 className="lp-cta-title">{t("landing.home.ctaTitle")}</h2>
+            <p className="lp-cta-lead">{t("landing.home.ctaCopy")}</p>
+            <ul className="lp-cta-points">
+              {[t("landing.home.ctaPoint1"), t("landing.home.ctaPoint2"), t("landing.home.ctaPoint3")].map(
+                (point) => (
+                  <li key={point}>
+                    <Check aria-hidden className="h-4 w-4" />
+                    {point}
+                  </li>
+                ),
+              )}
             </ul>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <LaunchAppLink className="hero-launch-btn">
-                {t("common.openSaphra")}
-                <ArrowRight className="h-4 w-4" />
-              </LaunchAppLink>
-            </div>
+            <LaunchAppLink className="lp-cta-button">
+              {t("common.openSaphra")}
+              <ArrowRight className="h-4 w-4" />
+            </LaunchAppLink>
           </div>
-          <div className="marketing-cta-media">
-            <img
-              alt={t("landing.ctaImageAlt")}
-              draggable={false}
-              src="/landing/pay-laptop.jpg"
-            />
+          <div className="lp-cta-media">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt={t("landing.home.ctaImageAlt")} draggable={false} src="/landing/pay-laptop.jpg" />
           </div>
         </div>
       </section>
 
       <LandingFooter />
-
     </MarketingShell>
   );
 }

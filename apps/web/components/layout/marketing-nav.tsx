@@ -14,7 +14,15 @@ import { cn } from "@/lib/utils";
 export function MarketingNav() {
   const pathname = usePathname();
   const t = useT();
-  const marketingLinks = [{ href: "#products", label: t("common.product") }];
+  // Section links; on another page they lead back to that section of the landing page.
+  const anchor = (id: string) => (pathname === "/" ? `#${id}` : `/#${id}`);
+  const marketingLinks = [
+    { href: anchor("products"), label: t("landing.home.navPlatform") },
+    { href: anchor("allie"), label: t("landing.home.navAllie") },
+    { href: anchor("business"), label: t("landing.home.navBusiness") },
+    { href: anchor("security"), label: t("landing.home.navSecurity") },
+    { href: anchor("faq"), label: t("landing.home.navFaq") },
+  ];
 
   return (
     <header className="marketing-nav">
