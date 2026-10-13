@@ -1,0 +1,88 @@
+/* Every page title in Invite & Earn's style (components/referral/invite-earn.css,
+   .ie-title): large, bold Sora on its own line under the bar's buttons. Its own
+   file, not globals.css (a stale build cache once shipped an old globals.css).
+
+   Each page's bar is a three-column grid: back · title · action. The title
+   drops to a full-width second row, and whatever followed it stays in the
+   right-hand column. `header >` lifts these rules above each page's own
+   one-class title rule, whatever order the stylesheets load in. */
+header > :is(
+    .bulkpay-title,
+    .ck-title,
+    .cl-title,
+    .dep-title,
+    .insights-title,
+    .inv-title,
+    .ov-title,
+    .pocket-bar-title,
+    .pr-title,
+    .recurepay-title,
+    .ref-title,
+    .req-title,
+    .rw-title,
+    .st-title,
+    .swap3-title,
+    .sx-title,
+    .txh-title
+  ),
+.app-frame .app-page-title h1 {
+  max-width: none;
+  overflow: visible;
+  background: none;
+  color: var(--foreground);
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.8rem, 7vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: left;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+header > :is(
+    .bulkpay-title,
+    .ck-title,
+    .cl-title,
+    .dep-title,
+    .insights-title,
+    .inv-title,
+    .ov-title,
+    .pocket-bar-title,
+    .pr-title,
+    .recurepay-title,
+    .ref-title,
+    .req-title,
+    .st-title,
+    .swap3-title,
+    .sx-title,
+    .txh-title
+  ) {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+header > :is(
+    .bulkpay-title,
+    .ck-title,
+    .cl-title,
+    .dep-title,
+    .insights-title,
+    .inv-title,
+    .ov-title,
+    .pocket-bar-title,
+    .pr-title,
+    .recurepay-title,
+    .ref-title,
+    .req-title,
+    .st-title,
+    .swap3-title,
+    .sx-title,
+    .txh-title
+  )
+  ~ * {
+  grid-row: 1;
+  grid-column: -2;
+}

@@ -2,6 +2,7 @@ import { arcChain } from "@/lib/chains";
 import "./globals.css";
 import "./bubble.css";
 import "./app-chrome.css";
+import "@/components/layout/page-title.css";
 
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
