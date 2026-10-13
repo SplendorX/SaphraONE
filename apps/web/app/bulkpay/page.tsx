@@ -148,10 +148,12 @@ type CircleChallengeResult = {
 };
 
 const zeroAmount = BigInt(0);
-const allowancePollAttempts = 30;
-const allowancePollDelayMs = 2_000;
+// Arc makes a block in under a second: check often (still ~60s in total).
+const allowancePollAttempts = 120;
+const allowancePollDelayMs = 500;
 const arcPublicClient = createPublicClient({
  chain: arcChain,
+ pollingInterval: 400,
  transport: arcTransport(),
 });
 const configuredSwiftBatchAddress =

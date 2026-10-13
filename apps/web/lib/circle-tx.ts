@@ -162,6 +162,10 @@ export async function recoverCircleTxDetails(input: {
         // Failed for good: stop waiting for a hash that will never come.
         const failure = extractCircleTxFailure(tx);
         if (failure) return { failure, transactionId: resolvedTxId };
+        // Circle has this exact transaction and it is still pending: the
+        // challenge and the wallet list would only repeat that, at three
+        // round trips per check. Ask again on the next round.
+        if (asRecord(asRecord(tx)?.data)?.transaction ?? asRecord(tx)?.transaction) continue;
       }
     } catch {
       // transactionId may be a challenge id; fall through
