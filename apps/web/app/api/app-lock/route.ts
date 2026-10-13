@@ -28,6 +28,7 @@ import {
   setAppLockTimeout,
   setUnlockCookie,
   type AppLockRow,
+  pinPausedMessage,
 } from "@/lib/app-lock/server";
 import { setWalletSessionCookies } from "@/lib/circle-wallet-session";
 import { readJsonRecord } from "@/lib/http";
@@ -129,7 +130,7 @@ function readChallenge(token: string | undefined, kind: "register" | "unlock", w
 function pinFailure(response: Awaited<ReturnType<typeof checkPin>>) {
   if (response.ok) return null;
   if (response.reason === "paused") {
-    return jsonError("Too many wrong PINs. Try again later.", 429, { pausedUntil: response.until });
+    return jsonError(pinPausedMessage(response.until), 429, { pausedUntil: response.until });
   }
   if (response.reason === "sign-out") {
     const signedOut = jsonError("Too many wrong PINs. Sign in again to continue.", 401, {
@@ -309,7 +310,7 @@ export async function POST(request: NextRequest) {
   if (action === "passkey-unlock") {
     if (!lock) return jsonError("The app lock is off.", 404);
     if (lock.locked_until && Date.parse(lock.locked_until) > Date.now()) {
-      return jsonError("Too many wrong PINs. Try again later.", 429, {
+      return jsonError(pinPausedMessage(lock.locked_until), 429, {
         pausedUntil: lock.locked_until,
       });
     }

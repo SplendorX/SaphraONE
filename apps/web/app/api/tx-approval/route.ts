@@ -15,6 +15,7 @@ import {
   isValidPin,
   listPasskeys,
   recordPasskeyUse,
+  pinPausedMessage,
 } from "@/lib/app-lock/server";
 import { readJsonRecord } from "@/lib/http";
 import { platformAccessCookieName } from "@/lib/platform-access";
@@ -353,7 +354,7 @@ async function verify(
     const result = await checkPin(lock, body.pin);
     if (!result.ok) {
       if (result.reason === "paused") {
-        return jsonError("Too many wrong PINs. Try again later.", 429, { pausedUntil: result.until });
+        return jsonError(pinPausedMessage(result.until), 429, { pausedUntil: result.until });
       }
       if (result.reason === "sign-out") {
         return signedOutResponse("Too many wrong PINs. Sign in again to continue.");

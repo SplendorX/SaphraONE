@@ -134,6 +134,12 @@ export type PinCheck =
   | { ok: false; reason: "paused"; until: string }
   | { ok: false; reason: "sign-out" };
 
+/** What a paused PIN says, with how long is left. */
+export function pinPausedMessage(until: string) {
+  const minutes = Math.max(1, Math.ceil((Date.parse(until) - Date.now()) / 60_000));
+  return `Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+}
+
 /** Check a PIN, counting wrong ones: a pause after 5, sign-out after 10. */
 export async function checkPin(lock: AppLockRow, pin: string): Promise<PinCheck> {
   if (lock.locked_until && Date.parse(lock.locked_until) > Date.now()) {
