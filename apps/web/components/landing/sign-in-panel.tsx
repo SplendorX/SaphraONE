@@ -23,6 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { fetchAccountState } from "@/lib/account/client";
 import {
+  readCircleReverify,
+  writeCircleReverify,
+  type CircleReverify,
+} from "@/lib/circle-device";
+import {
   circleStorageKeys,
   clearCircleSession,
   readCircleLogin,
@@ -72,6 +77,9 @@ export function SignInPanel() {
   // Google sent this address to email sign-in: it already signs in that way.
   const [emailFromGoogle, setEmailFromGoogle] = useState("");
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  // Here to confirm this device with Circle again (lib/circle-device.ts).
+  const [reverify, setReverify] = useState<CircleReverify | null>(null);
+  const [autoSendCode, setAutoSendCode] = useState(false);
 
   const refreshSession = useCallback(async () => {
     if (!isConnected || !address) {
@@ -172,10 +180,26 @@ export function SignInPanel() {
 
   const busy = isAuthorizing || isSigning || isCheckingSession;
 
-  // Land on the step already in progress: back from Google's redirect (or a
-  // Circle wallet mid-setup), or an external wallet already connected.
+  // Land on the step already in progress: confirming this device again, back
+  // from Google's redirect (or a Circle wallet mid-setup), or an external
+  // wallet already connected.
   useEffect(() => {
+    const reverifying = readCircleReverify();
+    if (reverifying) {
+      setReverify(reverifying);
+      if (reverifying.kind === "email") {
+        // The code goes out by itself once; after that, on request.
+        if (!reverifying.codeSent && reverifying.email) {
+          writeCircleReverify({ ...reverifying, codeSent: true });
+          setAutoSendCode(true);
+        }
+        setEmailFromGoogle(reverifying.email ?? "");
+        setMethod("email");
+        return;
+      }
+    }
     const googleInProgress =
+      reverifying?.kind === "google" ||
       Boolean(readCircleLogin()) ||
       readCircleSessionStorage(circleStorageKeys.setupIntent) === "true" ||
       readCircleSessionStorage(circleStorageKeys.enterApp) === "true" ||
@@ -281,6 +305,13 @@ export function SignInPanel() {
         </div>
       ) : null}
 
+      {reverify && method === reverify.kind ? (
+        <p className="mb-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {reverify.kind === "email"
+            ? "Circle needs to confirm this device again. Enter the code we email you and you'll go straight back to where you were."
+            : "Confirming this device with Circle so you can keep sending. You'll go straight back to where you were."}
+        </p>
+      ) : null}
       {method === "email" && emailNotice ? (
         <p className="mb-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           {emailNotice}
@@ -288,6 +319,7 @@ export function SignInPanel() {
       ) : null}
       {method === "email" ? (
         <EmailSignIn
+          autoSendCode={autoSendCode}
           bare
           initialEmail={emailFromGoogle}
           key={emailFromGoogle}

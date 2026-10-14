@@ -88,6 +88,10 @@ export const circleStorageKeys = {
   setupIntent: `${circleKeyPrefix}.setupIntent`,
   enterApp: `${circleKeyPrefix}.enterApp`,
   wallets: `${circleKeyPrefix}.wallets`,
+  /** A device re-check under way (lib/circle-device.ts). */
+  reverify: `${circleKeyPrefix}.reverify`,
+  /** When this browser last finished one. */
+  reverifiedAt: `${circleKeyPrefix}.reverifiedAt`,
 };
 
 const circleOAuthStorageKeys = ["socialLoginProvider", "state", "nonce"];
@@ -376,32 +380,40 @@ export function getCircleErrorMessage(error: unknown, fallback: string) {
 
 
 
-/** Circle's answer when its device record doesn't match this browser. */
+/**
+ * Circle's answer when its device record doesn't match this browser (code
+ * 155113, "incorrect device ID").
+ */
 export function isCircleDeviceIdError(error: unknown) {
+  const code = String((error as { code?: unknown } | null)?.code ?? "");
   const message =
     error instanceof Error
       ? error.message
       : String((error as { message?: unknown } | null)?.message ?? error ?? "");
-  return /device id is not found|device ?id.*not found/i.test(message);
+  return code === "155113" || /device id is not found|device ?id.*not found/i.test(message);
 }
 
 export const circleDeviceIdHelp =
-  "Circle needs to verify this device again. Nothing was sent. You'll be signed out the next time you open SaphraONE; sign back in and try again.";
+  "Circle needs to confirm this device again. Nothing was sent. We'll confirm it now and bring you straight back, then you can try again.";
 
 const staleSessionKey = "saphra.circleSessionStale";
 /** Set just before the automatic sign-out, so sign-in can say why. */
 export const circleSignedOutNoticeKey = "saphra.signedOutNotice";
+/** Fired when a Circle session goes stale, so it is re-confirmed right away. */
+export const circleSessionStaleEventName = "saphra:circle-session-stale";
 
 /**
  * Circle can no longer use this sign-in on this device (its device record is
- * gone, or the session couldn't be renewed). Signing in again is the only
- * fix, so the next time the app opens it signs out (see StaleCircleSessionGuard).
+ * gone, or the session couldn't be renewed). Only a new Circle login fixes
+ * it: StaleCircleSessionGuard confirms the device again (silently for
+ * Google), or signs out where it can't.
  */
 export function markCircleSessionStale() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(staleSessionKey, String(Date.now()));
   } catch {}
+  window.dispatchEvent(new CustomEvent(circleSessionStaleEventName));
 }
 
 export function isCircleSessionStale() {
@@ -541,6 +553,24 @@ export function refreshCircleLogin(): Promise<CircleLoginResult | null> {
   return refreshInFlight;
 }
 
+/** Calls whose challenge opens Circle's confirmation window next. */
+const challengeActions = new Set(["createContractExecution", "createTransfer", "signTypedData"]);
+
+/**
+ * The device check under way (StaleCircleSessionGuard), if any. Resolves
+ * true when this device is being sent to confirm itself with Circle again.
+ * Payments wait for it: one started meanwhile would only fail, and Circle's
+ * window must not open while the check's own Circle frame is still loading.
+ */
+let pendingDeviceCheck: Promise<boolean> | null = null;
+
+export function trackCircleDeviceCheck(check: Promise<boolean>) {
+  pendingDeviceCheck = check;
+  void check.finally(() => {
+    if (pendingDeviceCheck === check) pendingDeviceCheck = null;
+  });
+}
+
 /**
  * Call the Circle user-wallets API. If the user token has expired, renew it
  * once and retry with the new token, so long sessions keep working.
@@ -549,6 +579,9 @@ export async function callCircleWalletApi<T>(
   action: string,
   params: Record<string, unknown> = {},
 ): Promise<T & CircleClientErrorPayload> {
+  if (pendingDeviceCheck && challengeActions.has(action) && (await pendingDeviceCheck)) {
+    throw new CircleClientError({ code: "155113", message: circleDeviceIdHelp }, circleDeviceIdHelp);
+  }
   // Money-moving calls carry SaphraONE's own confirmation (lib/tx-approval).
   params = await withApproval(action, params);
   try {

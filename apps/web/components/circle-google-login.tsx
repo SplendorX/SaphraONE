@@ -41,8 +41,14 @@ import { postEmailAuth } from "@/components/email-sign-in";
 import { personalCircleWallet } from "@/lib/business/provision-wallet";
 import { fetchAccountState } from "@/lib/account/client";
 import { ensureProfile } from "@/lib/profile";
+import {
+  clearCircleReverify,
+  finishCircleReverify,
+  readCircleReverify,
+  writeCircleReverify,
+} from "@/lib/circle-device";
 import { consumeNextPath, resolveSignInDestination } from "@/lib/sign-in-destination";
-import { ensureCircleWalletSession } from "@/lib/wallet-auth-client";
+import { endWalletSession, ensureCircleWalletSession } from "@/lib/wallet-auth-client";
 import { arcTokenSymbols, type ArcTokenSymbol } from "@/lib/tokens";
 import { writePreferredWalletMode } from "@/lib/wallet-mode";
 
@@ -313,10 +319,24 @@ async function callCircleWalletApi<T>(
   }
 
   if (!response.ok) {
-    throw new CircleClientError(payload, "Circle wallet request failed.");
+    throw new CircleClientError(
+      { ...payload, code: payload.code ?? response.status },
+      "Circle wallet request failed.",
+    );
   }
 
   return payload;
+}
+
+/** The API refused the call because a locked SaphraONE session is in this browser. */
+function isAppLockedError(error: unknown) {
+  return String((error as { code?: unknown } | null)?.code ?? "") === "423";
+}
+
+/** Google's own error on the way back (cancelled, or no silent sign-in possible). */
+function readGoogleReturnError() {
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  return hashParams.get("id_token") ? null : hashParams.get("error");
 }
 
 /** No second account for an address that signs in with email (lib/email-auth-server.ts). */
@@ -499,6 +519,8 @@ export function CircleGoogleLogin({
           }
 
           const acceptGoogleWallet = () => {
+            // Back to where a device re-check started, once in.
+            finishCircleReverify();
             setLoginResult(nextLogin);
             writeCircleLogin(nextLogin);
             removeStorage(googleOAuthDiagnosticStorageKey);
@@ -568,6 +590,17 @@ export function CircleGoogleLogin({
             `${window.location.pathname}${window.location.search}`,
           );
         }
+        // Google came back with an error instead (cancelled, or, asked
+        // silently, it needs the person to choose). Off the URL before the
+        // SDK sees it, or it reports a token Circle rejected.
+        const googleError = isGoogleReturn ? null : readGoogleReturnError();
+        if (googleError) {
+          window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}${window.location.search}`,
+          );
+        }
         const sdk = new CircleW3SSdk(sdkConfigsFor(), onLoginComplete);
 
         // One shared instance: constructing it again hands back the first one
@@ -592,6 +625,18 @@ export function CircleGoogleLogin({
 
         if (isGoogleReturn) {
           await verifyGoogleReturn(sdk, returnHash, onLoginComplete);
+          return;
+        }
+
+        const reverify = readCircleReverify();
+        if (reverify?.kind === "google") {
+          continueGoogleReverify(reverify.googleAttempts ?? 0, googleError);
+        } else if (googleError) {
+          setError(
+            googleError === "access_denied"
+              ? "Google sign-in was cancelled. Try again when you're ready."
+              : "Google sign-in didn't finish. Please try again.",
+          );
         }
       } catch (sdkError) {
         if (!cancelled) {
@@ -623,7 +668,13 @@ export function CircleGoogleLogin({
 
       let tokens: DeviceTokenResponse;
       try {
-        tokens = await mintDeviceToken();
+        tokens = await mintDeviceToken().catch(async (deviceError: unknown) => {
+          // A locked session left in this browser refuses the sign-in's own
+          // calls ("SaphraONE is locked"). Signing in replaces it anyway.
+          if (!isAppLockedError(deviceError)) throw deviceError;
+          await endWalletSession().catch(() => undefined);
+          return mintDeviceToken();
+        });
       } catch (deviceError) {
         if (cancelled) {
           return;
@@ -660,6 +711,32 @@ export function CircleGoogleLogin({
       // Reads the token back off the URL and sends it to Circle with the
       // device token it was just given.
       sdk.updateConfigs(sdkConfigsFor(tokens), onLoginComplete);
+    }
+
+    /**
+     * Confirming this device again (lib/circle-device.ts): Google is asked
+     * first without showing anything, then, if it needs the person to choose,
+     * with its account list. Each comes back here.
+     */
+    function continueGoogleReverify(attempts: number, googleError: string | null) {
+      const reverify = readCircleReverify();
+      if (!reverify) return;
+      if (!googleError && attempts === 0) {
+        writeCircleReverify({ ...reverify, googleAttempts: 1 });
+        void startGoogleLogin({ loginHint: reverify.email, prompt: "none" });
+        return;
+      }
+      if (googleError && attempts === 1) {
+        writeCircleReverify({ ...reverify, googleAttempts: 2 });
+        void startGoogleLogin({ loginHint: reverify.email, prompt: "select_account" });
+        return;
+      }
+      if (googleError) {
+        clearCircleReverify();
+        setError(
+          "Google couldn't confirm it's you. Tap Continue with Google to keep using SaphraONE on this device.",
+        );
+      }
     }
 
     const initializationTimer = window.setTimeout(() => {
@@ -916,7 +993,43 @@ export function CircleGoogleLogin({
     return tokens;
   }
 
-  async function handleGoogleLogin() {
+  /**
+   * Google's sign-in address for a device re-check, stored the way the SDK
+   * stores its own (it checks the state and nonce on the way back). Unlike
+   * the SDK's, it names the account (login_hint), so "prompt=none" signs in
+   * without showing anything even with several Google accounts on the phone.
+   */
+  function googleReverifyUrl(prompt: "none" | "select_account", loginHint?: string) {
+    const state = crypto.randomUUID();
+    const nonce = crypto.randomUUID();
+    window.localStorage.setItem("socialLoginProvider", googleProvider);
+    window.localStorage.setItem("state", state);
+    window.localStorage.setItem("nonce", nonce);
+    const params = new URLSearchParams({
+      client_id: googleClientId,
+      nonce,
+      prompt,
+      redirect_uri: redirectUri,
+      response_type: "id_token token",
+      scope:
+        "openid https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+      state,
+    });
+    if (loginHint) params.set("login_hint", loginHint);
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  }
+
+  function handleGoogleLogin() {
+    return startGoogleLogin();
+  }
+
+  /**
+   * Leaves for Google. Without `prompt`, the SDK's own sign-in (Google's
+   * account list); with it, a device re-check (googleReverifyUrl).
+   */
+  async function startGoogleLogin(
+    options: { loginHint?: string; prompt?: "none" | "select_account" } = {},
+  ) {
     const sdk = sdkRef.current;
 
     if (!sdk) {
@@ -965,6 +1078,14 @@ export function CircleGoogleLogin({
     removeStorage(storageKeys.deviceEncryptionKey);
     removeStorage(storageKeys.deviceId);
 
+    // A sign-in from a browser that holds no Circle login replaces any
+    // session left behind. Left in place, a locked one refused the sign-in's
+    // own calls ("SaphraONE is locked") with no lock screen to open it. A
+    // device re-check keeps it: same account, already unlocked.
+    if (!readStoredLogin() && !readCircleReverify()) {
+      await endWalletSession().catch(() => undefined);
+    }
+
     try {
       // Email sign-in shares this SDK instance and may have left its own
       // settings and callback on it.
@@ -974,6 +1095,10 @@ export function CircleGoogleLogin({
       writeStorage(storageKeys.enterApp, "true");
       enterAppAfterLoginRef.current = true;
       setStatus("Redirecting to Google");
+      if (options.prompt) {
+        window.location.assign(googleReverifyUrl(options.prompt, options.loginHint));
+        return;
+      }
       await sdk.performLogin(googleProvider);
     } catch (loginError) {
       console.error("Google login start failed", loginError);
@@ -1360,7 +1485,8 @@ export function CircleGoogleLogin({
         </div>
       ) : null}
 
-      {error && oauthDiagnostic ? (
+      {/* For whoever is setting Google up locally; nothing a customer can act on. */}
+      {error && oauthDiagnostic && process.env.NODE_ENV !== "production" ? (
         <div className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
           Google token diagnostic:{" "}
           {getGoogleOAuthDiagnosticSummary(oauthDiagnostic)}
