@@ -244,7 +244,7 @@ early_access_audit_logs
 
 - RLS on, no anon access; every read/write goes through the API with the
   service role (same as the referral tables).
-- Postgres functions: `redeem_access_code(entry, code_hash)`,
+- Postgres functions: `redeem_access_code(entry, code)`,
   `redeem_live_invite(entry, wallet)`, `count_waitlist_referral(referred)`,
   `waitlist_rank(entry)`, `admit_waitlist_wave(n, actor)`; each one transaction.
 - **Backfill:** one `early_access_grants` row per existing `profiles` row, so
