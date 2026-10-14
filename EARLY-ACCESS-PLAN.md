@@ -10,6 +10,22 @@ live platform.
 Same model as defi.com's early access (email → "Your interest has been
 received" → referral code + share buttons), plus a leaderboard and a code box.
 
+## Decisions (owner, 2026-10-14)
+
+- Admin access codes are **one capitalised word**, limited by **time** or by
+  **number of people** (or both); each person can use **one code, ever**.
+- Each live user can let in **10 people**.
+- **10 counted invites admits you automatically.**
+- **No prizes**: the only reward on the leaderboard is earlier access (keeps
+  it out of promotion/sweepstakes rules).
+- Waves start at **200 people a day**, raised as support and Circle wallet
+  capacity allow.
+- Join asks for **email** and **country** (required), **nickname** (optional)
+  and the consent box. No phone number.
+- **Following our socials earns points**: every official SaphraONE account
+  (X, LinkedIn, Telegram, Instagram, TikTok, YouTube; the list is set in
+  admin) is a one-time task.
+
 Behind one switch: `early_access_settings.mode` = `open` (today's behaviour)
 or `waitlist`. Flipping it back to `open` lets everyone in without a deploy.
 
@@ -104,10 +120,10 @@ are logged so the admin can spot someone running through a dictionary.
 - A live user's existing invite code (their `referral_profiles.referral_token`,
   or their username, which the sign-in screen's referral field already accepts)
   works in the access-code box.
-- **Each live user can let in at most `live_invite_cap` people** (default **5**,
+- **Each live user can let in at most `live_invite_cap` people** (**10**,
   set in admin, per-user overrides for creators/partners). Without a cap, one
   code posted publicly opens the whole platform.
-- The user sees "3 of 5 invites left" on `/referral`.
+- The user sees "7 of 10 invites left" on `/referral`.
 - The person let in is also attached as that user's referral, so **Invite &
   Earn commissions** (REWARDS-PLAN.md §3) start from day one.
 - A referral link `/?ref=<live user's code>` pre-fills the access-code box and
@@ -130,9 +146,22 @@ are logged so the admin can spot someone running through a dictionary.
 |---|---|
 | A person you invited confirms their email | **+100** |
 | That person later goes live and makes their first payment | **+50** bonus |
-| Optional one-time tasks (follow on X, join Telegram) | +10 each, capped at +30 |
+| Follow each official SaphraONE social account (one time each) | **+10** per account |
 
-Tasks can't be verified cheaply, so they stay small; invites carry the board.
+### Social tasks
+- A "Follow us" card on the status page lists every account from
+  `early_access_social_tasks` (X, LinkedIn, Telegram, Instagram, TikTok,
+  YouTube to start; admin adds, removes or reorders without a deploy).
+- Tapping **Follow** opens the account in a new tab and records the task;
+  the points land when the person comes back to the page (at least 10 s
+  later), once per account.
+- Follows can't be checked without each platform's paid API, so they are
+  taken on trust and kept small: following everything (6 × 10 = 60) is worth
+  less than one invite (100). Invites still carry the board.
+- Telegram can be checked properly later with a bot (`/start <code>` in the
+  SaphraONE bot confirms the person joined the group); X and the others stay
+  on trust.
+- Points from tasks never count toward the 10-invite auto-admit.
 
 ### Order
 `score desc, joined_at asc`: among equal scores, earlier sign-ups are ahead.
@@ -152,10 +181,16 @@ Nickname (or "Anon #4821" if none / hidden), country flag, invites counted,
 score. **Never** an email. Entries can hide themselves from the board and
 still keep their place.
 
-### Auto-admit threshold (optional, recommended)
-Reaching **10 counted invites** admits you immediately. Gives the top of the
+### Auto-admit at 10 invites
+Reaching **10 counted invites** admits you immediately (held referrals
+don't count until released). Gives the top of the
 board a concrete goal ("7 / 10 invites to skip the line") and rewards the
-people driving growth. Configurable or off in admin.
+people driving growth. The number can be changed in admin.
+
+### No prizes
+The board ranks people for earlier access only: no cash, points, tokens or
+goods. That keeps it out of promotion / sweepstakes rules in most countries.
+Copy on the page says so ("Climb the board to get in sooner").
 
 ---
 
@@ -178,7 +213,7 @@ On admission:
 4. If the entry had a referrer who is live, `attachReferral()` connects them
    (Invite & Earn). Waitlist-only referrers keep their leaderboard credit.
 
-Wave cadence suggestion: start with 200/day, grow as support and Circle
+Waves: **200 people a day** to start (one daily wave), grow as support and Circle
 wallet capacity allow. Unused invites expire after 14 days and the seat goes
 back to the queue (entry keeps its position, gets a reminder email first).
 
@@ -189,10 +224,12 @@ back to the queue (entry keeps its position, gets a reminder email first).
 ```sql
 early_access_settings (single row)
   mode text check (mode in ('open','waitlist'))      -- the switch
-  live_invite_cap int default 5
+  live_invite_cap int default 10
   points_per_referral int default 100
   first_payment_bonus int default 50
-  auto_admit_referrals int null default 10            -- null = off
+  auto_admit_referrals int default 10
+  social_task_points int default 10
+  wave_size int default 200
   invite_expiry_days int default 14
   leaderboard_size int default 100
   updated_at, updated_by
@@ -212,6 +249,14 @@ waitlist_entries
   source jsonb (utm_*, landing path), ip_hash, device_hash, user_agent
   joined_at, updated_at
   index (status, score desc, joined_at)
+
+early_access_social_tasks
+  id, platform ('x','linkedin','telegram','instagram','tiktok','youtube',...)
+  label, url, sort_order, active bool
+
+waitlist_social_completions
+  entry_id, task_id, opened_at, completed_at, points
+  unique (entry_id, task_id)
 
 waitlist_referrals
   referrer_entry_id, referred_entry_id unique
@@ -303,6 +348,7 @@ Public / waitlist (all rate-limited, Turnstile on `join` and `resume`):
 | `GET /api/early-access/stats` | Public counter for the landing ("Join 18,930 on the waitlist") |
 | `POST /api/early-access/redeem` | Access-code box (admin code or live invite code) |
 | `POST /api/early-access/claim` | Link a proven waitlist email to the signed-in wallet |
+| `POST /api/early-access/tasks/:id` | Record a social follow (open, then complete on return) |
 | `GET /api/early-access/invites` | Live user: invites left, who used them |
 
 Admin (`ADMIN_SECRET`, `lib/admin-auth.ts`):
@@ -314,7 +360,8 @@ Admin (`ADMIN_SECRET`, `lib/admin-auth.ts`):
 | `POST /api/admin/early-access/admit` | Admit top N / selected / one |
 | `POST /api/admin/early-access/entries/:id` | Block, unblock, void referral, adjust score (reason required) |
 | `GET/POST/PATCH /api/admin/early-access/codes` | Create a word code (time / people / both limit), pause / end, see uses and failed tries |
-| `PATCH /api/admin/early-access/settings` | Mode, cap, points, threshold, expiry |
+| `PATCH /api/admin/early-access/settings` | Mode, invite cap, points, threshold, wave size, expiry |
+| `GET/POST/PATCH /api/admin/early-access/social-tasks` | Social accounts to follow: add, remove, reorder, turn off |
 
 Cron (`CRON_SECRET`): `GET /api/cron/early-access`, hourly: expire unused
 invites, send invite reminders, send the "you moved up" digest, flag velocity
@@ -349,8 +396,9 @@ Each non-transactional email has an unsubscribe link; transactional ones
   "@ada invited you".
 - "Sign in" stays for admitted and existing users.
 
-**Join (`/early-access`)**: email, nickname (optional), country, referral code
-(pre-filled, editable), Turnstile, consent ("I agree to the Terms and Privacy
+**Join (`/early-access`)**: email (required), country (required, pre-selected
+from the visitor's IP country), nickname (optional, shown on the board),
+referral code (pre-filled, editable), Turnstile, consent ("I agree to the Terms and Privacy
 notice and to receive SaphraONE updates").
 
 **Received (after join)**: the screenshot layout: check mark, "Your interest
@@ -362,13 +410,14 @@ WhatsApp / Telegram, Telegram community link, access-code box, back to home.
 - Header card: position, total waiting, score, invites counted / pending,
   progress to auto-admit ("7 / 10").
 - Referral card (as above) + native share sheet on mobile.
+- "Follow us" card: one row per social account, +10 each, ticks once done.
 - Live leaderboard: top 100, own row pinned at the bottom if outside it,
   movement arrows, your row highlighted.
 - "Have an access code?" box → success state "You're in" with "Sign in now".
 - Admitted: big "You're in" + Sign in button + invite expiry.
 
 **Live app**:
-- `/referral`: "Early-access invites: 3 of 5 left", share invite, list of
+- `/referral`: "Early-access invites: 7 of 10 left", share invite, list of
   people let in.
 - `/admin/early-access`: overview, entries, leaderboard with fraud flags,
   waves, codes, settings, audit log (style of `/admin/rewards`).
@@ -460,15 +509,8 @@ Joins/day, confirmation rate (target > 60 %), invites per confirmed entry
 
 ---
 
-## 13. Decisions needed
+## 13. Still open
 
-1. **Live-user invite cap**: 5 per user? Unlimited for business accounts?
-2. **Auto-admit threshold**: on at 10 invites, or waves only?
-3. **Leaderboard prizes** beyond access (e.g. SwiftPoints for the top 100 at
-   launch)? Prizes can make it a promotion with local rules (some countries
-   require terms/registration); access-only avoids that.
-4. **Wave size and cadence** to start (suggested 200/day).
-5. **Do existing users count as live inviters** right away? (Plan: yes.)
-6. **Required fields at join**: email only, or also country/phone (phone
-   raises friction but cuts fake sign-ups)?
-7. **Telegram / X tasks** on the board, or invites only?
+- **Existing users as inviters**: the plan lets every current user invite 10
+  people from day one (decided as the default; say if it should wait).
+- **Which social accounts** are in the first list, with their URLs.
