@@ -1,6 +1,6 @@
 # Partna vs Centiiv: Naira on-ramp and off-ramp for SaphraONE on Arc
 
-Research note, Oct 2026. Compares [Partna](https://www.getpartna.com/) with the earlier Centiiv research (`CENTIIV-RAMP-PLAN.md`, commit `73879c0` on branch `claude/swiftpay-onramp-offramp-research-wa8s4c`).
+Research note, Oct 2026. Compares [Partna](https://www.getpartna.com/) with the earlier Centiiv research (`CENTIIV-RAMP-PLAN.md`, in this folder).
 
 Sources: Partna's v4 docs (https://docs.getpartna.com/llms-full.txt) and its OpenAPI spec (https://docs.getpartna.com/api-reference/partna.json), both read in full in Oct 2026. Partna's marketing site (`www.getpartna.com`) was not reachable from the research environment and was not needed.
 
@@ -273,7 +273,7 @@ Add one seam during the Centiiv build so Partna can be plugged in later:
 - **Third-party listings:**
   - [Circle partner listing](https://partners.circle.com/partner/partna)
   - [Alchemy dapp listing](https://www.alchemy.com/dapps/partna)
-- **Centiiv:** `CENTIIV-RAMP-PLAN.md` (commit `73879c0`); docs index https://c-vmch.readme.io/llms.txt
+- **Centiiv:** `CENTIIV-RAMP-PLAN.md` (originally commit `73879c0`); docs index https://c-vmch.readme.io/llms.txt
 - **SaphraONE CCTP code:**
   - `apps/web/lib/multichain/chains.ts`
   - `apps/web/lib/multichain/service.ts`
