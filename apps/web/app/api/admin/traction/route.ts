@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { getTractionSummary } from "@/lib/traction/service";
 
 export const runtime = "nodejs";
 
 
 export async function GET(request: Request) {
-  if (!isAdminAuthorized(request)) {
+  if (!(await adminCan(request, "traction"))) {
     return NextResponse.json(
       { message: "Unauthorized traction dashboard request." },
       { status: 401 },

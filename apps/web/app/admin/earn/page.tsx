@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 
 import { EarnModeBanner } from "@/components/earn/earn-mode-banner";
-import { PlatformChrome } from "@/components/layout/platform-chrome";
+import { AdminPageHeader, useAdmin } from "@/components/admin/admin-shell";
 import { type EarnMode } from "@/lib/earn/config";
 import { cn } from "@/lib/utils";
 
@@ -68,24 +68,16 @@ function explorerUrl(base: string, address: string | null) {
 }
 
 export default function AdminEarnPage() {
-  const [adminKey, setAdminKey] = useState("");
+  const { adminFetch } = useAdmin();
   const [data, setData] = useState<AdminPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (key: string) => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        "/api/admin/earn",
-        {
-          headers: key
-            ? { Authorization: `Bearer ${key}` }
-            : undefined,
-          cache: "no-store",
-        },
-      );
+      const res = await adminFetch("/api/admin/earn");
       const payload = (await res.json()) as AdminPayload & { message?: string };
       if (!res.ok) {
         throw new Error(payload.message || "Admin API failed.");
@@ -97,36 +89,22 @@ export default function AdminEarnPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adminFetch]);
 
   useEffect(() => {
-    // Dev: try without key (allowed when no EARN_ADMIN_SECRET)
-    void load("");
+    void load();
   }, [load]);
 
   return (
-    <PlatformChrome
-      title="Admin · Earn"
-      subtitle="TVL, fees, APY, strategy health"
-    >
+    <div>
+      <AdminPageHeader subtitle="TVL, fees, APY, strategy health" title="Earn" />
       <div className="earn-page">
         <div className="earn-admin-auth">
-          <label className="earn-label" htmlFor="admin-key">
-            Admin key (EARN_ADMIN_SECRET or CRON_SECRET)
-          </label>
           <div className="earn-actions">
-            <input
-              className="earn-input"
-              id="admin-key"
-              onChange={(e) => setAdminKey(e.target.value)}
-              placeholder="Optional in local dev"
-              type="password"
-              value={adminKey}
-            />
             <button
               className="earn-btn earn-btn-primary"
               disabled={loading}
-              onClick={() => void load(adminKey)}
+              onClick={() => void load()}
               type="button"
             >
               {loading ? (
@@ -323,7 +301,7 @@ export default function AdminEarnPage() {
           <Link href="/earn">← Earn app</Link>
         </p>
       </div>
-    </PlatformChrome>
+    </div>
   );
 }
 

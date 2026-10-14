@@ -3,8 +3,8 @@
 import { Loader2, RefreshCw, Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { useAdmin } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type Ticket = {
@@ -32,7 +32,7 @@ const statuses = [
 
 /** The support team's inbox: requests the help assistant handed to a person. */
 export default function SupportAdminPage() {
-  const [secret, setSecret] = useState("");
+  const { adminFetch } = useAdmin();
   const [status, setStatus] = useState<(typeof statuses)[number]["id"]>("open");
   const [tickets, setTickets] = useState<Ticket[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -43,16 +43,12 @@ export default function SupportAdminPage() {
 
   const call = useCallback(
     async (path: string, init?: RequestInit) => {
-      const response = await fetch(path, {
-        ...init,
-        cache: "no-store",
-        headers: { authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
-      });
+      const response = await adminFetch(path, init);
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message ?? "Request failed.");
       return payload;
     },
-    [secret],
+    [adminFetch],
   );
 
   const loadQueue = useCallback(
@@ -66,6 +62,11 @@ export default function SupportAdminPage() {
     },
     [call, status],
   );
+
+  // Opens on the queue, and follows the status chosen above it.
+  useEffect(() => {
+    void loadQueue();
+  }, [loadQueue]);
 
   useEffect(() => {
     if (!selected) return;
@@ -90,7 +91,7 @@ export default function SupportAdminPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6">
+    <main className="max-w-6xl space-y-6">
       <header>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Admin</p>
         <h1 className="mt-1 font-heading text-3xl">Support inbox</h1>
@@ -101,16 +102,6 @@ export default function SupportAdminPage() {
       </header>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="min-w-64 flex-1 text-sm font-medium">
-          Admin secret
-          <Input
-            className="mt-2 h-11"
-            onChange={(event) => setSecret(event.target.value)}
-            placeholder="Bearer secret"
-            type="password"
-            value={secret}
-          />
-        </label>
         <div className="flex gap-1 rounded-full border border-border p-1">
           {statuses.map((option) => (
             <button
@@ -119,10 +110,7 @@ export default function SupportAdminPage() {
                 status === option.id ? "bg-foreground text-background" : "text-muted-foreground",
               )}
               key={option.id}
-              onClick={() => {
-                setStatus(option.id);
-                if (tickets) void loadQueue(option.id);
-              }}
+              onClick={() => setStatus(option.id)}
               type="button"
             >
               {option.label}
@@ -131,7 +119,7 @@ export default function SupportAdminPage() {
         </div>
         <Button className="h-11" onClick={() => void loadQueue()}>
           <RefreshCw className="h-4 w-4" />
-          Load
+          Refresh
         </Button>
       </div>
 

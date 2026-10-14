@@ -1,8 +1,9 @@
 "use client";
 
 import { ArrowUpRight, Check, Loader2, RefreshCw, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useAdmin } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -38,7 +39,7 @@ const idTypeLabel: Record<string, string> = {
  * register that was down, or a number already used by another business.
  */
 export default function BusinessVerificationsAdminPage() {
-  const [secret, setSecret] = useState("");
+  const { adminFetch } = useAdmin();
   const [view, setView] = useState<"PENDING" | "ALL">("PENDING");
   const [submissions, setSubmissions] = useState<Submission[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,10 +51,7 @@ export default function BusinessVerificationsAdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/business-verifications?status=${nextView}`, {
-        cache: "no-store",
-        headers: { authorization: `Bearer ${secret}` },
-      });
+      const response = await adminFetch(`/api/admin/business-verifications?status=${nextView}`);
       const payload = await response.json().catch(() => null);
       if (!response.ok) throw new Error(payload?.message ?? "Could not load submissions.");
       setSubmissions(payload.submissions);
@@ -64,13 +62,18 @@ export default function BusinessVerificationsAdminPage() {
     }
   }
 
+  // Opens on the submissions waiting for review.
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function decide(id: string, decision: "APPROVED" | "REJECTED") {
     setDeciding(id);
     setError(null);
     try {
-      const response = await fetch(`/api/admin/business-verifications/${id}`, {
+      const response = await adminFetch(`/api/admin/business-verifications/${id}`, {
         body: JSON.stringify({ decision, reason: reasons[id] ?? "" }),
-        headers: { authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
         method: "POST",
       });
       const payload = await response.json().catch(() => null);
@@ -84,7 +87,7 @@ export default function BusinessVerificationsAdminPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
+    <main className="max-w-5xl space-y-6">
       <header>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Admin</p>
         <h1 className="mt-1 font-heading text-3xl">Business verifications</h1>
@@ -95,16 +98,6 @@ export default function BusinessVerificationsAdminPage() {
       </header>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="min-w-64 flex-1 text-sm font-medium">
-          Admin secret
-          <Input
-            className="mt-2 h-11"
-            onChange={(event) => setSecret(event.target.value)}
-            placeholder="Bearer secret"
-            type="password"
-            value={secret}
-          />
-        </label>
         <div className="flex gap-1 rounded-full border border-border p-1">
           {(["PENDING", "ALL"] as const).map((option) => (
             <button
@@ -114,7 +107,7 @@ export default function BusinessVerificationsAdminPage() {
               key={option}
               onClick={() => {
                 setView(option);
-                if (submissions) void load(option);
+                void load(option);
               }}
               type="button"
             >
@@ -124,7 +117,7 @@ export default function BusinessVerificationsAdminPage() {
         </div>
         <Button className="h-11" disabled={loading} onClick={() => void load()}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Load
+          Refresh
         </Button>
       </div>
 

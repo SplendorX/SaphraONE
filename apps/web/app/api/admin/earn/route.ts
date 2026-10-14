@@ -5,7 +5,7 @@ import { fetchAaveApy } from "@/lib/earn/aave-apy";
 import { earnConfig, earnModeBanner } from "@/lib/earn/config";
 import { bpsToPercentString, formatUnitsToDecimal } from "@/lib/earn/decimal";
 import { swiftPayVaultAbi, yieldStrategyAbi } from "@/lib/earn/abis";
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { arcTokens } from "@/lib/tokens";
 import { arcChain, arcTransport } from "@/lib/chains";
@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
+  if (!(await adminCan(request, "earn"))) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 

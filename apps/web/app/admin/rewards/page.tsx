@@ -4,7 +4,7 @@ import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { adminLoadError, useAdminKey } from "@/components/admin/use-admin-key";
-import { PlatformChrome } from "@/components/layout/platform-chrome";
+import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { arcChain } from "@/lib/chains";
 import { cn } from "@/lib/utils";
 
@@ -133,7 +133,8 @@ const emptyQuest = {
 };
 
 export default function AdminRewardsPage() {
-  const { key: adminKey, ready: keyReady, setKey: setAdminKey } = useAdminKey();
+  // Signed in on the admin platform: its owner key, or none for a team member's own account.
+  const { key: adminKey, ready: keyReady } = useAdminKey();
   const [data, setData] = useState<AdminData | null>(null);
   const [tab, setTab] = useState<"queues" | "quests">("queues");
   const [loading, setLoading] = useState(false);
@@ -227,16 +228,10 @@ export default function AdminRewardsPage() {
   const counts = data ? { claims: data.claims.length, discounts: data.discounts.length, held: data.held.length } : null;
 
   return (
-    <PlatformChrome subtitle="Review queues and quests" title="Admin · Rewards">
+    <div>
+      <AdminPageHeader subtitle="Review queues and quests" title="Rewards" />
       <div className="ar-page">
         <div className="ar-auth">
-          <input
-            className="ar-input"
-            onChange={(event) => setAdminKey(event.target.value)}
-            placeholder="Admin key (ADMIN_SECRET; optional in local dev)"
-            type="password"
-            value={adminKey}
-          />
           <button className="ar-btn is-primary" disabled={loading} onClick={() => void load()} type="button">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Refresh
@@ -524,6 +519,6 @@ export default function AdminRewardsPage() {
           </>
         )}
       </div>
-    </PlatformChrome>
+    </div>
   );
 }
