@@ -35,6 +35,7 @@ import {
   type CircleLoginResult,
   type CircleTokenBalance,
   type CircleWallet,
+  uniqueTokenBalances,
 } from "@/lib/circle-session";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { postEmailAuth } from "@/components/email-sign-in";
@@ -831,7 +832,7 @@ export function CircleGoogleLogin({
       walletId,
     });
 
-    setBalances(payload.tokenBalances ?? []);
+    setBalances(uniqueTokenBalances(payload.tokenBalances ?? []));
   }
 
   async function loadWallets(

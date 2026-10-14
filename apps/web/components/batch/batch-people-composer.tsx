@@ -415,7 +415,7 @@ export const BatchPeopleComposer = forwardRef<
                           amountRefs.current[row.id]?.focus();
                         }
                       }}
-                      placeholder="username or 0x…"
+                      placeholder="ONE ID or 0x…"
                       spellCheck={false}
                       value={row.query}
                     />

@@ -399,7 +399,7 @@ export function SendHub(props: SendHubProps) {
             aria-label="Search people"
             autoComplete="off"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search a name, @username or 0x wallet"
+            placeholder="Search a name, ONE ID or 0x wallet"
             spellCheck={false}
             value={query}
           />
@@ -482,7 +482,7 @@ export function SendHub(props: SendHubProps) {
                     body="Anyone on SaphraONE or any wallet on Arc."
                     icon={<Send className="h-5 w-5" />}
                     onClick={startNew}
-                    title="Pay to @username or Arc address"
+                    title="Pay to a ONE ID or Arc address"
                   />
                 </li>
                 {multichainEnabled ? (
@@ -633,7 +633,7 @@ export function SendHub(props: SendHubProps) {
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && isRecipientValid) setView("chat");
                 }}
-                placeholder="@username or 0x…"
+                placeholder="ONE ID or 0x…"
                 spellCheck={false}
                 value={recipientAddress}
               />

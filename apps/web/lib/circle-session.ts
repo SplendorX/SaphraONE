@@ -653,6 +653,23 @@ async function callCircleWalletApiOnce<T>(
   return payload;
 }
 
+/**
+ * One balance per token. On Arc, USDC is both the native gas token and an
+ * ERC-20, and Circle lists the same money under each: shown twice it looks
+ * like two balances. The larger figure wins if they ever differ.
+ */
+export function uniqueTokenBalances(balances: CircleTokenBalance[]) {
+  const bySymbol = new Map<string, CircleTokenBalance>();
+  for (const balance of balances) {
+    const key = (balance.token?.symbol ?? balance.token?.name ?? balance.token?.id ?? "").toUpperCase();
+    const kept = bySymbol.get(key);
+    if (!kept || Number(balance.amount ?? 0) > Number(kept.amount ?? 0)) {
+      bySymbol.set(key, balance);
+    }
+  }
+  return [...bySymbol.values()];
+}
+
 export function findCircleTokenBalance(
   balances: CircleTokenBalance[],
   symbol: ArcTokenSymbol,

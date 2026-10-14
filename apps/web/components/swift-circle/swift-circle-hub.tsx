@@ -1262,7 +1262,7 @@ export function SwiftCircleHub() {
                   <Input
                     className="pl-9"
                     onChange={(event) => setMemberQuery(event.target.value)}
-                    placeholder="Search username"
+                    placeholder="Search ONE ID"
                     value={memberQuery}
                   />
                 </div>
@@ -1589,7 +1589,7 @@ export function SwiftCircleHub() {
                   <Input
                     className="pl-9"
                     onChange={(event) => setMemberQuery(event.target.value)}
-                    placeholder="Search username"
+                    placeholder="Search ONE ID"
                     value={memberQuery}
                   />
                 </div>

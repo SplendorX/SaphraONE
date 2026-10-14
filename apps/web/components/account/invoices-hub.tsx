@@ -530,11 +530,11 @@ export function InvoicesHub() {
                 </span>
               </label>
               <div className="text-sm font-medium">
-                <span className="mb-2 block">SaphraONE username</span>
+                <span className="mb-2 block">ONE ID</span>
                 <UsernameField
                   id="invoice-customer-username"
                   onChange={setCustomerUsername}
-                  placeholder="username (optional)"
+                  placeholder="ONE ID (optional)"
                   value={customerUsername.replace(/^@+/, "")}
                 />
               </div>

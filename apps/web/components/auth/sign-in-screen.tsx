@@ -9,7 +9,7 @@ import { rememberNextPath } from "@/lib/sign-in-destination";
 
 const stories: AuthStory[] = [
   {
-    body: "Send USDC to any @username and it lands on Arc in under a second. Lagos to London, rent to dinner, for a fraction of a cent.",
+    body: "Send USDC to any ONE ID and it lands on Arc in under a second. Lagos to London, rent to dinner, for a fraction of a cent.",
     label: "Send",
     scene: <SendScene />,
     title: "Money that moves like a message.",

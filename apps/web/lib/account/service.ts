@@ -24,7 +24,12 @@ import { checkoutEnabled } from "@/lib/checkout/flag";
 import { chargeSummary } from "@/lib/checkout/summary";
 import { sendInvoiceEmail } from "@/lib/email/invoice-email";
 import { createSavingsNotificationResult } from "@/lib/save/notifications";
-import { normalizeUsername, validateUsername } from "@/lib/profile-utils";
+import {
+  accountEmailLockedMessage,
+  normalizeUsername,
+  oneIdLockedMessage,
+  validateUsername,
+} from "@/lib/profile-utils";
 import { checkUsernameAvailability } from "@/lib/account/username-availability";
 import { findCountry } from "@/lib/countries";
 
@@ -272,6 +277,14 @@ export async function completeAccountOnboarding(input: {
     ownerWallet: input.ownerWallet,
   });
   const username = normalizeUsername(input.username);
+  // Onboarding sets the ONE ID once; running it again can't swap it.
+  if (
+    account.account_type_selected &&
+    account.username &&
+    username !== normalizeUsername(account.username)
+  ) {
+    throw accountErrors.invalid(oneIdLockedMessage);
+  }
   const usernameError = validateUsername(username);
   if (usernameError) throw accountErrors.invalid(usernameError);
   const availability = await checkUsernameAvailability(username, actorWallet);
@@ -417,6 +430,15 @@ export async function updateBusinessAccountProfile(input: {
   const { actorWallet } = await requireBusinessAccount(input);
   const current = await loadBusinessProfile(actorWallet);
   if (!current) throw accountErrors.profileRequired();
+  // The account email is set once; only the team changes it after that.
+  const nextEmail = optionalText(input.contactEmail, 160);
+  if (
+    current.contact_email &&
+    nextEmail &&
+    nextEmail.trim().toLowerCase() !== current.contact_email.trim().toLowerCase()
+  ) {
+    throw accountErrors.invalid(accountEmailLockedMessage);
+  }
   const next = await upsertBusinessProfile(actorWallet, {
     businessName:
       typeof input.businessName === "string" && input.businessName.trim()
@@ -527,7 +549,7 @@ async function findWalletByUsername(username: string) {
     .ilike("username", handle)
     .maybeSingle();
   if (error) {
-    throw new Error(readAccountDbError(error, "Could not look up that username."));
+    throw new Error(readAccountDbError(error, "Could not look up that ONE ID."));
   }
   return (data as { username: string; wallet_address: string } | null) ?? null;
 }
@@ -737,7 +759,7 @@ export async function createInvoice(input: {
   if (customerUsername) {
     const found = await findWalletByUsername(customerUsername);
     if (!found) {
-      throw accountErrors.invalid("That SaphraONE username was not found.");
+      throw accountErrors.invalid("That ONE ID was not found.");
     }
   }
   const origin = input.origin?.replace(/\/$/, "") ?? "";
@@ -887,7 +909,7 @@ export async function updateInvoice(input: {
   if (customerUsername) {
     const found = await findWalletByUsername(customerUsername);
     if (!found) {
-      throw accountErrors.invalid("That SaphraONE username was not found.");
+      throw accountErrors.invalid("That ONE ID was not found.");
     }
   }
   const supabase = accountDb();

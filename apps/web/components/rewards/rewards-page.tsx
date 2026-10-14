@@ -201,7 +201,12 @@ export function RewardsPage() {
         {data.activity.length === 0 ? (
           <p className="rw-empty">Make a payment to earn your first points.</p>
         ) : (
-          <ul className="rw-activity">
+          // Scrolls inside the card once it is longer than about six entries.
+          <ul
+            aria-label="Rewards activity"
+            className={cn("rw-activity", data.activity.length > 6 && "is-long")}
+            tabIndex={data.activity.length > 6 ? 0 : undefined}
+          >
             {data.activity.map((entry) => (
               <li key={entry.id}>
                 <div className="min-w-0">

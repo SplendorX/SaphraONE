@@ -42,6 +42,11 @@ const siteTitle = "SaphraONE | Powering possibilities with USDC";
 const siteDescription =
   `Money movement infrastructure for the internet. Send, batch, request, swap, and settle stablecoins on ${arcChain.name}.`;
 const brandMark = "/brand/saphra-mark.png";
+const shareTitle = "SaphraONE | One account. One identity. Anywhere.";
+const shareDescription =
+  "Send, save and get paid in USDC with your ONE ID: a name, not a number. Settles on Arc in under a second.";
+// Versioned so apps that cache link previews fetch the new banner.
+const shareImage = "/og/saphra-share.jpg?v=1";
 
 function getSiteUrl() {
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -76,24 +81,28 @@ export const metadata: Metadata = {
     icon: [{ url: brandMark, type: "image/png", sizes: "32x32" }],
     shortcut: brandMark,
   },
+  // What a shared link shows (WhatsApp, X, Telegram, iMessage, Slack…): the
+  // banner, made from the brand (public/og/saphra-share.jpg, 1200×630).
   openGraph: {
-    description: siteDescription,
+    description: shareDescription,
     images: [
       {
-        alt: "SaphraONE",
-        height: 1024,
-        url: brandMark,
-        width: 1024,
+        alt: shareTitle,
+        height: 630,
+        type: "image/jpeg",
+        url: shareImage,
+        width: 1200,
       },
     ],
-    title: siteTitle,
+    siteName: "SaphraONE",
+    title: shareTitle,
     type: "website",
   },
   twitter: {
-    card: "summary",
-    description: siteDescription,
-    images: [brandMark],
-    title: siteTitle,
+    card: "summary_large_image",
+    description: shareDescription,
+    images: [{ alt: shareTitle, url: shareImage }],
+    title: shareTitle,
   },
 };
 

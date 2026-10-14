@@ -25,8 +25,8 @@ export function HeroWelcome() {
         {t("landing.home.heroKicker")}
       </p>
       <h1 className="hero-welcome-title">
+        <span className="hero-welcome-line">{t("landing.home.heroTitleLead")} </span>
         <span className="hero-welcome-line">
-          {t("landing.home.heroTitleLead")}{" "}
           <span className="hero-welcome-accent">{t("landing.home.heroTitleAccent")}</span>
         </span>
       </h1>

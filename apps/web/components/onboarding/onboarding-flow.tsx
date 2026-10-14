@@ -117,6 +117,8 @@ export function OnboardingFlow() {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [businessName, setBusinessName] = useState("");
+  // Starts from the Google / email sign-in address; becomes the account email.
+  const [contactEmail, setContactEmail] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
@@ -175,6 +177,7 @@ export function OnboardingFlow() {
           validateUsername(state.account.username) ? null : normalizeUsername(state.account.username),
         );
         setCountry((state.account as { country?: string | null }).country ?? "");
+        setContactEmail((current) => current || readSignInEmail() || "");
         setFullName(state.account.display_name ?? "");
         setBio(state.account.bio ?? "");
       } catch (err) {
@@ -232,6 +235,8 @@ export function OnboardingFlow() {
   const usernameBlocked =
     Boolean(usernameError) || usernameCheck.state === "checking" || usernameCheck.state === "taken";
   const countryMissing = !findCountry(country);
+  const contactEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
+  const contactEmailInvalid = Boolean(contactEmail.trim()) && !contactEmailValid;
 
   async function finish(accountKind: "personal" | "business") {
     if (!ownerWallet) return;
@@ -247,8 +252,8 @@ export function OnboardingFlow() {
           businessCategory: category,
           businessDescription: description,
           businessName,
-          // A Google / email sign-in starts the business's contact email.
-          contactEmail: readSignInEmail(),
+          // Asked of a business (pre-filled from the sign-in address).
+          contactEmail: accountKind === "business" ? contactEmail.trim() : readSignInEmail(),
           country,
           locale,
           logoUrl: logoUrl || null,
@@ -326,8 +331,8 @@ export function OnboardingFlow() {
     {
       body:
         kind === "business"
-          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your @name."
-          : "People pay you by your @name instead of a long address. This is how you'll appear to them.",
+          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your ONE ID."
+          : "Your ONE ID is how people pay you instead of a long address. Choose it carefully: it's yours for good.",
       label: "Profile",
       scene: (
         <ProfileScene
@@ -338,7 +343,7 @@ export function OnboardingFlow() {
           username={username}
         />
       ),
-      title: kind === "business" ? "Put your business on the map." : "Claim your @name.",
+      title: kind === "business" ? "Put your business on the map." : "Claim your ONE ID.",
     },
     {
       body: "A PIN, plus Face ID or fingerprint where your phone has it. Even with your phone in hand, no one else gets in.",
@@ -502,6 +507,7 @@ export function OnboardingFlow() {
             suggestion={suggestedUsername}
           />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
+          <p className="mt-1 text-xs text-muted-foreground">Your ONE ID is permanent once you continue. Only our team can change it later.</p>
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -560,6 +566,7 @@ export function OnboardingFlow() {
             suggestion={suggestedUsername}
           />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
+          <p className="mt-1 text-xs text-muted-foreground">Your ONE ID is permanent once you continue. Only our team can change it later.</p>
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -580,6 +587,23 @@ export function OnboardingFlow() {
               placeholder="Acme Studio"
               value={businessName}
             />
+          </label>
+          <label className="mt-5 block text-sm font-medium">
+            {t("common.contactEmail")}
+            <Input
+              autoComplete="email"
+              className="mt-2 h-11"
+              inputMode="email"
+              onChange={(event) => setContactEmail(event.target.value)}
+              placeholder="hello@acme.com"
+              type="email"
+              value={contactEmail}
+            />
+            <span className="mt-2 block text-xs font-normal text-muted-foreground">
+              {contactEmailInvalid
+                ? "Enter a valid email address."
+                : "Where customers and SaphraONE reach your business. It's locked once saved; the team can change it on request."}
+            </span>
           </label>
           <div className="mt-5 block text-sm font-medium">
             {t("common.category")}
@@ -642,7 +666,9 @@ export function OnboardingFlow() {
               {t("common.back")}
             </Button>
             <Button
-              disabled={busy || usernameBlocked || countryMissing || !businessName.trim()}
+              disabled={
+                busy || usernameBlocked || countryMissing || !businessName.trim() || !contactEmailValid
+              }
               onClick={() => void finish("business")}
             >
               {t("onboarding.createBusinessCta")}

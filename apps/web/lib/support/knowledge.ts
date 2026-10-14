@@ -152,7 +152,7 @@ export const supportArticles: SupportArticle[] = [
     title: "I sent money to the wrong address",
     keywords: ["wrong address", "wrong person", "mistake", "reverse", "refund", "undo", "cancel payment", "sent by mistake"],
     answer:
-      "Blockchain payments can't be reversed by SaphraONE. If you know the recipient, ask them to send it back. If you sent to a SaphraONE @username, our team can try to contact them for you.",
+      "Blockchain payments can't be reversed by SaphraONE. If you know the recipient, ask them to send it back. If you sent to a ONE ID, our team can try to contact them for you.",
     links: [{ label: "Open Transactions", href: "/transactions" }],
     urgent: true,
   },
@@ -381,9 +381,10 @@ export const supportArticles: SupportArticle[] = [
   {
     id: "change-username",
     category: "account",
-    title: "How do I change my username or profile?",
-    keywords: ["username", "profile", "display name", "avatar", "photo", "bio", "edit profile"],
-    answer: "Edit your username, name and photo in Settings → Profile.",
+    title: "How do I change my ONE ID, email or profile?",
+    keywords: ["one id", "oneid", "username", "email", "change email", "profile", "display name", "avatar", "photo", "bio", "edit profile"],
+    answer:
+      "Edit your name, photo and bio in Settings → Profile. Your ONE ID and account email are locked once your account is set up, so no one can redirect payments meant for you. To change either, open a support request and our team will help.",
     links: [{ label: "Profile settings", href: "/settings#wallet-profile" }],
   },
   {

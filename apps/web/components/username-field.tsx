@@ -69,7 +69,7 @@ export function UsernameField({
     }
     if (looksLikeAddress && !allowAddress) {
       setResolving(false);
-      setResolveError("Enter a SaphraONE username, not a wallet address.");
+      setResolveError("Enter a ONE ID, not a wallet address.");
       return;
     }
     let cancelled = false;
@@ -151,7 +151,7 @@ export function UsernameField({
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
           onChange={(event) => onChange(event.target.value.replace(/\s/g, "").replace(/^@+/, ""))}
           onFocus={() => setFocused(true)}
-          placeholder={placeholder ?? (allowAddress ? "username or 0x…" : "username")}
+          placeholder={placeholder ?? (allowAddress ? "ONE ID or 0x…" : "ONE ID")}
           spellCheck={false}
           value={value}
         />

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Could not check that username." },
+      { message: error instanceof Error ? error.message : "Could not check that ONE ID." },
       { headers: { "Cache-Control": "no-store" }, status: 503 },
     );
   }

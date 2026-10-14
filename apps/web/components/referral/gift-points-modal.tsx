@@ -129,7 +129,7 @@ export function GiftPointsModal({
                 autoComplete="off"
                 className="pr-9"
                 onChange={(event) => setRecipient(event.target.value)}
-                placeholder="@username or 0x address"
+                placeholder="ONE ID or 0x address"
                 spellCheck={false}
                 value={recipient}
               />

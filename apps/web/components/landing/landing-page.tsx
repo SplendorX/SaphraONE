@@ -19,6 +19,7 @@ import { FeatureStories } from "@/components/landing/feature-stories";
 import { HeroWelcome } from "@/components/landing/hero-welcome";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
+import { OneIdShowcase } from "@/components/landing/one-id-showcase";
 import { ProductShowcase } from "@/components/landing/product-showcase";
 import { SecuritySection } from "@/components/landing/security-section";
 import { FadeUp, Stagger, StaggerItem } from "@/components/design/motion";
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/accordion";
 
 import "./landing-home.css";
+import "./pillar-art.css";
 
 /** The rails SaphraONE runs on, shown under the hero. Names, not translated. */
 const partners: { logo?: string; name: string }[] = [
@@ -55,8 +57,9 @@ export function LandingPage() {
     { label: t("landing.home.metric3Label"), value: "24/7" },
     { label: t("landing.home.metric4Label"), value: "9" },
   ];
-  const pillars: { body: string; href: string; icon: LucideIcon; items: string[]; title: string }[] = [
+  const pillars: { art: string; body: string; href: string; icon: LucideIcon; items: string[]; title: string }[] = [
     {
+      art: "/landing/pillar-pay.svg",
       body: t("landing.home.payBody"),
       href: "/send",
       icon: Send,
@@ -70,6 +73,7 @@ export function LandingPage() {
       title: t("landing.home.payTitle"),
     },
     {
+      art: "/landing/pillar-grow.svg",
       body: t("landing.home.growBody"),
       href: "/save",
       icon: PiggyBank,
@@ -83,6 +87,7 @@ export function LandingPage() {
       title: t("landing.home.growTitle"),
     },
     {
+      art: "/landing/pillar-together.svg",
       body: t("landing.home.togetherBody"),
       href: "/circle",
       icon: UsersRound,
@@ -172,6 +177,9 @@ export function LandingPage() {
         </Stagger>
       </section>
 
+      {/* ── ONE ID ── */}
+      <OneIdShowcase />
+
       {/* ── The platform ── */}
       <section className="marketing-section" id="products">
         <div className="marketing-section-header">
@@ -185,6 +193,9 @@ export function LandingPage() {
             return (
               <StaggerItem className="lp-pillar" key={pillar.href}>
                 <span aria-hidden className="lp-pillar-glow" />
+                {/* What the board is about, drawn faintly behind the words. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" aria-hidden className="lp-pillar-art" draggable={false} src={pillar.art} />
                 <span className="lp-pillar-icon">
                   <Icon className="h-5 w-5" />
                 </span>

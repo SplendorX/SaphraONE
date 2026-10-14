@@ -785,7 +785,7 @@ export function RecurepayCompose({
               autoComplete="off"
               className="recurepay-input pr-10"
               onChange={(event) => onRecipient(event.target.value)}
-              placeholder="@username or 0x wallet address"
+              placeholder="ONE ID or 0x wallet address"
               spellCheck={false}
               value={recipient}
             />

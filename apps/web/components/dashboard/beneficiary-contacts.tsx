@@ -97,7 +97,7 @@ export function BeneficiaryContacts({
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name, @username, or wallet"
+          placeholder="Search name, ONE ID, or wallet"
           value={query}
         />
       </label>

@@ -7,6 +7,8 @@ import { AllieMark } from "@/components/allie/AllieMark";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { cn } from "@/lib/utils";
 
+import "./allie-showcase.css";
+
 /**
  * ALLIE, for people who have not signed in yet.
  *
@@ -237,6 +239,30 @@ function AllieDemoStage({ reduced }: { reduced: boolean }) {
       </div>
 
       <div className="allie-stage-body">
+        {/* Every scenario's finished state, invisible, in the same cell as
+            the live one: the board is always as tall as the tallest of them,
+            at any width, so cycling never moves the page around it. */}
+        {scenarios.map((item) => (
+          <div aria-hidden className="allie-stage-layer allie-stage-sizer" key={item.prompt}>
+            <div className="allie-stage-prompt">
+              <span>{item.prompt}</span>
+            </div>
+            <div className="allie-stage-card">
+              <p className="allie-stage-card-title">{item.title}</p>
+              <div className="allie-stage-rows">
+                {item.rows.map((row) => (
+                  <div className="allie-stage-row" key={row.label}>
+                    <span>{row.label}</span>
+                    <span>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="allie-stage-foot">{item.foot}</p>
+            </div>
+          </div>
+        ))}
+
+        <div className="allie-stage-layer">
         <div className="allie-stage-prompt">
           <span>{scenario.prompt.slice(0, typed)}</span>
           {phase === "typing" ? <i className="allie-stage-caret" /> : null}
@@ -270,6 +296,7 @@ function AllieDemoStage({ reduced }: { reduced: boolean }) {
             <p className="allie-stage-foot">{scenario.foot}</p>
           </div>
         ) : null}
+        </div>
       </div>
 
       <div className="allie-stage-pips" role="presentation">

@@ -86,16 +86,107 @@ function SheetContent({
   )
 }
 
-/** The little handle at the top of a bottom sheet. */
+/** Pulled down this far (of the sheet's height), or flicked, a sheet closes. */
+const grabberCloseFraction = 0.25
+const grabberFlickVelocity = 0.6 // px per ms
+
+/**
+ * The handle at the top of a bottom sheet. Hold it and the sheet follows the
+ * finger down; let go past a quarter of its height (or with a flick) and it
+ * closes, otherwise it springs back. `className` styles the visible bar.
+ */
 function SheetGrabber({ className }: { className?: string }) {
+  const closeRef = React.useRef<HTMLButtonElement>(null)
+  const drag = React.useRef<{
+    content: HTMLElement
+    lastT: number
+    lastY: number
+    offset: number
+    startY: number
+    velocity: number
+  } | null>(null)
+
+  function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    const content = event.currentTarget.closest<HTMLElement>('[data-slot="sheet-content"]')
+    if (!content || (event.pointerType === "mouse" && event.button !== 0)) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    content.style.transition = "none"
+    drag.current = {
+      content,
+      lastT: event.timeStamp,
+      lastY: event.clientY,
+      offset: 0,
+      startY: event.clientY,
+      velocity: 0,
+    }
+  }
+
+  function onPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const state = drag.current
+    if (!state) return
+    const delta = event.clientY - state.startY
+    // Down follows the finger; up gives a little, then stops.
+    state.offset = delta > 0 ? delta : delta / 6
+    const elapsed = event.timeStamp - state.lastT
+    if (elapsed > 0) state.velocity = (event.clientY - state.lastY) / elapsed
+    state.lastY = event.clientY
+    state.lastT = event.timeStamp
+    state.content.style.transform = `translateY(${state.offset}px)`
+  }
+
+  function onPointerEnd() {
+    const state = drag.current
+    drag.current = null
+    if (!state) return
+    const { content, offset, velocity } = state
+    const closing =
+      offset > content.offsetHeight * grabberCloseFraction ||
+      (offset > 24 && velocity > grabberFlickVelocity)
+    content.style.transition = "transform 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease"
+    if (!closing) {
+      content.style.transform = ""
+      window.setTimeout(() => {
+        content.style.transition = ""
+      }, 200)
+      return
+    }
+    // Off the bottom and faded, so the sheet's own exit animation (which
+    // starts from here) has nothing left to show.
+    content.style.transform = "translateY(100%)"
+    content.style.opacity = "0"
+    window.setTimeout(() => {
+      closeRef.current?.click()
+      // Still on screen if the host kept it open: put it back.
+      window.setTimeout(() => {
+        content.style.transition = ""
+        content.style.transform = ""
+        content.style.opacity = ""
+      }, 400)
+    }, 170)
+  }
+
   return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute left-1/2 top-2 z-10 h-1.5 w-10 -translate-x-1/2 rounded-full bg-foreground/20",
-        className
-      )}
-    />
+    <>
+      <div
+        aria-hidden="true"
+        className="absolute left-1/2 top-0 z-20 flex h-8 w-40 -translate-x-1/2 cursor-grab touch-none select-none justify-center pt-2 active:cursor-grabbing"
+        data-slot="sheet-grabber"
+        onPointerCancel={onPointerEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+      >
+        <span
+          className={cn(
+            "pointer-events-none h-1.5 w-10 rounded-full bg-foreground/20",
+            className
+          )}
+        />
+      </div>
+      <SheetPrimitive.Close asChild>
+        <button aria-hidden="true" hidden ref={closeRef} tabIndex={-1} type="button" />
+      </SheetPrimitive.Close>
+    </>
   )
 }
 

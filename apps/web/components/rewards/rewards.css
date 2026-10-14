@@ -316,6 +316,35 @@
   border-bottom: 0;
 }
 
+/* However long the history gets, the card keeps its height and the list
+ * scrolls inside it (about six entries show), so the page never stretches.
+ * The fade at the bottom says there is more. */
+.rw-activity {
+  max-height: 22rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.25rem;
+}
+
+.rw-activity.is-long {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+  padding-bottom: 1.5rem;
+}
+
+.rw-activity li > div {
+  min-width: 0;
+}
+
+.rw-activity:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: 0.5rem;
+}
+
 .rw-activity-label {
   font-size: 0.92rem;
   font-weight: 600;

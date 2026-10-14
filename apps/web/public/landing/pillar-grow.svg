@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" width="480" height="480" fill="none">
+  <defs>
+    <linearGradient id="b" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#6A0EF4"/>
+      <stop offset="0.55" stop-color="#3B2CF6"/>
+      <stop offset="1" stop-color="#0078FF"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6A0EF4" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#0078FF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B2CF6" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#3B2CF6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Rising chart behind -->
+  <path d="M40 360 L120 320 L190 336 L270 250 L340 262 L440 140 V 430 H 40 Z" fill="url(#area)"/>
+  <path d="M40 360 L120 320 L190 336 L270 250 L340 262 L440 140" stroke="url(#b)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M410 140 H 444 V 174" stroke="url(#b)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="270" cy="250" r="8" fill="url(#b)"/>
+  <circle cx="120" cy="320" r="7" fill="url(#b)" opacity="0.7"/>
+  <!-- Coin stack -->
+  <g stroke="url(#b)" stroke-width="5">
+    <ellipse cx="200" cy="420" rx="78" ry="20" fill="url(#soft)"/>
+    <path d="M122 420 V 400 M278 420 V 400"/>
+    <ellipse cx="200" cy="400" rx="78" ry="20" fill="url(#soft)"/>
+    <path d="M122 400 V 380 M278 400 V 380"/>
+    <ellipse cx="200" cy="380" rx="78" ry="20" fill="url(#soft)"/>
+    <path d="M122 380 V 360 M278 380 V 360"/>
+    <ellipse cx="200" cy="360" rx="78" ry="20" fill="url(#soft)"/>
+  </g>
+  <!-- Sprout from the stack -->
+  <path d="M200 356 C 200 320, 196 290, 204 250" stroke="url(#b)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M202 300 C 170 300, 146 280, 140 248 C 172 246, 196 262, 202 300 Z" fill="url(#soft)" stroke="url(#b)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M204 258 C 214 226, 244 206, 278 208 C 274 240, 246 262, 204 258 Z" fill="url(#soft)" stroke="url(#b)" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Sparkles -->
+  <path d="M340 70 V 102 M324 86 H 356" stroke="url(#b)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M396 210 V 230 M386 220 H 406" stroke="url(#b)" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+  <!-- Percent badge -->
+  <rect x="300" y="300" width="120" height="52" rx="26" fill="url(#soft)" stroke="url(#b)" stroke-width="5"/>
+  <circle cx="328" cy="318" r="6" stroke="url(#b)" stroke-width="4"/>
+  <circle cx="348" cy="336" r="6" stroke="url(#b)" stroke-width="4"/>
+  <path d="M348 312 L 328 342" stroke="url(#b)" stroke-width="4" stroke-linecap="round"/>
+  <rect x="364" y="320" width="40" height="10" rx="5" fill="url(#b)" opacity="0.7"/>
+</svg>

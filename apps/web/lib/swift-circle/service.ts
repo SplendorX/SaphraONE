@@ -560,7 +560,7 @@ export async function inviteMember(input: {
 
   const username = parseInviteUsername(input.username);
   if (!username) {
-    throw circleErrors.invalid("Invite using a valid SaphraONE username, like @alice.");
+    throw circleErrors.invalid("Invite using a valid ONE ID, like @alice.");
   }
   const profile = await resolveProfileByUsername(username);
   if (profile.wallet_address === input.actorWallet) {

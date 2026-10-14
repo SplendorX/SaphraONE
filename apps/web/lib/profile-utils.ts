@@ -13,6 +13,16 @@ const reservedUsernames = new Set([
   "wallet",
 ]);
 
+/**
+ * A ONE ID is chosen once, at onboarding, and an account's email once it is
+ * set: people pay and find each other by them. Only the team changes them
+ * after that (on request through support).
+ */
+export const oneIdLockedMessage =
+  "Your ONE ID is locked once your account is set up. To change it, contact support.";
+export const accountEmailLockedMessage =
+  "Your account email is locked once it's set. To change it, contact support.";
+
 export function normalizeUsername(value: string) {
   return value.trim().replace(/^@+/, "").toLowerCase();
 }
@@ -21,11 +31,11 @@ export function validateUsername(value: string) {
   const username = normalizeUsername(value);
 
   if (!usernamePattern.test(username)) {
-    return "Usernames must be 3-20 characters, start with a letter, and use only lowercase letters, numbers, or underscores.";
+    return "A ONE ID must be 3-20 characters, start with a letter, and use only lowercase letters, numbers, or underscores.";
   }
 
   if (reservedUsernames.has(username)) {
-    return "That username is reserved.";
+    return "That ONE ID is reserved.";
   }
 
   return null;

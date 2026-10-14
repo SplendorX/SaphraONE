@@ -3,6 +3,7 @@ import { businessDb, businessTables, readBusinessDbError } from "@/lib/business/
 import { businessErrors } from "@/lib/business/errors";
 import { parseApprovalPolicy } from "@/lib/business/policy";
 import { normalizeHandle, validateBusinessUsername } from "@/lib/business/usernames";
+import { oneIdLockedMessage } from "@/lib/profile-utils";
 import { businessVerificationStatus, readReviewStatus } from "@/lib/business/verification";
 import type {
   ApprovalTier,
@@ -57,6 +58,10 @@ export async function updateBusinessProfile(input: {
     const error = validateBusinessUsername(input.username);
     if (error) throw businessErrors.invalid(error);
     const username = normalizeHandle(input.username);
+    // A business keeps the ONE ID it was given; only the team changes it.
+    if (workspace.username && username !== workspace.username) {
+      throw businessErrors.invalid(oneIdLockedMessage);
+    }
     if (username !== workspace.username) {
       const taken = await supabase
         .from(businessTables.identities)
@@ -64,7 +69,7 @@ export async function updateBusinessProfile(input: {
         .eq("username", username)
         .maybeSingle();
       if (taken.data && (taken.data as { workspace_id: string }).workspace_id !== workspace.id) {
-        throw businessErrors.conflict("That username is already taken.");
+        throw businessErrors.conflict("That ONE ID is already taken.");
       }
       workspaceUpdates.username = username;
     }

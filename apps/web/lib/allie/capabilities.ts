@@ -578,7 +578,7 @@ export async function resolveAllieAction(
         })}`,
         cta: "Create the request",
         handoff:
-          "The request page builds the shareable link against your own username.",
+          "The request page builds the shareable link against your own ONE ID.",
       };
 
     // ── Recurring ──────────────────────────────────────────────────────────

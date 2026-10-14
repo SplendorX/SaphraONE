@@ -7,8 +7,10 @@ import { isDeletedUsername } from "@/lib/account-deletion/rules";
 import { isAppLocale } from "@/lib/locales";
 import { readJsonRecord } from "@/lib/http";
 import {
+  accountEmailLockedMessage,
   buildUsernameCandidate,
   normalizeUsername,
+  oneIdLockedMessage,
   usernameFromDisplayName,
   validateUsername,
 } from "@/lib/profile-utils";
@@ -23,6 +25,38 @@ import {
 export const runtime = "nodejs";
 
 const profilesTable = process.env.SUPABASE_PROFILES_TABLE ?? "profiles";
+
+/**
+ * What a save may no longer change: the ONE ID once onboarding is done, and
+ * the contact email once set. The email column arrives with a migration, so a
+ * database without it locks only the ONE ID.
+ */
+async function readLockedFields(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  walletAddress: string,
+) {
+  const withEmail = await supabase
+    .from(profilesTable)
+    .select("username, account_type_selected, contact_email")
+    .eq("wallet_address", walletAddress)
+    .maybeSingle();
+  const row = (
+    withEmail.error
+      ? (
+          await supabase
+            .from(profilesTable)
+            .select("username, account_type_selected")
+            .eq("wallet_address", walletAddress)
+            .maybeSingle()
+        ).data
+      : withEmail.data
+  ) as { account_type_selected?: boolean | null; contact_email?: string | null; username?: string | null } | null;
+  return {
+    contactEmail: row?.contact_email?.trim() || null,
+    onboarded: Boolean(row?.account_type_selected),
+    username: row?.username ?? null,
+  };
+}
 const maxUsernameAttempts = 20;
 
 type EnsureProfileBody = {
@@ -174,7 +208,7 @@ function readSupabaseError(error: { code?: string; message?: string } | null) {
 
   if (error?.code === "23505") {
     if (message.toLowerCase().includes("username")) {
-      return "That username is already taken.";
+      return "That ONE ID is already taken.";
     }
 
     return "A profile already exists for this wallet.";
@@ -612,7 +646,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!canEdit) {
       return jsonError(
-        "Connect the active wallet profile before editing your username.",
+        "Connect the active wallet profile before editing your profile.",
         401,
       );
     }
@@ -622,9 +656,29 @@ export async function PATCH(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
+    // The ONE ID (once onboarding is done) and the account email (once set)
+    // are locked: only the team changes them. Sending the same value again,
+    // as Settings does on every save, is fine.
+    const current = await readLockedFields(supabase, walletAddress);
+    if (
+      hasUsername &&
+      current.onboarded &&
+      current.username &&
+      username !== normalizeUsername(current.username)
+    ) {
+      return jsonError(oneIdLockedMessage, 403);
+    }
+    if (typeof body.contactEmail === "string" || body.contactEmail === null) {
+      const nextEmail =
+        typeof body.contactEmail === "string" ? body.contactEmail.trim().toLowerCase() : "";
+      if (current.contactEmail && nextEmail !== current.contactEmail.toLowerCase()) {
+        return jsonError(accountEmailLockedMessage, 403);
+      }
+    }
+
     if (hasUsername) {
       if (await isUsernameHeld(username, walletAddress)) {
-        return jsonError("That username isn't available. Try another.", 409);
+        return jsonError("That ONE ID isn't available. Try another.", 409);
       }
       updates.username = username;
     }
@@ -698,7 +752,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ profile: publicProfile(mutation.data) });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Username could not be updated.";
+      error instanceof Error ? error.message : "Profile could not be updated.";
 
     return jsonError(message, 500);
   }

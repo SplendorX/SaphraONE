@@ -1,0 +1,46 @@
+/* "The platform" boards: each one's illustration sits faintly in the lower
+ * right, behind the words, fading out toward the text so it never competes
+ * with it. A little stronger on hover, and in dark mode where the card is. */
+
+.lp-pillar-art {
+  position: absolute;
+  z-index: -1;
+  right: -14%;
+  bottom: -10%;
+  width: 72%;
+  max-width: 22rem;
+  height: auto;
+  opacity: 0.13;
+  pointer-events: none;
+  user-select: none;
+  -webkit-mask-image: radial-gradient(circle at 75% 75%, #000 35%, transparent 75%);
+  mask-image: radial-gradient(circle at 75% 75%, #000 35%, transparent 75%);
+  transform: rotate(-6deg);
+  transition:
+    opacity 260ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-pillar:hover .lp-pillar-art {
+  opacity: 0.2;
+  transform: rotate(-3deg) translateY(-6px);
+}
+
+html.dark .lp-pillar-art,
+.dark .lp-pillar-art {
+  opacity: 0.2;
+  filter: brightness(1.35) saturate(1.1);
+}
+
+html.dark .lp-pillar:hover .lp-pillar-art,
+.dark .lp-pillar:hover .lp-pillar-art {
+  opacity: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-pillar-art,
+  .lp-pillar:hover .lp-pillar-art {
+    transition: none;
+    transform: rotate(-6deg);
+  }
+}
