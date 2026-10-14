@@ -15,7 +15,7 @@ received" → referral code + share buttons), plus a leaderboard and a code box.
 - Admin access codes are **one capitalised word**, limited by **time** or by
   **number of people** (or both); each person can use **one code, ever**.
 - Each live user can let in **10 people**.
-- **10 counted invites admits you automatically.**
+- **50 counted invites admits you automatically.**
 - **No prizes**: the only reward on the leaderboard is earlier access (keeps
   it out of promotion/sweepstakes rules).
 - Waves are **manual**: an admin presses "Admit top N" when ready. Nothing
@@ -162,7 +162,7 @@ are logged so the admin can spot someone running through a dictionary.
 - Telegram can be checked properly later with a bot (`/start <code>` in the
   SaphraONE bot confirms the person joined the group); X and the others stay
   on trust.
-- Points from tasks never count toward the 10-invite auto-admit.
+- Points from tasks never count toward the 50-invite auto-admit.
 
 ### Order
 `score desc, joined_at asc`: among equal scores, earlier sign-ups are ahead.
@@ -182,10 +182,10 @@ Nickname (or "Anon #4821" if none / hidden), country flag, invites counted,
 score. **Never** an email. Entries can hide themselves from the board and
 still keep their place.
 
-### Auto-admit at 10 invites
-Reaching **10 counted invites** admits you immediately (held referrals
+### Auto-admit at 50 invites
+Reaching **50 counted invites** admits you immediately (held referrals
 don't count until released). Gives the top of the
-board a concrete goal ("7 / 10 invites to skip the line") and rewards the
+board a concrete goal ("32 / 50 invites to skip the line") and rewards the
 people driving growth. The number can be changed in admin.
 
 ### No prizes
@@ -231,7 +231,7 @@ early_access_settings (single row)
   live_invite_cap int default 10
   points_per_referral int default 100
   first_payment_bonus int default 50
-  auto_admit_referrals int default 10
+  auto_admit_referrals int default 50
   social_task_points int default 10
   wave_size int default 200                         -- pre-fills the manual wave; never run automatically
   invite_expiry_days int default 14
@@ -412,7 +412,7 @@ WhatsApp / Telegram, Telegram community link, access-code box, back to home.
 
 **Status (`/early-access/status`)**:
 - Header card: position, total waiting, score, invites counted / pending,
-  progress to auto-admit ("7 / 10").
+  progress to auto-admit ("32 / 50").
 - Referral card (as above) + native share sheet on mobile.
 - "Follow us" card: one row per social account, +10 each, ticks once done.
 - Live leaderboard: top 100, own row pinned at the bottom if outside it,
