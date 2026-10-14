@@ -1,4 +1,4 @@
-# Partna vs Centiiv: Naira on-ramp and off-ramp for SwiftPay on Arc
+# Partna vs Centiiv: Naira on-ramp and off-ramp for SaphraONE on Arc
 
 Research note, Oct 2026. Compares [Partna](https://www.getpartna.com/) with the earlier Centiiv research (`CENTIIV-RAMP-PLAN.md`, commit `73879c0` on branch `claude/swiftpay-onramp-offramp-research-wa8s4c`).
 
@@ -16,8 +16,8 @@ Sources: Partna's v4 docs (https://docs.getpartna.com/llms-full.txt) and its Ope
   - orders expire after 1 hour by default.
   - **Markets:** Nigeria and **Kenya** are live; Ghana, Malawi and Zambia are launching.
   - **Track record:** it powers MiniPay, with 200,000+ transactions and $4M+ volume per month.
-- **SwiftPay can bridge to Partna without new custody.** The app already moves USDC between Arc and Base, Ethereum, Arbitrum, Optimism, Avalanche and Polygon over Circle CCTP v2 (`apps/web/lib/multichain/`).
-  - **On-ramp:** Partna pays the user's own SwiftPay deposit address on another network. The existing sweep then moves it to Arc.
+- **SaphraONE can bridge to Partna without new custody.** The app already moves USDC between Arc and Base, Ethereum, Arbitrum, Optimism, Avalanche and Polygon over Circle CCTP v2 (`apps/web/lib/multichain/`).
+  - **On-ramp:** Partna pays the user's own SaphraONE deposit address on another network. The existing sweep then moves it to Arc.
   - **Off-ramp:** the user's `sendUsdcFromArc` burns on Arc and mints to Partna's deposit address.
   - This works only on a network both sides share. For USDC that is **Ethereum** today, and Base, Polygon and Avalanche if Partna confirms USDC there.
 - **The two big costs of Partna:**
@@ -25,7 +25,7 @@ Sources: Partna's v4 docs (https://docs.getpartna.com/llms-full.txt) and its Ope
   2. **An extra CCTP hop** on every order. That adds Circle's fast-transfer fee and a few minutes, and makes the off-ramp amount harder to get exact.
 - **Recommendation:** build on Centiiv first, as planned, behind a provider interface (section 5). Add Partna second if any of these apply:
   - Centiiv can't meet volume, rates or uptime;
-  - SwiftPay wants Kenya (M-Pesa) soon;
+  - SaphraONE wants Kenya (M-Pesa) soon;
   - Partna confirms USDC on Base, or adds Arc.
 
 ---
@@ -58,12 +58,12 @@ Sources: Partna's v4 docs (https://docs.getpartna.com/llms-full.txt) and its Ope
 - **Networks (spec enum):** `avalanche`, `base`, `binance`, `bitcoin`, `celo`, `ethereum`, `kenyanshilling`, `naira`, `polygon`, `solana`, `tron`. **No Arc.**
 - **USDC in the `GET /supported/assets` staging example:** Celo, Ethereum (Sepolia) and Solana (devnet), each with a minimum withdrawal of 1 and a withdrawal fee of 0.01. Call this endpoint per environment for the real list.
 
-### Endpoints SwiftPay would use
+### Endpoints SaphraONE would use
 
 **`GET /rate?fromCurrency=NGN&toCurrency=USDC&fromAmount=…`**
 - Returns a rate and a `key` (for example `"1640-USDT_to_NGN-a1b2c3d4-1755873777"`) that locks the price for a short time.
 - `POST /rate/verify-rate-key` checks whether a key is still valid.
-- A custom rate key can carry SwiftPay's own spread.
+- A custom rate key can carry SaphraONE's own spread.
 
 **`POST /ramp/breakdown`** takes the same body as `/ramp` and returns the fee breakdown without creating an order.
 
@@ -146,7 +146,7 @@ There are two alternatives to this flow:
 
 **Fees and discounts:**
 - Each order quotes `totalFeesInFromCurrency` and `totalFeesInToCurrency`. In the example, ₦10,000 → USDT cost ₦16.74 plus 0.01.
-- `feeBearer` is `merchant` (fees come out of SwiftPay's balance) or `client` (fees come out of the user's amount).
+- `feeBearer` is `merchant` (fees come out of SaphraONE's balance) or `client` (fees come out of the user's amount).
 - `GET /discount` lists volume discounts on USD → NGN off-ramps. Example tiers: 1% from $100, 5% from $500, 10% from $1,000.
 - Payouts can be adjusted after a deposit is confirmed (`POST /transfer/withdraw`), which needs a funded payout balance. This gives a margin lever.
 - No public fee schedule was found.
@@ -177,7 +177,7 @@ There are two alternatives to this flow:
 | Expiry | 30 minutes | 1 hour by default, configurable |
 | Rate lock | Indicative quote only | **Rate key locks the price**, with a choice of what happens on expiry |
 | Concurrency | Not limited | **One pending ramp per user** |
-| End-user KYC | Optional `sender` block; Centiiv does KYB on SwiftPay | **Mandatory** Partna account plus BVN/OTP KYC per user (merchant KYC needs approval) |
+| End-user KYC | Optional `sender` block; Centiiv does KYB on SaphraONE | **Mandatory** Partna account plus BVN/OTP KYC per user (merchant KYC needs approval) |
 | Idempotency | `idempotency-key` header | `rampReference` |
 | Quote and fees | `POST /public/quote` | `GET /rate`, `POST /ramp/breakdown`, fee bearer, volume discounts |
 | Bank list / name check | `GET /banking/banks`, `POST /banking/verify-account` | `GET /banks`, `POST /kyc/resolve-account` |
@@ -189,16 +189,16 @@ There are two alternatives to this flow:
 
 ---
 
-## 4. How Partna would work for SwiftPay without Arc
+## 4. How Partna would work for SaphraONE without Arc
 
-SwiftPay already has the pieces needed to reach Partna over CCTP v2:
+SaphraONE already has the pieces needed to reach Partna over CCTP v2:
 - **Deposit addresses:** each user can have deposit addresses on Base, Ethereum, Arbitrum, Optimism, Avalanche and Polygon (`lib/multichain/chains.ts`).
 - **Inbound:** detect → sweep → credit moves USDC that lands there to the owner's Arc wallet, and credits it only once the Arc mint is seen (`lib/multichain/service.ts`, `credit.ts`).
 - **Outbound:** `sendUsdcFromArc` (`lib/multichain/send-out.ts`) burns on Arc and has Circle's Forwarding Service mint at the destination, so the recipient needs no gas.
 
 **On-ramp (NGN → USDC on Arc)**
 1. Pick the network: the first one in both Partna's USDC list and `MULTICHAIN_CHAINS`. That is Ethereum today, or Base, Polygon or Avalanche once confirmed.
-2. `POST /ramp` with `cryptoAddress` = the user's own SwiftPay deposit address on that network, never one taken from the request (the same rule as Centiiv safety rule 1).
+2. `POST /ramp` with `cryptoAddress` = the user's own SaphraONE deposit address on that network, never one taken from the request (the same rule as Centiiv safety rule 1).
 3. The user pays the virtual account. Partna delivers USDC to the deposit address.
 4. The existing sweep moves it to Arc. The order is FULFILLED when Partna says `completed` **and** the sweep has credited.
 
@@ -243,12 +243,12 @@ Add one seam during the Centiiv build so Partna can be plugged in later:
 
 1. Do you support, or plan to support, **Arc** (mainnet, and testnet chain 5042002) for USDC? If so, when?
 2. In production, which networks carry USDC for NGN ramps? Is **Base** supported?
-3. Can SwiftPay use **merchant-managed KYC**, where SwiftPay is the KYB'd merchant and does its own user checks? Or is BVN + OTP required for every user?
+3. Can SaphraONE use **merchant-managed KYC**, where SaphraONE is the KYB'd merchant and does its own user checks? Or is BVN + OTP required for every user?
 4. **Fees and limits:** the NGN ↔ USDC fees and spreads, the min/max per order and per day, and how long a rate key lasts.
 5. **Off-ramp amount:** if the deposit arrives slightly under or over `fromAmount` (for example after a bridge fee), is the order settled on what arrived, refunded or stuck? Is there a refund path to `sendingAddress`?
 6. **Statuses:** the full list, including failure, refund and expiry states.
 7. **Webhooks:** the exact bytes signed (raw `data` or re-serialised JSON), the retry schedule, and any replay protection.
-8. **One pending ramp per user:** is this per Partna account, or can SwiftPay run several orders for the same user?
+8. **One pending ramp per user:** is this per Partna account, or can SaphraONE run several orders for the same user?
 
 ---
 
@@ -274,7 +274,7 @@ Add one seam during the Centiiv build so Partna can be plugged in later:
   - [Circle partner listing](https://partners.circle.com/partner/partna)
   - [Alchemy dapp listing](https://www.alchemy.com/dapps/partna)
 - **Centiiv:** `CENTIIV-RAMP-PLAN.md` (commit `73879c0`); docs index https://c-vmch.readme.io/llms.txt
-- **SwiftPay CCTP code:**
+- **SaphraONE CCTP code:**
   - `apps/web/lib/multichain/chains.ts`
   - `apps/web/lib/multichain/service.ts`
   - `apps/web/lib/multichain/credit.ts`
