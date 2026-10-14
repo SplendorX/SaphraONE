@@ -38,6 +38,8 @@ export type CircleReverify = {
   /** Google asked without showing anything (1), then with its account list (2). */
   googleAttempts?: number;
   kind: CircleReverifyKind;
+  /** Their name, for the welcome back. */
+  name?: string;
   /** Where to land afterwards. */
   path: string;
   startedAt: number;
@@ -164,16 +166,18 @@ export function circleReverifiedRecently(withinMs = 10 * 60_000) {
 }
 
 /**
- * Sends the person to sign-in to make a new Circle login for this device,
- * then back to this page. The server session stays, so no app lock or
- * two-factor code is asked again. The old login is set aside first: it can't
+ * Signs the person out of this device's Circle login and opens sign-in to
+ * make a new one, then brings them back to this page. The server session
+ * stays, so their two-factor code isn't asked again for the same account. The old login is set aside first: it can't
  * confirm payments here, and sign-in would otherwise carry on with it.
  */
 export function startCircleReverify(kind: CircleReverifyKind, login: CircleLoginResult) {
   const path = `${window.location.pathname}${window.location.search}`;
+  const identity = getCircleLoginIdentity(login);
   writeCircleReverify({
-    email: getCircleLoginIdentity(login).email?.trim().toLowerCase() || undefined,
+    email: identity.email?.trim().toLowerCase() || undefined,
     kind,
+    name: identity.name?.trim() || undefined,
     path,
     startedAt: Date.now(),
   });

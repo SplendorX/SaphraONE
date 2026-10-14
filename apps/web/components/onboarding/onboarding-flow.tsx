@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Input } from "@/components/ui/input";
 import { OneIdInput } from "@/components/one-id-input";
-import { AppLockSettings } from "@/components/settings/app-lock-settings";
+import { PaymentSecuritySettings } from "@/components/settings/payment-security-settings";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { useLocale, useT } from "@/components/locale-provider";
 import { completeAccountOnboardingClient, fetchAccountState } from "@/lib/account/client";
@@ -289,7 +289,7 @@ export function OnboardingFlow() {
       setDestination(
         result.account.account_type === "BUSINESS" ? "/business" : "/dashboard",
       );
-      // Last, optional: offer the app lock before entering the app.
+      // Last, optional: set the PIN that confirms payments before entering the app.
       setStep("security");
     } catch (err) {
       setError(errorMessage(err, t("common.somethingWentWrong")));
@@ -683,13 +683,13 @@ export function OnboardingFlow() {
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <ShieldCheck className="h-5 w-5" />
           </span>
-          <h1 className="mt-4 font-heading text-3xl">Protect your account</h1>
+          <h1 className="mt-4 font-heading text-3xl">Protect your payments</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Set a PIN, and Face ID or fingerprint where your device has it, so SaphraONE asks for
-            it whenever you come back. You can set this up later in Settings → App lock.
+            Set a PIN, and Face ID or fingerprint where your device has it. Every payment asks for
+            it before money moves. You can also do this later in Settings → Payment security.
           </p>
           <div className="mt-8">
-            <AppLockSettings compact onEnabledChange={onAppLockChange} />
+            <PaymentSecuritySettings compact onEnabledChange={onAppLockChange} />
           </div>
           <div className="mt-8 flex gap-3">
             <Button onClick={() => router.replace(destination)} variant={appLockOn ? "default" : "outline"}>

@@ -234,6 +234,8 @@ export function SignInPanel() {
     },
   };
   const step = method === "choose" ? null : steps[method];
+  // Sent here to sign in again on this device, on the method they use.
+  const returningHere = Boolean(reverify && method === reverify.kind);
 
   return (
     <div className="sign-in-panel" id="sign-in">
@@ -254,12 +256,20 @@ export function SignInPanel() {
       )}
 
       <h2 className="sign-in-title">
-        {step ? step.title : "Great to see you"}
+        {returningHere
+          ? `Welcome back${reverify?.name ? `, ${reverify.name.split(/\s+/)[0]}` : ""}`
+          : step
+            ? step.title
+            : "Great to see you"}
       </h2>
       <p className="sign-in-lede">
-        {step
-          ? step.body
-          : "Sign in or create your SaphraONE account in under a minute, with email, Google or a wallet you already have."}
+        {returningHere
+          ? reverify?.kind === "email"
+            ? "For your security, sign in again on this device with the code we email you. You'll go straight back to where you were."
+            : "For your security, sign in again on this device. One tap, and you'll go straight back to where you were."
+          : step
+            ? step.body
+            : "Sign in or create your SaphraONE account in under a minute, with email, Google or a wallet you already have."}
       </p>
 
       {method === "choose" ? (
@@ -305,13 +315,6 @@ export function SignInPanel() {
         </div>
       ) : null}
 
-      {reverify && method === reverify.kind ? (
-        <p className="mb-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-          {reverify.kind === "email"
-            ? "Circle needs to confirm this device again. Enter the code we email you and you'll go straight back to where you were."
-            : "Confirming this device with Circle so you can keep sending. You'll go straight back to where you were."}
-        </p>
-      ) : null}
       {method === "email" && emailNotice ? (
         <p className="mb-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           {emailNotice}

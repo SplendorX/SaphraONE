@@ -2,7 +2,6 @@ import "@/lib/env-compat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { appUnlockCookieName, isSessionLocked } from "@/lib/app-lock/cookie";
 import { platformAccessCookieName } from "@/lib/platform-access";
 import { readWalletToken, walletSessionCookieName } from "@/lib/wallet-session";
 
@@ -77,18 +76,13 @@ function isForgedCrossSiteRequest(request: NextRequest) {
   return !allowedOrigins(request).has(origin);
 }
 
-/**
- * Reachable while the app is locked: unlocking, and signing in or out. The
- * public Checkout pay pages too: they show nothing of the signed-in account.
- */
-const lockExemptApiPrefixes = ["/api/app-lock", "/api/auth/", "/api/checkout/"];
 /** Reachable before the 2FA code is in: entering it, signing in or out, public Checkout. */
 const twoFactorExemptApiPrefixes = ["/api/two-factor", "/api/auth/", "/api/checkout/"];
 /**
- * Exact paths reachable from the lock and 2FA screens' "Contact us": the
+ * Exact paths reachable from the 2FA screen's "Contact us": the
  * service status, and opening a support request. Both work for guests and
  * read nothing of the account (a ticket only names a wallet the request
- * itself proves), so a locked device learns nothing it shouldn't.
+ * itself proves), so a device waiting for its code learns nothing it shouldn't.
  */
 const lockedScreenApiPaths = new Set(["/api/support/status", "/api/support/tickets"]);
 
@@ -109,31 +103,6 @@ function isTwoFactorPendingRequest(request: NextRequest) {
   try {
     return Boolean(readWalletToken(sessionCookie, "session")?.mfaPending);
   } catch {
-    return false;
-  }
-}
-
-/**
- * A signed-in account with an app lock gets no API data until it is
- * unlocked with the PIN or Face ID / fingerprint (see lib/app-lock).
- */
-function isLockedApiRequest(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  if (
-    lockedScreenApiPaths.has(pathname) ||
-    lockExemptApiPrefixes.some((prefix) => pathname.startsWith(prefix))
-  ) {
-    return false;
-  }
-  const sessionCookie = request.cookies.get(walletSessionCookieName)?.value;
-  if (!sessionCookie) return false;
-  try {
-    return isSessionLocked(
-      readWalletToken(sessionCookie, "session"),
-      request.cookies.get(appUnlockCookieName)?.value,
-    );
-  } catch {
-    // No session secret configured: routes can't verify sessions either.
     return false;
   }
 }
@@ -161,12 +130,6 @@ export function proxy(request: NextRequest) {
           message: "Enter your two-factor code to continue.",
           reason: "two-factor",
         },
-        { headers: { "Cache-Control": "no-store" }, status: 423 },
-      );
-    }
-    if (isLockedApiRequest(request)) {
-      return NextResponse.json(
-        { locked: true, message: "SaphraONE is locked. Unlock it to continue." },
         { headers: { "Cache-Control": "no-store" }, status: 423 },
       );
     }

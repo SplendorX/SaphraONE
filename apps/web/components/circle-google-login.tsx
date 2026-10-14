@@ -47,6 +47,7 @@ import {
   finishCircleReverify,
   readCircleReverify,
   writeCircleReverify,
+  type CircleReverify,
 } from "@/lib/circle-device";
 import { consumeNextPath, resolveSignInDestination } from "@/lib/sign-in-destination";
 import { endWalletSession, ensureCircleWalletSession } from "@/lib/wallet-auth-client";
@@ -407,6 +408,11 @@ export function CircleGoogleLogin({
   const [googleReturnPending, setGoogleReturnPending] = useState(false);
   // True once the SDK has been handed the Google token to verify with Circle.
   const [googleVerifying, setGoogleVerifying] = useState(false);
+  // Back to sign in again on this device (lib/circle-device.ts).
+  const [returning, setReturning] = useState<CircleReverify | null>(null);
+  useEffect(() => {
+    setReturning(readCircleReverify());
+  }, []);
   const appId = resolvedAppId || envAppId;
   const primaryWallet = personalCircleWallet(wallets);
   const isConfigured = Boolean(appId && googleClientId);
@@ -715,18 +721,13 @@ export function CircleGoogleLogin({
     }
 
     /**
-     * Confirming this device again (lib/circle-device.ts): Google is asked
-     * first without showing anything, then, if it needs the person to choose,
-     * with its account list. Each comes back here.
+     * Signing in again on this device (lib/circle-device.ts): the tap on
+     * "Continue as …" asks Google without showing anything; if Google needs
+     * the person to choose, its account list follows once. Each comes back here.
      */
     function continueGoogleReverify(attempts: number, googleError: string | null) {
       const reverify = readCircleReverify();
       if (!reverify) return;
-      if (!googleError && attempts === 0) {
-        writeCircleReverify({ ...reverify, googleAttempts: 1 });
-        void startGoogleLogin({ loginHint: reverify.email, prompt: "none" });
-        return;
-      }
       if (googleError && attempts === 1) {
         writeCircleReverify({ ...reverify, googleAttempts: 2 });
         void startGoogleLogin({ loginHint: reverify.email, prompt: "select_account" });
@@ -734,9 +735,8 @@ export function CircleGoogleLogin({
       }
       if (googleError) {
         clearCircleReverify();
-        setError(
-          "Google couldn't confirm it's you. Tap Continue with Google to keep using SaphraONE on this device.",
-        );
+        setReturning(null);
+        setError("Google didn't finish signing you in. Tap Continue with Google to try again.");
       }
     }
 
@@ -1347,13 +1347,28 @@ export function CircleGoogleLogin({
     await completeWalletSetup(loginResult);
   }
 
+  /** Back to sign in again on this device: one tap, as the same Google account. */
+  function continueAsReturning() {
+    const reverify = readCircleReverify();
+    if (!reverify) {
+      setReturning(null);
+      void handleGoogleLogin();
+      return;
+    }
+    writeCircleReverify({ ...reverify, googleAttempts: 1 });
+    void startGoogleLogin({ loginHint: reverify.email, prompt: "none" });
+  }
+
+  const returningGoogle = returning?.kind === "google" ? returning : null;
+
   const primaryAction = !loginResult ? (
+    <div className="grid gap-2">
     <button
       className="sp-bubble inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       disabled={
         !appConfigChecked || !sdkReady || isBusy || googleReturnPending
       }
-      onClick={() => void handleGoogleLogin()}
+      onClick={() => (returningGoogle ? continueAsReturning() : void handleGoogleLogin())}
       type="button"
     >
       {isBusy || googleReturnPending ? (
@@ -1363,8 +1378,30 @@ export function CircleGoogleLogin({
           <GoogleLogo className="h-4 w-4" />
         </span>
       )}
-      {googleReturnPending ? "Signing in with Google" : "Continue with Google"}
+      <span className="min-w-0 truncate">
+        {googleReturnPending
+          ? "Signing in with Google"
+          : returningGoogle?.email
+            ? `Continue as ${returningGoogle.email}`
+            : "Continue with Google"}
+      </span>
     </button>
+    {returningGoogle && !googleReturnPending ? (
+      <button
+        className="justify-self-center text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        disabled={isBusy}
+        onClick={() => {
+          // A different account is a new sign-in, with its own session.
+          clearCircleReverify();
+          setReturning(null);
+          void handleGoogleLogin();
+        }}
+        type="button"
+      >
+        Use a different Google account
+      </button>
+    ) : null}
+    </div>
   ) : primaryWallet ? (
     <Link
       className="sp-bubble inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"

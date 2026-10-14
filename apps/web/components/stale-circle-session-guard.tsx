@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { toast } from "sonner";
 import { useDisconnect } from "wagmi";
 
-import { fetchAppLockStatus, signOutForAppLock } from "@/lib/app-lock/client";
+import { signOutForAppLock } from "@/lib/app-lock/client";
 import {
   circleReverifiedRecently,
   circleReverifyKind,
@@ -14,7 +13,6 @@ import {
 } from "@/lib/circle-device";
 import {
   circleSessionStaleEventName,
-  circleSignedOutNoticeKey,
   clearCircleSessionStale,
   isCircleSessionStale,
   readCircleLogin,
@@ -27,8 +25,8 @@ import { walletSessionChangedEventName } from "@/lib/wallet-auth-client";
 const signInPaths = new Set(["/", "/sign-in"]);
 /** Back in the app after this long away, the device is checked again. */
 const recheckAfterHiddenMs = 30_000;
-/** Time to read why before going to confirm the device. */
-const staleNoticeMs = 3_500;
+/** Long enough to read why a payment didn't go through before sign-in opens. */
+const staleNoticeMs = 2_500;
 
 /** Logged server-side, so the check can be followed in production. */
 function report(message: string) {
@@ -39,49 +37,51 @@ function report(message: string) {
   }).catch(() => undefined);
 }
 
-/** Usable right now: not behind the app lock or a two-factor code. */
-async function appIsOpen() {
-  const twoFactor = await fetchTwoFactorStatus().catch(() => null);
-  if (twoFactor?.pending) return false;
-  const lock = await fetchAppLockStatus().catch(() => null);
-  return !(lock?.enabled && lock.locked);
+/** Still waiting for the two-factor code: that screen comes first. */
+async function twoFactorPending() {
+  const status = await fetchTwoFactorStatus().catch(() => null);
+  return Boolean(status?.pending);
 }
 
 /**
  * Keeps a Google or email sign-in able to confirm payments on this device.
  *
- * On open, and on coming back after a while, it asks Circle's frame for its
- * device ID. If that is no longer the ID the login was made for (Safari lost
- * the frame's storage; see lib/circle-device.ts), the device is confirmed
- * again before any payment can fail: Google does it without showing anything,
- * email sends a code. The same happens when a payment or a token renewal
- * reports the session stale. Logins Circle doesn't tie to a device (older PIN
- * wallets) are signed out instead, as before, and sign-in says why.
- *
- * It waits for the app lock and two-factor code, so it never runs behind them.
+ * Circle ties a login to the device ID its own frame keeps in the browser;
+ * Safari drops that ID whenever iOS closes Safari (lib/circle-device.ts), and
+ * then no payment can be confirmed until the person signs in again. So on
+ * open, and on coming back after a while, the frame's ID is compared with the
+ * one the login was made for. If it changed, or a payment or token renewal
+ * reports the session stale, the person goes straight to sign-in, once, with
+ * their method ready and their page remembered: no failed payments, no
+ * loading back and forth. Older PIN-wallet logins, which Circle doesn't tie
+ * to a device, are signed out the same way.
  */
 export function StaleCircleSessionGuard() {
   const { disconnect } = useDisconnect();
 
   useEffect(() => {
-    // The notice left by the sign-out below.
-    try {
-      if (window.sessionStorage.getItem(circleSignedOutNoticeKey)) {
-        window.sessionStorage.removeItem(circleSignedOutNoticeKey);
-        toast.info("You were signed out so Circle can verify this device again. Sign in to continue.", {
-          duration: 8000,
-        });
-      }
-    } catch {}
-
     let running = false;
-    // Asked again while running: runs once more after.
     let again = false;
     let leaving = false;
-    // This page load has confirmed the device; checked again after time away.
-    let deviceConfirmed = false;
+    // This page load has checked the device; checked again after time away.
+    let deviceChecked = false;
     let hiddenAt: number | null = null;
     let staleTimer: number | undefined;
+
+    /** To sign-in, for a new Circle login on this device. */
+    function signInAgain(reason: string) {
+      const login = readCircleLogin();
+      if (!login || leaving) return;
+      leaving = true;
+      const kind = circleReverifyKind(login);
+      report(`${reason}, signing in again (${kind ?? "pin wallet"})`);
+      if (kind) {
+        startCircleReverify(kind, login);
+        return;
+      }
+      clearCircleSessionStale();
+      void signOutForAppLock(() => disconnect());
+    }
 
     async function check() {
       if (running) {
@@ -91,56 +91,42 @@ export function StaleCircleSessionGuard() {
       if (leaving || signInPaths.has(window.location.pathname)) return;
       const login = readCircleLogin();
       if (!login) {
-        // Nothing to sign out of (already signed out, or an external wallet).
         clearCircleSessionStale();
         return;
       }
-      const kind = circleReverifyKind(login);
       running = true;
       try {
+        if (await twoFactorPending()) return;
+
         if (isCircleSessionStale()) {
-          if (kind && !circleReverifiedRecently()) {
-            if (await appIsOpen()) {
-              leaving = true;
-              report(`stale session, confirming again (${kind})`);
-              startCircleReverify(kind, login);
-            }
-            return;
-          }
-          clearCircleSessionStale();
-          leaving = true;
-          try {
-            window.sessionStorage.setItem(circleSignedOutNoticeKey, "1");
-          } catch {}
-          void signOutForAppLock(() => disconnect());
+          signInAgain("session stale");
           return;
         }
 
         const signedInDeviceId = readSignedInDeviceId();
         // An open Circle window means a payment is under way: never disturb it.
-        if (deviceConfirmed || !kind || !signedInDeviceId || document.getElementById("sdkIframe")) {
+        if (
+          deviceChecked ||
+          !circleReverifyKind(login) ||
+          !signedInDeviceId ||
+          document.getElementById("sdkIframe")
+        ) {
           return;
         }
 
-        const changed = readCircleFrameDeviceId().then(async (deviceId) => {
-          // Unreadable counts as checked too: asked again only after time
-          // away, never in the middle of what the person is doing.
-          if (!deviceId || deviceId === signedInDeviceId) {
-            deviceConfirmed = true;
-            return false;
-          }
+        const changed = readCircleFrameDeviceId().then((deviceId) => {
+          deviceChecked = true;
+          if (!deviceId || deviceId === signedInDeviceId) return false;
+          // A browser that keeps nothing for Circle loses the ID on every
+          // load; asking again within minutes wouldn't help it.
           if (circleReverifiedRecently()) {
-            report(`device ID changed again soon after confirming (${kind}); left as is`);
+            report("device ID changed again soon after signing in; left as is");
             return false;
           }
-          return appIsOpen();
+          return true;
         });
         trackCircleDeviceCheck(changed);
-        if (await changed) {
-          leaving = true;
-          report(`device ID changed, confirming again (${kind})`);
-          startCircleReverify(kind, login);
-        }
+        if (await changed) signInAgain("device ID changed");
       } finally {
         running = false;
         if (again) {
@@ -158,7 +144,7 @@ export function StaleCircleSessionGuard() {
         return;
       }
       if (hiddenAt !== null && Date.now() - hiddenAt >= recheckAfterHiddenMs) {
-        deviceConfirmed = false;
+        deviceChecked = false;
       }
       hiddenAt = null;
       void check();
@@ -167,7 +153,7 @@ export function StaleCircleSessionGuard() {
       window.clearTimeout(staleTimer);
       staleTimer = window.setTimeout(() => void check(), staleNoticeMs);
     }
-    // Unlocking, or a finished two-factor code, says so with this event.
+    // A finished two-factor code says so with this event.
     function onSessionChanged() {
       void check();
     }

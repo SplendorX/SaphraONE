@@ -320,7 +320,7 @@ export function TxApprovalSheet() {
     setBusy(true);
     setError(null);
     try {
-      await postAppLock("setup", { pin: newPin, timeoutMinutes: 15 });
+      await postAppLock("setup", { pin: newPin });
       await afterMethod(await postApproval({ action: "verify", id: start?.id, method: "pin", pin: newPin }));
     } catch (cause) {
       setPin("");

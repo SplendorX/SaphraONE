@@ -4,7 +4,6 @@ import {
   createCircleWalletSession,
   setWalletSessionCookies,
 } from "@/lib/circle-wallet-session";
-import { setUnlockCookie } from "@/lib/app-lock/server";
 import { readJsonRecord } from "@/lib/http";
 import { sessionWallets } from "@/lib/wallet-session";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -69,11 +68,6 @@ export async function POST(request: NextRequest) {
       { headers: noStore },
     );
     await setWalletSessionCookies(response, issued.token);
-    if (issued.lock && issued.freshSignIn) {
-      await setUnlockCookie(response, issued.lock.owner_wallet, issued.lock.timeout_minutes);
-    }
-    // Never opens the lock on an account switch: this endpoint also runs on
-    // page load with a stored token. The email is safe either way.
     // Google/email sign-ins name their address; it becomes the contact email
     // only when the profile has none (Settings can change it).
     const signInEmail = typeof body?.email === "string" ? body.email : "";

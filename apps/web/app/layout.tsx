@@ -10,7 +10,7 @@ import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import { Providers } from "@/app/providers";
-import { AppLockGate } from "@/components/app-lock/app-lock-gate";
+import { TwoFactorGate } from "@/components/two-factor/two-factor-gate";
 import { TxApprovalSheet } from "@/components/tx-approval/tx-approval-sheet";
 import { SplashScreen } from "@/components/splash-screen";
 import { Toaster } from "@/components/ui/sonner";
@@ -140,7 +140,7 @@ export default async function RootLayout({
         <SplashScreen />
         <TooltipProvider>
           <Providers cookies={cookies}>
-            <AppLockGate>{children}</AppLockGate>
+            <TwoFactorGate>{children}</TwoFactorGate>
             <TxApprovalSheet />
           </Providers>
           <Toaster position="top-right" richColors />

@@ -44,7 +44,7 @@ const erased = [
   "Your profile: name, photo, bio, country, email and phone",
   "Your ONE ID: no one else can take it for 12 months, then it's released",
   "Saved contacts and payment recipients",
-  "App lock, two-factor and sign-in security settings",
+  "Payment PIN, Face ID, two-factor and sign-in security settings",
   "Recurring payments, automations and ALLIE's Agent Wallet access",
 ];
 

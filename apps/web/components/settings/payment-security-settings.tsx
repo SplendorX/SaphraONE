@@ -1,6 +1,6 @@
 "use client";
 
-import { Fingerprint, Loader2, Lock } from "lucide-react";
+import { Fingerprint, Loader2, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { PinPad } from "@/components/app-lock/pin-pad";
@@ -9,7 +9,6 @@ import {
   AppLockError,
   biometricLabel,
   fetchAppLockStatus,
-  notifyAppLockChanged,
   postAppLock,
   type AppLockStatus,
 } from "@/lib/app-lock/client";
@@ -19,12 +18,6 @@ type Flow =
   | { kind: "setup"; step: "new" | "confirm"; first: string }
   | { kind: "change"; step: "current" | "new" | "confirm"; current: string; first: string }
   | { kind: "disable" };
-
-const timeoutOptions = [
-  { label: "1 minute", value: 1 },
-  { label: "5 minutes", value: 5 },
-  { label: "15 minutes", value: 15 },
-];
 
 function messageFrom(cause: unknown) {
   if (cause instanceof AppLockError) {
@@ -37,13 +30,15 @@ function messageFrom(cause: unknown) {
 }
 
 /**
- * Settings → App lock: a 6-digit PIN asked for whenever SaphraONE is opened
- * again, with Face ID / fingerprint as a shortcut where the device has it.
+ * Settings → Payment security: the 6-digit PIN, with Face ID / fingerprint
+ * as the quicker way, that confirms every payment (components/tx-approval).
+ * An authenticator code (Settings → Two-factor) works as well. Opening the
+ * app asks for nothing; moving money always does.
  *
- * `compact` is the onboarding version: turning it on and adding Face ID /
- * fingerprint only. Changing or turning it off stays in Settings.
+ * `compact` is the onboarding version: setting the PIN and adding Face ID /
+ * fingerprint only. Changing or removing it stays in Settings.
  */
-export function AppLockSettings({
+export function PaymentSecuritySettings({
   compact = false,
   onEnabledChange,
 }: {
@@ -64,7 +59,7 @@ export function AppLockSettings({
       setStatus(next);
       onEnabledChange?.(next.enabled);
     } catch {
-      setError("The app lock couldn't be loaded.");
+      setError("Payment security couldn't be loaded.");
     }
   }, [onEnabledChange]);
 
@@ -90,7 +85,6 @@ export function AppLockSettings({
       start({ kind: "idle" });
       if (done) setNotice(done);
       await load();
-      notifyAppLockChanged();
     } catch (cause) {
       setPin("");
       setError(messageFrom(cause));
@@ -112,7 +106,7 @@ export function AppLockSettings({
         setPin("");
         return;
       }
-      void run(() => postAppLock("setup", { pin: value, timeoutMinutes: 5 }), "App lock is on.");
+      void run(() => postAppLock("setup", { pin: value }), "Your payment PIN is set.");
       return;
     }
     if (flow.kind === "change") {
@@ -139,7 +133,7 @@ export function AppLockSettings({
       return;
     }
     if (flow.kind === "disable") {
-      void run(() => postAppLock("disable", { pin: value }), "App lock is off.");
+      void run(() => postAppLock("disable", { pin: value }), "Your payment PIN is removed.");
     }
   }
 
@@ -156,7 +150,6 @@ export function AppLockSettings({
       await postAppLock("passkey-register", { response });
       setNotice(`${biometricLabel()} is set up on this device.`);
       await load();
-      notifyAppLockChanged();
     } catch (cause) {
       if (cause instanceof Error && cause.name === "NotAllowedError") return;
       if (cause instanceof Error && cause.name === "InvalidStateError") {
@@ -182,7 +175,7 @@ export function AppLockSettings({
   }
 
   if (!status.signedIn) {
-    return <p className="text-sm text-muted-foreground">Sign in to set up an app lock.</p>;
+    return <p className="text-sm text-muted-foreground">Sign in to set up payment security.</p>;
   }
 
   const pinPrompt =
@@ -197,15 +190,16 @@ export function AppLockSettings({
             ? "Choose a new 6-digit PIN"
             : "Enter the new PIN again to confirm"
         : flow.kind === "disable"
-          ? "Enter your PIN to turn the app lock off"
+          ? "Enter your PIN to remove it"
           : "";
 
   return (
     <div className="grid gap-5">
       {compact ? null : (
         <p className="text-sm text-muted-foreground">
-          Ask for a PIN{biometricsAvailable ? ` or ${biometricLabel()}` : ""} whenever you come
-          back to SaphraONE. If you forget your PIN, sign out and sign in again to get back in.
+          Every payment asks for your PIN{biometricsAvailable ? ` or ${biometricLabel()}` : ""}
+          {" "}before money moves, so no one else can pay from your account, even with your phone in
+          hand. An authenticator code works too.
         </p>
       )}
 
@@ -233,44 +227,15 @@ export function AppLockSettings({
           onClick={() => start({ first: "", kind: "setup", step: "new" })}
           type="button"
         >
-          <Lock className="h-4 w-4" />
-          Turn on app lock
+          <ShieldCheck className="h-4 w-4" />
+          Set a payment PIN
         </Button>
       ) : (
         <div className="grid gap-4">
-          {compact ? (
-            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <Lock className="h-4 w-4 text-primary" />
-              App lock is on. SaphraONE locks after 1 minute away.
-            </p>
-          ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold">Lock after I leave for</p>
-              <p className="text-xs text-muted-foreground">
-                Closing SaphraONE or switching away for this long locks it.
-              </p>
-            </div>
-            <select
-              aria-label="Auto-lock time"
-              className="h-10 rounded-lg border border-border bg-card px-3 text-sm"
-              disabled={busy}
-              onChange={(event) =>
-                void run(
-                  () => postAppLock("timeout", { timeoutMinutes: Number(event.target.value) }),
-                  "Auto-lock time saved.",
-                )
-              }
-              value={status.timeoutMinutes ?? 1}
-            >
-              {timeoutOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          )}
+          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Your payment PIN is set.
+          </p>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -279,7 +244,7 @@ export function AppLockSettings({
                 {biometricsAvailable
                   ? (status.passkeys ?? 0) > 0
                     ? "Set up. Add this device too if you use SaphraONE on more than one."
-                    : "Unlock without typing your PIN."
+                    : "Confirm payments without typing your PIN."
                   : "This device or browser doesn't offer it. Your PIN still works."}
               </p>
             </div>
@@ -305,27 +270,27 @@ export function AppLockSettings({
 
           {compact ? (
             <p className="text-xs text-muted-foreground">
-              Change the timing, your PIN or turn it off any time in Settings → App lock.
+              Change your PIN any time in Settings → Payment security.
             </p>
           ) : (
-          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-            <Button
-              disabled={busy}
-              onClick={() => start({ current: "", first: "", kind: "change", step: "current" })}
-              type="button"
-              variant="outline"
-            >
-              Change PIN
-            </Button>
-            <Button
-              disabled={busy}
-              onClick={() => start({ kind: "disable" })}
-              type="button"
-              variant="ghost"
-            >
-              Turn off app lock
-            </Button>
-          </div>
+            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+              <Button
+                disabled={busy}
+                onClick={() => start({ current: "", first: "", kind: "change", step: "current" })}
+                type="button"
+                variant="outline"
+              >
+                Change PIN
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => start({ kind: "disable" })}
+                type="button"
+                variant="ghost"
+              >
+                Remove PIN
+              </Button>
+            </div>
           )}
         </div>
       )}

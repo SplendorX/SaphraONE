@@ -4,17 +4,12 @@ import { clearCircleSession } from "@/lib/circle-session";
 import { platformAccessCookieName, clearActivatedExternalProfile } from "@/lib/platform-access";
 import { endWalletSession } from "@/lib/wallet-auth-client";
 
-/** Settings fire this after turning the lock on or off, or changing it. */
-export const appLockChangedEvent = "saphra:app-lock-changed";
-
+/** Payment security: whether a PIN is set, and how many Face ID / fingerprint devices. */
 export type AppLockStatus = {
   enabled: boolean;
-  locked: boolean;
   passkeys?: number;
   pausedUntil?: string | null;
-  profile?: { avatarUrl: string | null; displayName: string | null; username: string | null } | null;
   signedIn: boolean;
-  timeoutMinutes?: number;
 };
 
 export class AppLockError extends Error {
@@ -39,7 +34,7 @@ export function hasSignedInCookie() {
 
 export async function fetchAppLockStatus(): Promise<AppLockStatus> {
   const response = await fetch("/api/app-lock", { cache: "no-store", credentials: "include" });
-  if (!response.ok) throw new AppLockError("The app lock couldn't be checked.", response.status);
+  if (!response.ok) throw new AppLockError("Payment security couldn't be checked.", response.status);
   return (await response.json()) as AppLockStatus;
 }
 
@@ -67,10 +62,6 @@ export async function postAppLock<T = Record<string, unknown>>(
     );
   }
   return payload as T;
-}
-
-export function notifyAppLockChanged() {
-  window.dispatchEvent(new Event(appLockChangedEvent));
 }
 
 /** What the device calls its biometrics, for button labels. */

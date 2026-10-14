@@ -2,7 +2,6 @@ import { secureCookieFor } from "@/lib/secure-cookie";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
 
-import { appLockForSession } from "@/lib/app-lock/server";
 import { listWalletAddressesForUserToken } from "@/lib/circle-user-server";
 import { mfaPendingForSignIn } from "@/lib/two-factor/server";
 import { platformAccessCookieName } from "@/lib/platform-access";
@@ -28,8 +27,8 @@ import {
  * wallet, e.g. it expired, so callers can treat the exchange as best-effort.
  *
  * `freshSignIn` is true only when the browser had no session: a Circle token
- * is kept in the browser, so exchanging it again must never open an app
- * lock. Opening one takes the PIN, a passkey, or signing out and back in.
+ * is kept in the browser, so exchanging it again carries the session (and
+ * its finished two-factor code) forward rather than starting a new one.
  */
 export async function createCircleWalletSession(userToken: string) {
   const wallets = await listWalletAddressesForUserToken(userToken);
@@ -43,8 +42,7 @@ export async function createCircleWalletSession(userToken: string) {
     "session",
   );
   // Only the same account carries its session forward. A different account
-  // signing in on this device starts a new one: keeping the previous owner
-  // made the app lock greet, and unlock, the wrong account.
+  // signing in on this device starts a new one, with its own two-factor code.
   const lowerWallets = wallets.map((wallet) => wallet.toLowerCase());
   const carried =
     previous &&
@@ -53,16 +51,11 @@ export async function createCircleWalletSession(userToken: string) {
     )
       ? previous
       : null;
-  const appLock = await appLockForSession([
-    ...(carried ? [carried.ownerWallet, ...sessionWallets(carried)] : []),
-    ...wallets,
-  ]);
   const session = createWalletSession(
     wallets[0],
     { connectorName: "Circle" },
     {
       additionalWallets: wallets.slice(1),
-      ...(appLock.known ? { appLock: Boolean(appLock.lock) } : {}),
       keepPreviousOwner: true,
       mfaPending: await mfaPendingForSignIn(carried, wallets),
       previous: carried,
@@ -72,7 +65,6 @@ export async function createCircleWalletSession(userToken: string) {
     freshSignIn: !previous,
     /** A different account than the session held (or none): worth a sign-in email. */
     newAccount: !carried,
-    lock: appLock.lock,
     session,
     token: createWalletToken(session),
     wallets,

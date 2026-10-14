@@ -394,7 +394,7 @@ export function isCircleDeviceIdError(error: unknown) {
 }
 
 export const circleDeviceIdHelp =
-  "Circle needs to confirm this device again. Nothing was sent. We'll confirm it now and bring you straight back, then you can try again.";
+  "For your security, sign in again on this device. Nothing was sent, and you'll come straight back here to try again.";
 
 const staleSessionKey = "saphra.circleSessionStale";
 /** Set just before the automatic sign-out, so sign-in can say why. */

@@ -30,7 +30,7 @@ import { useT } from "@/components/locale-provider";
 import { AccountProfileSettings } from "@/components/settings/account-profile-settings";
 import { AccountTypeSettings } from "@/components/settings/account-type-settings";
 import { AlertsSettings } from "@/components/settings/alerts-settings";
-import { AppLockSettings } from "@/components/settings/app-lock-settings";
+import { PaymentSecuritySettings } from "@/components/settings/payment-security-settings";
 import { DeleteAccountSettings } from "@/components/settings/delete-account-settings";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
 import { CurrencySettings } from "@/components/settings/currency-settings";
@@ -123,19 +123,19 @@ export function SettingsHub() {
         render: () => <InstallAppSettingsCard />,
       },
       {
-        id: "app-lock",
+        id: "payment-security",
         group: "Security & ALLIE",
         icon: Lock,
-        title: "App lock",
-        blurb: "Ask for a PIN, Face ID or fingerprint whenever you come back to SaphraONE.",
-        render: () => <AppLockSettings />,
+        title: "Payment security",
+        blurb: "Confirm every payment with your PIN, Face ID or fingerprint.",
+        render: () => <PaymentSecuritySettings />,
       },
       {
         id: "two-factor",
         group: "Security & ALLIE",
         icon: ShieldCheck,
         title: "Two-factor authentication",
-        blurb: "Ask for a code from an authenticator app whenever you sign in on a new device.",
+        blurb: "Ask for a code from an authenticator app when you sign in on a new device. It can confirm payments too.",
         render: () => <TwoFactorSettings />,
       },
       {

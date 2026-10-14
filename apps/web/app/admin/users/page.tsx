@@ -192,7 +192,7 @@ function UserPanel({ onChanged, user }: { onChanged: (user: UserDetail) => void;
         <p className="adm-mono mt-1 break-all text-muted-foreground">{user.wallet}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className={user.security.appLock ? "adm-chip is-good" : "adm-chip"}>
-            <Lock className="h-3 w-3" /> App lock {user.security.appLock ? "on" : "off"}
+            <Lock className="h-3 w-3" /> Payment PIN {user.security.appLock ? "set" : "not set"}
           </span>
           <span className={user.security.twoFactor ? "adm-chip is-good" : "adm-chip"}>
             <ShieldCheck className="h-3 w-3" /> 2FA {user.security.twoFactor ? "on" : "off"}
