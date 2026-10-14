@@ -80,7 +80,7 @@ export function LockScreen({
 
   const canUseBiometrics = hasPasskey && biometricsReady;
   const showPinPad = usePin || !canUseBiometrics;
-  const name = profile?.displayName?.trim() || (profile?.username ? `@${profile.username}` : null);
+  const name = profile?.displayName?.trim() || (profile?.username ? `${profile.username}.one` : null);
 
   function fail(cause: unknown) {
     setPin("");

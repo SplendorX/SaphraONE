@@ -75,7 +75,7 @@ export function receiptCounterpartyName(
   counterpartyUsername?: string | null,
 ) {
   return counterpartyUsername
-    ? `@${counterpartyUsername}`
+    ? `${counterpartyUsername}.one`
     : getCounterpartyLabel(transfer);
 }
 

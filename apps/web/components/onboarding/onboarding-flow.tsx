@@ -13,6 +13,7 @@ import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Input } from "@/components/ui/input";
+import { OneIdInput } from "@/components/one-id-input";
 import { AppLockSettings } from "@/components/settings/app-lock-settings";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { useLocale, useT } from "@/components/locale-provider";
@@ -37,7 +38,7 @@ type UsernameCheck =
   | { state: "taken"; message: string; username: string }
   | { state: "unknown"; username: string };
 
-/** "Use @ada_lovelace": the sign-in name, one tap away but never pre-filled. */
+/** "Use ada_lovelace.one": the sign-in name, one tap away but never pre-filled. */
 function UsernameSuggestion({
   current,
   onPick,
@@ -54,7 +55,7 @@ function UsernameSuggestion({
       onClick={() => onPick(suggestion)}
       type="button"
     >
-      Use @{suggestion}
+      Use {suggestion}.one
     </button>
   );
 }
@@ -493,10 +494,10 @@ export function OnboardingFlow() {
           </label>
           <label className="mt-5 block text-sm font-medium">
             {t("onboarding.username")}
-            <Input
+            <OneIdInput
               aria-describedby="onboarding-username-status"
-              className="mt-2 h-11"
-              onChange={(event) => setUsername(event.target.value)}
+              className="mt-2"
+              onValueChange={setUsername}
               placeholder="yourname"
               value={username}
             />
@@ -552,10 +553,10 @@ export function OnboardingFlow() {
           </p>
           <label className="mt-8 block text-sm font-medium">
             {t("common.username")}
-            <Input
+            <OneIdInput
               aria-describedby="onboarding-username-status"
-              className="mt-2 h-11"
-              onChange={(event) => setUsername(event.target.value)}
+              className="mt-2"
+              onValueChange={setUsername}
               placeholder="acme"
               value={username}
             />

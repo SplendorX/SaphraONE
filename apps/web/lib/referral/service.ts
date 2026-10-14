@@ -96,7 +96,7 @@ export async function getReferralDashboard(
     return {
       id: ref.id,
       referredUserOrBusiness: ref.referred_username_snapshot
-        ? `@${ref.referred_username_snapshot}`
+        ? `${ref.referred_username_snapshot}.one`
         : `${ref.referred_wallet.slice(0, 6)}…${ref.referred_wallet.slice(-4)}`,
       accountType: ref.referred_account_type,
       status: ref.status,

@@ -131,7 +131,7 @@ function SendScreen() {
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           {t("common.recipient")}
         </p>
-        <p className="mt-1 text-sm font-semibold">@ada.payments</p>
+        <p className="mt-1 text-sm font-semibold">ada.one</p>
       </div>
       <div className="rounded-xl border border-border bg-background px-3 py-2.5">
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -173,7 +173,7 @@ function RequestScreen() {
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
           {t("landing.showcaseSendRequestTo")}
         </p>
-        <p className="mt-1 text-sm font-semibold">@studio.west</p>
+        <p className="mt-1 text-sm font-semibold">studiowest.one</p>
       </div>
       <div className="rounded-xl border border-border bg-background px-3 py-2.5">
         <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">

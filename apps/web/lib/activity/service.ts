@@ -243,7 +243,7 @@ async function loadRecurePay(db: Supabase, wallet: string, limit = sourceLimit) 
     const schedule = one(row.recurring_schedules as Row | Row[] | null);
     const username = str(schedule?.beneficiary_username);
     const to =
-      (username ? `@${username.replace(/^@/, "")}` : null) ??
+      (username ? `${username.replace(/^@/, "")}.one` : null) ??
       str(schedule?.beneficiary_label) ??
       str(schedule?.beneficiary_wallet);
     return {

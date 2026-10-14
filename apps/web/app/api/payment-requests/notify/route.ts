@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
 
     const fromLabel =
       normalizeText(body.fromLabel, 80) ||
-      (fromUsername ? `@${fromUsername}` : "A SaphraONE user");
+      (fromUsername ? `${fromUsername}.one` : "A SaphraONE user");
     const note = normalizeText(body.note, maxNoteLength);
     const duplicate = await hasNotificationForPaymentId(
       recipient.wallet_address,

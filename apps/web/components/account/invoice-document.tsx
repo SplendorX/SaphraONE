@@ -58,7 +58,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDocumentModel }) 
               </p>
               <h1 className="mt-1 font-heading text-2xl">{invoice.businessName}</h1>
               {invoice.businessUsername ? (
-                <p className="text-sm text-muted-foreground">@{invoice.businessUsername}</p>
+                <p className="text-sm text-muted-foreground">{invoice.businessUsername}.one</p>
               ) : null}
               {invoice.businessDescription ? (
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
@@ -94,7 +94,7 @@ export function InvoiceDocument({ invoice }: { invoice: InvoiceDocumentModel }) 
             </p>
             <p className="mt-1">{invoice.customerName || "—"}</p>
             {invoice.customerUsername ? (
-              <p className="text-muted-foreground">@{invoice.customerUsername}</p>
+              <p className="text-muted-foreground">{invoice.customerUsername}.one</p>
             ) : null}
             {invoice.customerEmail ? (
               <p className="text-muted-foreground">{invoice.customerEmail}</p>

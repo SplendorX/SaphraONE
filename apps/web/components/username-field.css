@@ -1,4 +1,4 @@
-/* The shared @username field. Its own file (not globals.css), so the build cache can't serve a stale copy. */
+/* The shared ONE ID field. Its own file (not globals.css), so the build cache can't serve a stale copy. */
 
 .uf {
   position: relative;
@@ -88,4 +88,43 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The fixed ".one" after a typed ONE ID: amara → amara.one. */
+.uf-suffix {
+  margin-left: -0.5rem;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.uf-input-wrap {
+  display: inline-grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.uf-input-wrap.is-sized {
+  flex: 0 1 auto;
+}
+
+/* An invisible copy of the value gives the input its width. */
+.uf-input-wrap.is-sized::after {
+  content: attr(data-value);
+  padding-right: 2px;
+  grid-area: 1 / 1;
+  visibility: hidden;
+  white-space: pre;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.uf-input-wrap input {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+
+.uf-spacer {
+  flex: 1;
 }

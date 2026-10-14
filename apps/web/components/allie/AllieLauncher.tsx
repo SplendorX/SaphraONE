@@ -19,14 +19,14 @@ const phraseIntervalMs = 3_200;
  * fixed width, and the longest phrase sets how wide the bubble has to be.
  */
 const capabilities = [
-  "Send $20 to @alex",
+  "Send $20 to alex.one",
   "Split $60 three ways",
   "What's my balance?",
   "Pay two people at once",
   "Swap 25 USDC to EURC",
   "My savings balance",
-  "Request $40 from @sam",
-  "Pay @rent $500 monthly",
+  "Request $40 from sam.one",
+  "Pay rent.one $500 monthly",
   "Recent payments",
   "Pause ALLIE",
 ];

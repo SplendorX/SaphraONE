@@ -378,7 +378,7 @@ export function AddTeamMemberModal({
             <div className="flex items-center justify-between border-b border-border pb-2">
               <span className="text-muted-foreground">Payment Destination</span>
               <span className="font-semibold text-foreground font-mono text-xs">
-                {destinationType === "SWIFTPAY_USER" ? `@${saphraUsername}` : walletAddress}
+                {destinationType === "SWIFTPAY_USER" ? `${saphraUsername}.one` : walletAddress}
               </span>
             </div>
             <div className="flex items-center justify-between border-b border-border pb-2">

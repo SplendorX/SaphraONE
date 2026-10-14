@@ -4,6 +4,7 @@ import { ArrowDownLeft, ArrowUpRight, Check, Fingerprint, Lock, ShieldCheck, Spa
 
 import { OnePointsMark } from "@/components/brand/one-points-mark";
 import { TokenIcon } from "@/components/token-icon";
+import { formatUsernameLabel } from "@/lib/profile-utils";
 import { cn } from "@/lib/utils";
 
 /**
@@ -91,7 +92,7 @@ export function SendScene() {
           <Check className="h-4 w-4" />
         </span>
         <span className="av-toast-text">
-          <strong>50 USDC sent to @ada</strong>
+          <strong>50 USDC sent to ada.one</strong>
           <small>Settled on Arc · 0.8s</small>
         </span>
       </div>
@@ -118,7 +119,7 @@ export function AllieScene() {
           <div className="av-card av-confirm">
             <span className="av-confirm-name">Allie</span>
             <span className="av-confirm-line">
-              Send to @ada <strong>20 USDC</strong>
+              Send to ada.one <strong>20 USDC</strong>
             </span>
             <span className="av-confirm-actions">
               <span className="av-btn-primary">Confirm</span>
@@ -127,7 +128,7 @@ export function AllieScene() {
           </div>
         </div>
         <div className="av-bubble av-bubble-allie av-typing-in">
-          <small>Allie:</small> Done. 20 USDC sent to @ada.
+          <small>Allie:</small> Done. 20 USDC sent to ada.one.
         </div>
       </div>
       <div className="av-sparkle av-float-slow">
@@ -215,7 +216,7 @@ export function ProfileScene({
   logoUrl?: string | null;
   username?: string;
 }) {
-  const handle = username?.trim() ? `@${username.trim().replace(/^@+/, "").toLowerCase()}` : "@yourname";
+  const handle = username?.trim() ? formatUsernameLabel(username) : "yourname.one";
   const name = (kind === "business" ? businessName : displayName)?.trim() || (kind === "business" ? "Your business" : "Your name");
   const initials = name
     .split(/\s+/)
@@ -250,7 +251,7 @@ export function ProfileScene({
           </span>
           <span className="av-toast-text">
             <strong>Invoice INV-0012 paid</strong>
-            <small>1,200 USDC · from @acme</small>
+            <small>1,200 USDC · from acme.one</small>
           </span>
         </div>
       ) : (

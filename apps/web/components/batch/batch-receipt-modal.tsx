@@ -81,7 +81,7 @@ export function useNamedBatchReceipt<T extends BatchReceiptData>(receipt: T): T 
     recipients: receipt.recipients.map((recipient) => {
       if (recipient.label) return recipient;
       const username = usernameFor(recipient.address);
-      return username ? { ...recipient, label: `@${username}` } : recipient;
+      return username ? { ...recipient, label: `${username}.one` } : recipient;
     }),
   };
 }

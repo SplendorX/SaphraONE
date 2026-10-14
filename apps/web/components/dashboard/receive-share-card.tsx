@@ -208,7 +208,7 @@ export function ReceiveShareCard({
         <Link className="rx-tile rx-tile-link" href="/settings">
           <span className="rx-tile-main">
             <span className="rx-label">ONE ID</span>
-            <span className="rx-value">Claim your ONE ID so people can pay @you</span>
+            <span className="rx-value">Claim your ONE ID so people can pay you by name</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </Link>

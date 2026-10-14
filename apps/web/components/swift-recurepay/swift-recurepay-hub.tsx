@@ -1333,7 +1333,7 @@ export function SwiftRecurepayHub() {
 
       if (ownerAddress && txHash && schedule.amount) {
         const recipientLabel = schedule.beneficiary_username
-          ? `@${schedule.beneficiary_username.replace(/^@/, "")}`
+          ? `${schedule.beneficiary_username.replace(/^@/, "")}.one`
           : schedule.beneficiary_label || shortenAddress(schedule.beneficiary_wallet);
         void recordPlatformTransactionActivity({
           walletAddress: ownerAddress,
@@ -1492,7 +1492,7 @@ export function SwiftRecurepayHub() {
 
   if (view === "review" && reviewPlan.ok) {
     const recipientLabel = resolvedRecipientUsername
-      ? `@${resolvedRecipientUsername.replace(/^@/, "")}`
+      ? `${resolvedRecipientUsername.replace(/^@/, "")}.one`
       : resolvedRecipientAddress
         ? `${resolvedRecipientAddress.slice(0, 6)}…${resolvedRecipientAddress.slice(-4)}`
         : recipientInput;

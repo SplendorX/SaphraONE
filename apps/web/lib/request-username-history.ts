@@ -11,7 +11,7 @@ function historyStorageKey(owner: string) {
 const maxHistory = 8;
 
 function normalizeStoredUsername(value: string) {
-  return value.trim().toLowerCase().replace(/^@+/, "").replace(/\s/g, "");
+  return value.trim().toLowerCase().replace(/^@+/, "").replace(/\.one$/i, "").replace(/\s/g, "");
 }
 
 export function readRequestUsernameHistory(owner: string | null | undefined): string[] {

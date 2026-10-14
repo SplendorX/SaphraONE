@@ -48,6 +48,7 @@ import type { DirectoryHit } from "@/lib/business/types";
 import { useWalletUsernames } from "@/lib/activity/usernames";
 import { multichainEnabled } from "@/lib/multichain/flag";
 import { fetchProfile } from "@/lib/profile";
+import { OneIdSuggestions } from "@/components/one-id-suggestions";
 import { formatUsernameLabel } from "@/lib/profile-utils";
 import { calculateTransactionCashback } from "@/lib/referral/cashback-service";
 import { cashbackPointsFor, rewardsV2Enabled } from "@/lib/rewards/config";
@@ -73,7 +74,7 @@ export type SendHubProps = SendPaymentWizardProps & {
 type View = "home" | "to" | "chat" | "network";
 
 type Person = {
-  /** What goes in the recipient field: @username or a wallet. */
+  /** What goes in the recipient field: a ONE ID (amara.one) or a wallet. */
   value: string;
   wallet: string | null;
   name: string;
@@ -123,7 +124,7 @@ function InviteBanner() {
       <p className="sx-invite-title">Can&apos;t find who you&apos;re looking for?</p>
       <p className="sx-invite-body">
         Invite them to SaphraONE. They sign up in a minute, and from then on you can pay them by
-        @username, free and in seconds.
+        their ONE ID, free and in seconds.
       </p>
       <Link className="sx-invite-cta" href="/referral">
         Invite friends
@@ -282,11 +283,15 @@ export function SendHub(props: SendHubProps) {
       const saved = beneficiaryByWallet.get(wallet);
       const titled = (titleFor(item) ?? "").replace(/^Sent to /, "");
       const username = usernameFor(wallet);
-      const handle = username ? `@${username}` : titled.startsWith("@") ? titled : null;
+      const handle = username
+        ? formatUsernameLabel(username)
+        : titled.startsWith("@") || /\.one$/i.test(titled)
+          ? titled
+          : null;
       out.push({
         lastAmount: `${formatAmount(item.amount)} ${item.token ?? ""}`.trim(),
         name: saved?.name ?? handle ?? shortenAddress(wallet),
-        value: saved?.username ? `@${saved.username}` : handle ?? wallet,
+        value: saved?.username ? `${saved.username}.one` : handle ?? wallet,
         wallet,
         when: item.occurredAt,
       });
@@ -297,13 +302,13 @@ export function SendHub(props: SendHubProps) {
 
   const beneficiaryPeople: Person[] = savedBeneficiaries.map((entry) => ({
     name: entry.name,
-    sub: entry.username ? `@${entry.username}` : shortenAddress(entry.beneficiary_wallet),
-    value: entry.username ? `@${entry.username}` : entry.beneficiary_wallet,
+    sub: entry.username ? `${entry.username}.one` : shortenAddress(entry.beneficiary_wallet),
+    value: entry.username ? `${entry.username}.one` : entry.beneficiary_wallet,
     wallet: entry.beneficiary_wallet,
   }));
 
   // Search: your people first, then anyone on SaphraONE.
-  const needle = query.trim().replace(/^@+/, "").toLowerCase();
+  const needle = query.trim().replace(/^@+/, "").replace(/\.one$/i, "").toLowerCase();
   useEffect(() => {
     if (!needle || isAddress(needle)) {
       setDirectory([]);
@@ -332,6 +337,9 @@ export function SendHub(props: SendHubProps) {
           all.findIndex((other) => other.value === person.value) === index,
       )
     : [];
+
+  // The "To" field has focus: people are suggested under it as you type.
+  const [toFocused, setToFocused] = useState(true);
 
   function openChat(person: Person) {
     navigated.current = true;
@@ -423,13 +431,13 @@ export function SendHub(props: SendHubProps) {
                 </li>
               ))}
               {directory
-                .filter((hit) => !localMatches.some((person) => person.value === `@${hit.username}`))
+                .filter((hit) => !localMatches.some((person) => person.value === `${hit.username}.one`))
                 .map((hit) => {
                   const person: Person = {
                     avatarUrl: hit.avatarUrl,
                     name: hit.displayName || formatUsernameLabel(hit.username),
                     sub: `${formatUsernameLabel(hit.username)}${hit.kind === "business" ? " · Business" : ""}`,
-                    value: `@${hit.username}`,
+                    value: `${hit.username}.one`,
                     wallet: null,
                   };
                   return (
@@ -553,7 +561,7 @@ export function SendHub(props: SendHubProps) {
               setBeneficiariesOpen(false);
               openChat({
                 name: beneficiary.name,
-                value: beneficiary.username ? `@${beneficiary.username}` : beneficiary.beneficiary_wallet,
+                value: beneficiary.username ? `${beneficiary.username}.one` : beneficiary.beneficiary_wallet,
                 wallet: beneficiary.beneficiary_wallet,
               });
             }}
@@ -619,9 +627,22 @@ export function SendHub(props: SendHubProps) {
 
         <section className="sx-section">
           <label className="sx-label" htmlFor="send-to">
-            @username or Arc wallet
+            ONE ID or Arc wallet
           </label>
-          <div className="sx-to">
+          <div className="sx-to sx-to-suggesting">
+            <OneIdSuggestions
+              onPick={(hit) =>
+                openChat({
+                  avatarUrl: hit.avatarUrl,
+                  name: hit.displayName || formatUsernameLabel(hit.username),
+                  sub: formatUsernameLabel(hit.username),
+                  value: formatUsernameLabel(hit.username),
+                  wallet: null,
+                })
+              }
+              open={toFocused}
+              query={recipientAddress}
+            />
             <div className="sx-to-field">
               <input
                 aria-describedby="send-recipient-status"
@@ -629,7 +650,9 @@ export function SendHub(props: SendHubProps) {
                 autoComplete="off"
                 autoFocus
                 id="send-to"
+                onBlur={() => window.setTimeout(() => setToFocused(false), 150)}
                 onChange={(event) => onRecipientChange(event.target.value.replace(/\s/g, ""))}
+                onFocus={() => setToFocused(true)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && isRecipientValid) setView("chat");
                 }}
@@ -805,11 +828,11 @@ function readScannedRecipient(text: string): { link?: string; recipient?: string
     const url = new URL(value);
     if (url.origin === window.location.origin) return { link: `${url.pathname}${url.search}` };
     const username = url.searchParams.get("username");
-    if (username) return { recipient: `@${username.replace(/^@/, "")}` };
+    if (username) return { recipient: formatUsernameLabel(username) };
   } catch {}
   const address = value.match(/0x[a-fA-F0-9]{40}/)?.[0];
   if (address) return { recipient: address };
-  if (/^@?[a-zA-Z0-9_.]{2,32}$/.test(value)) return { recipient: value.startsWith("@") ? value : `@${value}` };
+  if (/^@?[a-zA-Z0-9_.]{2,32}$/.test(value)) return { recipient: formatUsernameLabel(value) };
   return {};
 }
 

@@ -283,3 +283,8 @@ html.dark .oneid-points svg,
 .dark .oneid-points svg {
   color: #a78bfa;
 }
+
+/* The ".one" in a ONE ID, a step softer than the name. */
+.oneid-card-suffix {
+  color: rgb(255 255 255 / 0.55);
+}

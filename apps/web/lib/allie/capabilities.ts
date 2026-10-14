@@ -1,5 +1,6 @@
 // Server-only. Resolves an ALLIE action into something the chat UI can render.
 import { isAddress } from "viem";
+import { formatUsernameLabel } from "@/lib/profile-utils";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { officialArcExplorerUrl } from "@/lib/network";
 
@@ -637,11 +638,12 @@ export async function resolveAllieAction(
       const contact = action.recipient.startsWith("@")
         ? null
         : matchContact(await loadContacts(ownerWallet), action.recipient);
+      // Anything that isn't a contact or an address goes over as a ONE ID.
       const payee = contact
         ? contact.wallet
-        : isAddress(action.recipient) || action.recipient.startsWith("@")
+        : isAddress(action.recipient)
           ? action.recipient
-          : `@${action.recipient}`;
+          : formatUsernameLabel(action.recipient);
 
       return {
         kind: "prepare",

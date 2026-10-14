@@ -21,7 +21,7 @@ export function BusinessActivityCard({ activities }: BusinessActivityCardProps) 
     if (!item.counterparty || !username) return item;
     return {
       ...item,
-      title: item.title.replace(shortAddress(item.counterparty), `@${username}`),
+      title: item.title.replace(shortAddress(item.counterparty), `${username}.one`),
     };
   }
 

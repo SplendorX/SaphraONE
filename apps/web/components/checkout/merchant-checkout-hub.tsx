@@ -307,7 +307,7 @@ export function MerchantCheckoutHub() {
               )}
               <span className="min-w-0 text-left">
                 <span className="ck-shop-name">
-                  {profile?.business_name ?? account?.display_name ?? `@${account?.username}`}
+                  {profile?.business_name ?? account?.display_name ?? `${account?.username}.one`}
                 </span>
                 <span className="ck-muted block text-xs">Your permanent storefront QR</span>
               </span>

@@ -88,9 +88,10 @@ export function OneIdShowcase() {
               <span className="oneid-card-label">ONE ID</span>
             </div>
             <p className="oneid-card-handle">
-              <span className="oneid-card-ghost">@{longestHandle}</span>
+              <span className="oneid-card-ghost">{longestHandle}<span className="oneid-card-suffix">.one</span></span>
               <span className="oneid-card-live" key={sample.handle}>
-                @{sample.handle}
+                {sample.handle}
+                <span className="oneid-card-suffix">.one</span>
               </span>
             </p>
             <div className="oneid-card-foot">
@@ -105,7 +106,7 @@ export function OneIdShowcase() {
             <span className="oneid-toast-icon">+</span>
             <span className="oneid-toast-text">
               <strong>{sample.amount} USDC</strong>
-              <span>from @{sample.from}</span>
+              <span>from {sample.from}.one</span>
             </span>
           </div>
         </FadeUp>

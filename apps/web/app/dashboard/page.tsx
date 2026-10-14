@@ -211,7 +211,7 @@ type CircleChallengeResult = {
 };
 
 function formatDashboardGreetingName(username: string) {
-  const normalized = username.trim().replace(/^@+/, "");
+  const normalized = username.trim().replace(/^@+/, "").replace(/\.one$/i, "");
   const compact = normalized.replace(/[_-]+/g, " ");
 
   return compact
@@ -1247,19 +1247,11 @@ export function DashboardContent({
     const requestedMemo = params.get("memo");
 
     if (requestedUsername) {
-      setRecipientAddress(
-        requestedUsername.startsWith("@")
-          ? requestedUsername
-          : `@${requestedUsername}`,
-      );
+      setRecipientAddress(formatUsernameLabel(requestedUsername));
     } else if (requestedRecipient && isAddress(requestedRecipient)) {
       setRecipientAddress(requestedRecipient);
     } else if (requestedRecipient) {
-      setRecipientAddress(
-        requestedRecipient.startsWith("@")
-          ? requestedRecipient
-          : `@${requestedRecipient}`,
-      );
+      setRecipientAddress(formatUsernameLabel(requestedRecipient));
     }
 
     if (requestedAmount) {

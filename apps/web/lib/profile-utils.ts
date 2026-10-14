@@ -23,8 +23,20 @@ export const oneIdLockedMessage =
 export const accountEmailLockedMessage =
   "Your account email is locked once it's set. To change it, contact support.";
 
+/** How a ONE ID reads everywhere: `amara.one`. */
+export const oneIdSuffix = ".one";
+
+/**
+ * The stored name inside a ONE ID, however it was typed: `amara.one`,
+ * `@amara` (the older way) and `amara` all give `amara`. Names never contain
+ * a dot, so the suffix can't be mistaken for part of one.
+ */
 export function normalizeUsername(value: string) {
-  return value.trim().replace(/^@+/, "").toLowerCase();
+  return value
+    .trim()
+    .replace(/^@+/, "")
+    .toLowerCase()
+    .replace(/\.one$/, "");
 }
 
 export function validateUsername(value: string) {
@@ -69,8 +81,9 @@ export function usernameFromDisplayName(value?: string | null) {
   return slug;
 }
 
+/** A stored name as its ONE ID: `amara` → `amara.one`. */
 export function formatUsernameLabel(username: string) {
-  return `@${normalizeUsername(username)}`;
+  return `${normalizeUsername(username)}${oneIdSuffix}`;
 }
 
 export type ParsedRecipientInput =

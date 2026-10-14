@@ -52,7 +52,7 @@ export function BeneficiaryContacts({
       return (
         beneficiary.name.toLowerCase().includes(needle) ||
         beneficiary.beneficiary_wallet.toLowerCase().includes(needle) ||
-        username.includes(needle.replace(/^@/, ""))
+        username.includes(needle.replace(/^@/, "").replace(/\.one$/i, ""))
       );
     });
   }, [query, savedBeneficiaries]);
@@ -246,7 +246,7 @@ function ContactEditor({
 }) {
   const [name, setName] = useState(beneficiary.name);
   const [recipient, setRecipient] = useState(
-    beneficiary.username ? `@${beneficiary.username}` : beneficiary.beneficiary_wallet,
+    beneficiary.username ? `${beneficiary.username}.one` : beneficiary.beneficiary_wallet,
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -296,7 +296,7 @@ function ContactEditor({
       </label>
       <label className="grid gap-1">
         <span className="text-[0.7rem] font-semibold text-muted-foreground">
-          Wallet or @username
+          Wallet or ONE ID
         </span>
         <span className="relative">
           <input

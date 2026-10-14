@@ -28,10 +28,10 @@ type Scenario = {
 
 const scenarios: Scenario[] = [
   {
-    prompt: "Send $20 to @alex",
+    prompt: "Send $20 to alex.one",
     title: "Payment ready",
     rows: [
-      { label: "Recipient", value: "@alex" },
+      { label: "Recipient", value: "alex.one" },
       { label: "Amount", value: "20.00 USDC" },
       { label: "Rail", value: "Agent Wallet (Arc)" },
     ],
@@ -58,10 +58,10 @@ const scenarios: Scenario[] = [
     foot: "Answered from your own data — no payment made.",
   },
   {
-    prompt: "Pay @rent $500 on the 1st, monthly",
+    prompt: "Pay rent.one $500 on the 1st, monthly",
     title: "Schedule prepared",
     rows: [
-      { label: "Recipient", value: "@rent" },
+      { label: "Recipient", value: "rent.one" },
       { label: "Amount", value: "500.00 USDC" },
       { label: "Repeats", value: "Monthly, 1st" },
     ],

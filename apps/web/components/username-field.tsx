@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, CheckCircle2, Loader2, UserRound } from "lucide-react";
+import { CheckCircle2, Loader2, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { isAddress } from "viem";
 
@@ -21,7 +21,7 @@ export type ResolvedPerson = {
 };
 
 /**
- * A SaphraONE @username field that works like BulkPay's: people are suggested
+ * A ONE ID field (amara.one) that works like BulkPay's: people are suggested
  * as you type, the username is looked up, and the line underneath says
  * exactly who (and which wallet) it is. `allowAddress` also accepts a pasted
  * 0x wallet.
@@ -105,7 +105,7 @@ export function UsernameField({
 
   // Suggest people while the field has focus.
   useEffect(() => {
-    const term = query.replace(/^@+/, "");
+    const term = query.replace(/^@+/, "").replace(/\.one$/i, "");
     if (!focused || !term || isAddress(term) || looksLikeAddress) {
       setSuggestions([]);
       setSuggestLoading(false);
@@ -131,7 +131,7 @@ export function UsernameField({
     };
   }, [focused, looksLikeAddress, query]);
 
-  const exactMatch = resolved?.username && resolved.username.toLowerCase() === query.replace(/^@+/, "").toLowerCase();
+  const exactMatch = resolved?.username && resolved.username.toLowerCase() === query.replace(/^@+/, "").replace(/\.one$/i, "").toLowerCase();
   const showSuggest = focused && query.length > 0 && !exactMatch && (suggestLoading || suggestions.length > 0);
 
   return (
@@ -140,8 +140,10 @@ export function UsernameField({
         {resolved?.avatarUrl ? (
           <img alt="" className="uf-avatar" src={resolved.avatarUrl} />
         ) : (
-          <AtSign className="h-4 w-4 shrink-0 text-primary" />
+          <UserRound className="h-4 w-4 shrink-0 text-primary" />
         )}
+        {/* Sized to what is typed, so the ".one" sits right after the name. */}
+        <span className={cn("uf-input-wrap", value && !/^0x/i.test(value) && "is-sized")} data-value={value}>
         <input
           aria-describedby={id ? `${id}-status` : undefined}
           autoCapitalize="off"
@@ -149,12 +151,22 @@ export function UsernameField({
           autoFocus={autoFocus}
           id={id}
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
-          onChange={(event) => onChange(event.target.value.replace(/\s/g, "").replace(/^@+/, ""))}
+          // The ".one" is shown after the field, so a typed one folds into it.
+          onChange={(event) =>
+            onChange(event.target.value.replace(/\s/g, "").replace(/^@+/, "").replace(/\.one$/i, ""))
+          }
           onFocus={() => setFocused(true)}
           placeholder={placeholder ?? (allowAddress ? "ONE ID or 0x…" : "ONE ID")}
           spellCheck={false}
           value={value}
         />
+        </span>
+        {value && !/^0x/i.test(value) ? (
+          <>
+            <span aria-hidden className="uf-suffix">.one</span>
+            <span aria-hidden className="uf-spacer" />
+          </>
+        ) : null}
         {resolving ? (
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
         ) : resolved ? (

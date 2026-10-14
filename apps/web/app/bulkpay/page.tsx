@@ -716,7 +716,7 @@ export default function BulkPayPage() {
  address: recipient.address,
  amount: recipient.amount,
  label: recipient.username
- ? `@${recipient.username}${recipient.label ? ` · ${recipient.label}` : ""}`
+ ? `${recipient.username}.one${recipient.label ? ` · ${recipient.label}` : ""}`
  : recipient.label,
  line: recipient.line,
  })),
@@ -948,7 +948,7 @@ export default function BulkPayPage() {
   address: recipient.address,
   amount: recipient.amount,
   line: recipient.line,
-  name: recipient.username ? `@${recipient.username}` : shortenAddress(recipient.address),
+  name: recipient.username ? `${recipient.username}.one` : shortenAddress(recipient.address),
   note: recipient.label,
  }));
  const insufficient = !hasEnoughBalance && requiredAmountUnits > zeroAmount;
@@ -1063,7 +1063,7 @@ export default function BulkPayPage() {
      {usesLegacyBulkFee() ? `${swiftBatchFeeBasisPoints / 100}%` : "at least 0.10"}).{" "}
      <Link
       href={`/send?to=${encodeURIComponent(
-       recipients[0].username ? `@${recipients[0].username}` : recipients[0].address,
+       recipients[0].username ? `${recipients[0].username}.one` : recipients[0].address,
       )}&amount=${encodeURIComponent(recipients[0].amount)}&token=${selectedToken}`}
      >
       Send instead

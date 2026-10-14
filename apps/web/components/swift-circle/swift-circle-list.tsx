@@ -417,7 +417,7 @@ function CreateCircleSheet({
           </label>
           <label className="cl-field">
             <span>Invite people</span>
-            <Input onChange={(event) => onInvitesChange(event.target.value)} placeholder="@alice @bob" value={invites} />
+            <Input onChange={(event) => onInvitesChange(event.target.value)} placeholder="alice.one bob.one" value={invites} />
             <em>
               SaphraONE usernames, separated by spaces or commas.
               {limits?.max_members ? ` Up to ${limits.max_members} members.` : ""}

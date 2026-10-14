@@ -269,7 +269,7 @@ export default function TeamManagementPage() {
                         <span className="pr-run-sub">
                           {member.role || (member.member_type === "CONTRACTOR" ? "Contractor" : "Employee")} ·{" "}
                           {member.payment_destination_type === "SWIFTPAY_USER" && member.swiftpay_username
-                            ? `@${member.swiftpay_username}`
+                            ? `${member.swiftpay_username}.one`
                             : `${member.wallet_address.slice(0, 6)}…${member.wallet_address.slice(-4)}`}
                         </span>
                       </span>

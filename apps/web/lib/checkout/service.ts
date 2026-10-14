@@ -547,7 +547,7 @@ export async function startChargeOnramp(code: string) {
 // ── Storefront ──────────────────────────────────────────────────────────────
 
 async function resolveStorefront(username: string) {
-  const handle = decodeURIComponent(username).trim().replace(/^@+/, "");
+  const handle = decodeURIComponent(username).trim().replace(/^@+/, "").replace(/\.one$/i, "");
   if (!/^[a-z0-9_.-]{1,40}$/i.test(handle)) throw checkoutErrors.storefrontNotFound();
   const identity = await resolvePaymentIdentity(handle);
   const wallet = identity?.profile_wallet ?? identity?.destination_wallet;

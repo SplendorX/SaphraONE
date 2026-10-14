@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { BusinessVerificationPanel } from "@/components/settings/business-verification-panel";
 import { Input } from "@/components/ui/input";
+import { OneIdInput } from "@/components/one-id-input";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { updateBusinessAccountProfileClient } from "@/lib/account/client";
 import { missingVerificationFields } from "@/lib/business/verification";
@@ -407,20 +408,13 @@ export function AccountProfileSettings() {
 
       <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {t("common.username")}
-        <div className="relative mt-2">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-            @
-          </span>
-          <Input
-            className={oneIdLocked ? "h-11 cursor-not-allowed pl-7 pr-9 opacity-80" : "h-11 pl-7"}
-            onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
-            readOnly={oneIdLocked}
-            value={username}
-          />
-          {oneIdLocked ? (
-            <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          ) : null}
-        </div>
+        <OneIdInput
+          className="mt-2 normal-case tracking-normal"
+          onValueChange={setUsername}
+          readOnly={oneIdLocked}
+          trailing={oneIdLocked ? <Lock className="h-4 w-4" /> : undefined}
+          value={username}
+        />
         {oneIdLocked ? <LockedNote /> : null}
       </label>
 

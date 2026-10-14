@@ -11,7 +11,7 @@ export type CircleProfile = {
 
 export function parseInviteUsername(value: unknown) {
   if (typeof value !== "string") return null;
-  const raw = value.trim().replace(/^@/, "");
+  const raw = value.trim().replace(/^@/, "").replace(/\.one$/i, "");
   const username = normalizeUsername(raw);
   if (validateUsername(username)) return null;
   return username;

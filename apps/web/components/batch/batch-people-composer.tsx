@@ -222,7 +222,7 @@ export const BatchPeopleComposer = forwardRef<
 
   useEffect(() => {
     const active = rows.find((row) => row.id === activeSuggestId);
-    const query = active?.query.trim().replace(/^@+/, "") ?? "";
+    const query = active?.query.trim().replace(/^@+/, "").replace(/\.one$/i, "") ?? "";
     if (!active || query.length < 1 || isAddress(active.query.trim())) {
       setSuggestions([]);
       setSuggestLoading(false);
@@ -441,7 +441,7 @@ export const BatchPeopleComposer = forwardRef<
                             updateRow(row.id, {
                               avatarUrl: hit.avatarUrl,
                               displayName: hit.displayName,
-                              query: hit.username,
+                              query: formatUsernameLabel(hit.username),
                               resolvedAddress: null,
                               username: hit.username,
                             });
@@ -585,7 +585,7 @@ export const BatchPeopleComposer = forwardRef<
       ) : (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Search className="h-4 w-4" />
-          Type @username or paste a 0x… wallet address to get started.
+          Type a ONE ID like amara.one, or paste a 0x… wallet address, to get started.
         </div>
       )}
 

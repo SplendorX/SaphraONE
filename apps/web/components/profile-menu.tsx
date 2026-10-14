@@ -197,11 +197,11 @@ export function ProfileMenu({
   }, [activeLogin, identity.email, identity.name]);
   const buttonLabel = isBusinessAccount
     ? businessProfile?.business_name ||
-      (accountRecord?.username ? `@${accountRecord.username}` : "Business")
+      (accountRecord?.username ? `${accountRecord.username}.one` : "Business")
     : profile?.display_name
     ? profile.display_name
     : profile?.username
-    ? `@${profile.username}`
+    ? `${profile.username}.one`
     : isCurrentExternalWallet && activeAddress
       ? shortenCircleAddress(activeAddress)
       : identity.email ??
@@ -221,7 +221,7 @@ export function ProfileMenu({
   const profilePrimaryLabel = isBusinessAccount
     ? businessProfile?.business_name || accountRecord?.username || "Business"
     : profile?.display_name || profile?.username
-    ? profile?.display_name || `@${profile?.username}`
+    ? profile?.display_name || `${profile?.username}.one`
     : activeLogin
       ? googleLabel
       : externalAddress
@@ -231,11 +231,11 @@ export function ProfileMenu({
         : googleLabel;
   const profileSecondaryLabel = isBusinessAccount
     ? accountRecord?.username
-      ? `@${accountRecord.username}`
+      ? `${accountRecord.username}.one`
       : t("profile.businessAccount")
     : profile?.username
     ? profile.display_name
-      ? `@${profile.username}`
+      ? `${profile.username}.one`
       : activeLogin
       ? (identity.email ?? identity.name ?? "")
       : externalAddress

@@ -748,7 +748,7 @@ export async function resolvePaymentIdentity(username: string) {
 }
 
 export async function searchDirectory(query: string): Promise<DirectoryHit[]> {
-  const q = query.trim().replace(/^@+/, "");
+  const q = query.trim().replace(/^@+/, "").replace(/\.one$/i, "");
   if (q.length < 1) return [];
 
   const supabase = businessDb();

@@ -21,6 +21,8 @@ import { giftOnePointsRequest } from "@/lib/referral/points-client";
 import { emitOnePointsUpdated } from "@/lib/referral/use-one-points";
 import { useResolvedRecipient } from "@/lib/use-resolved-recipient";
 import { RecipientSpinner, RecipientStatus } from "@/components/recipient-status";
+import { OneIdSuggestions } from "@/components/one-id-suggestions";
+import { formatUsernameLabel } from "@/lib/profile-utils";
 
 const MINIMUM_GIFT = 10;
 
@@ -128,12 +130,19 @@ export function GiftPointsModal({
                 aria-describedby="gift-recipient-status"
                 autoComplete="off"
                 className="pr-9"
+                id="gift-recipient"
                 onChange={(event) => setRecipient(event.target.value)}
                 placeholder="ONE ID or 0x address"
                 spellCheck={false}
                 value={recipient}
               />
               <RecipientSpinner resolution={resolved} />
+              <OneIdSuggestions
+                actionLabel="Gift"
+                inputId="gift-recipient"
+                onPick={(hit) => setRecipient(formatUsernameLabel(hit.username))}
+                query={recipient}
+              />
             </div>
             {selfGift && !resolved.isResolving ? (
               <span className="text-xs text-destructive" id="gift-recipient-status">

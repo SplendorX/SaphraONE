@@ -287,7 +287,7 @@ function SettingsHome({ groupOrder, sections }: { groupOrder: string[]; sections
         <span className="st-hero-main">
           <span className="st-hero-name">{name ?? "Your account"}</span>
           <span className="st-hero-sub">
-            {account?.username ? `@${account.username}` : null}
+            {account?.username ? `${account.username}.one` : null}
             {account?.username && wallet ? " · " : null}
             {wallet ? `${wallet.slice(0, 6)}…${wallet.slice(-4)}` : null}
           </span>

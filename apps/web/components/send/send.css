@@ -962,3 +962,8 @@
   transform: translateY(-1px);
   box-shadow: 0 10px 22px -12px rgb(0 0 0 / 0.45);
 }
+
+/* People suggested under the "To" field drop over what follows. */
+.sx-to-suggesting {
+  position: relative;
+}

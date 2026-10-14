@@ -109,7 +109,7 @@ function accountName(data: StatementData) {
   return (
     data.account.businessName ||
     data.account.displayName ||
-    (data.account.username ? `@${data.account.username}` : null) ||
+    (data.account.username ? `${data.account.username}.one` : null) ||
     shortAddress(data.account.wallet)
   );
 }
@@ -261,7 +261,7 @@ export async function statementPdf(data: StatementData) {
   let y = 84;
   const details: Array<[string, string]> = [
     ["Account", accountName(data)],
-    ...(data.account.username ? ([["Username", `@${data.account.username}`]] as Array<[string, string]>) : []),
+    ...(data.account.username ? ([["Username", `${data.account.username}.one`]] as Array<[string, string]>) : []),
     ["Wallet", data.account.wallet],
     ["Period", `${formatDay(new Date(data.period.from))} – ${formatDay(new Date(data.period.to))}`],
     ["Generated", formatDateTime(new Date(data.generatedAt))],

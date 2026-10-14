@@ -47,7 +47,7 @@ export function allieSenderLabel(wallet?: string | null) {
   const agent = wallet ? agentOwnerCache.get(wallet.toLowerCase()) : undefined;
   if (!agent) return null;
   const owner = agent.username
-    ? `@${agent.username}`
+    ? `${agent.username}.one`
     : `${agent.owner.slice(0, 6)}…${agent.owner.slice(-4)}`;
   return `${owner} via ALLIE`;
 }

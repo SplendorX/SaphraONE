@@ -466,7 +466,7 @@ export function CrossChainSend({
           </div>
           {trimmed && !validAddress ? (
             <p className="xc-hint is-error">
-              {trimmed.startsWith("@")
+              {trimmed.startsWith("@") || /\.one$/i.test(trimmed)
                 ? "ONE IDs are paid on Arc. Go back and use Pay to a ONE ID."
                 : "Enter a 0x address."}
             </p>

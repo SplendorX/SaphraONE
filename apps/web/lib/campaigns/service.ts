@@ -93,7 +93,7 @@ async function standings(campaignId: string, options: { limit?: number; wallet?:
 async function namesFor(wallets: string[]) {
   const usernames = await usernamesForWallets(wallets).catch(() => ({} as Record<string, string>));
   return (wallet: string) =>
-    usernames[wallet.toLowerCase()] ? `@${usernames[wallet.toLowerCase()]}` : `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
+    usernames[wallet.toLowerCase()] ? `${usernames[wallet.toLowerCase()]}.one` : `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
 }
 
 async function audit(action: string, targetId: string, reason: string, changes: object = {}) {

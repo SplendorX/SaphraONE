@@ -26,7 +26,8 @@ const reservedUsernames = new Set([
 ]);
 
 export function normalizeHandle(value: string) {
-  return value.trim().toLowerCase().replace(/^@+/, "");
+  // `acme.one`, `@acme` and `acme` are the same ONE ID.
+  return value.trim().toLowerCase().replace(/^@+/, "").replace(/\.one$/, "");
 }
 
 export function validateBusinessUsername(value: string) {

@@ -540,7 +540,7 @@ function totalsFromItems(items: InvoiceItemInput[]) {
 }
 
 async function findWalletByUsername(username: string) {
-  const handle = username.trim().replace(/^@+/, "").toLowerCase();
+  const handle = username.trim().replace(/^@+/, "").replace(/\.one$/i, "").toLowerCase();
   if (!handle) return null;
   const supabase = accountDb();
   const { data, error } = await supabase
@@ -752,7 +752,7 @@ export async function createInvoice(input: {
   }
   const customerUsername = optionalText(
     typeof input.customerUsername === "string"
-      ? input.customerUsername.replace(/^@+/, "")
+      ? input.customerUsername.replace(/^@+/, "").replace(/\.one$/i, "")
       : input.customerUsername,
     32,
   );
@@ -902,7 +902,7 @@ export async function updateInvoice(input: {
   const customerUsername =
     optionalText(
       typeof input.customerUsername === "string"
-        ? input.customerUsername.replace(/^@+/, "")
+        ? input.customerUsername.replace(/^@+/, "").replace(/\.one$/i, "")
         : input.customerUsername,
       32,
     ) ?? current.customer_username;

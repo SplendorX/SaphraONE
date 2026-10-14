@@ -177,7 +177,7 @@ export function PayChargePage({ code }: { code: string }) {
             <div className="min-w-0">
               <p className="truncate font-semibold">{business.name}</p>
               {business.username ? (
-                <p className="truncate text-sm text-muted-foreground">@{business.username}</p>
+                <p className="truncate text-sm text-muted-foreground">{business.username}.one</p>
               ) : null}
             </div>
           </div>
