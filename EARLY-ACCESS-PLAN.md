@@ -18,8 +18,9 @@ received" → referral code + share buttons), plus a leaderboard and a code box.
 - **10 counted invites admits you automatically.**
 - **No prizes**: the only reward on the leaderboard is earlier access (keeps
   it out of promotion/sweepstakes rules).
-- Waves start at **200 people a day**, raised as support and Circle wallet
-  capacity allow.
+- Waves are **manual**: an admin presses "Admit top N" when ready. Nothing
+  admits people on a schedule. Suggested size to start: **200 people a day**,
+  raised as support and Circle wallet capacity allow.
 - Join asks for **email** and **country** (required), **nickname** (optional)
   and the consent box. No phone number.
 - **Following our socials earns points**: every official SaphraONE account
@@ -213,8 +214,11 @@ On admission:
 4. If the entry had a referrer who is live, `attachReferral()` connects them
    (Invite & Earn). Waitlist-only referrers keep their leaderboard credit.
 
-Waves: **200 people a day** to start (one daily wave), grow as support and Circle
-wallet capacity allow. Unused invites expire after 14 days and the seat goes
+Waves are **manual only**: an admin opens `/admin/early-access`, checks the
+top of the queue (flagged and held entries are shown and skipped by
+default), and presses "Admit top N". The cron never admits anyone. The
+suggested pace is **200 people a day** (the size box is pre-filled from
+`wave_size`), grown as support and Circle wallet capacity allow. Unused invites expire after 14 days and the seat goes
 back to the queue (entry keeps its position, gets a reminder email first).
 
 ---
@@ -229,7 +233,7 @@ early_access_settings (single row)
   first_payment_bonus int default 50
   auto_admit_referrals int default 10
   social_task_points int default 10
-  wave_size int default 200
+  wave_size int default 200                         -- pre-fills the manual wave; never run automatically
   invite_expiry_days int default 14
   leaderboard_size int default 100
   updated_at, updated_by
