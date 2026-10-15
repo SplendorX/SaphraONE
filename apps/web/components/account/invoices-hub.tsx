@@ -530,16 +530,16 @@ export function InvoicesHub() {
                 </span>
               </label>
               <div className="text-sm font-medium">
-                <span className="mb-2 block">One ID</span>
+                <span className="mb-2 block">ONE ID</span>
                 <UsernameField
                   id="invoice-customer-username"
                   onChange={setCustomerUsername}
-                  placeholder="One ID (optional)"
+                  placeholder="ONE ID (optional)"
                   value={customerUsername.replace(/^@+/, "")}
                 />
               </div>
               <p className="sm:col-span-2 text-xs text-muted-foreground">
-                One ID is optional. If filled, sending the invoice also delivers it to that account’s notifications.
+                ONE ID is optional. If filled, sending the invoice also delivers it to that account’s notifications.
               </p>
             </div>
           ) : null}

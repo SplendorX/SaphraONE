@@ -739,7 +739,7 @@ export default function BulkPayPage() {
 
  try {
  if (composer.resolving) {
- throw new Error("Wait for One IDs to resolve before sending.");
+ throw new Error("Wait for ONE IDs to resolve before sending.");
  }
 
  if (composer.errors.length > 0) {

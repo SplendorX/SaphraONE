@@ -1,4 +1,4 @@
-/* ── One ID on the landing page ─────────────────────────────────────────── */
+/* ── ONE ID on the landing page ─────────────────────────────────────────── */
 
 .oneid-grid {
   display: grid;
@@ -284,7 +284,7 @@ html.dark .oneid-points svg,
   color: #a78bfa;
 }
 
-/* The ".one" in a One ID, a step softer than the name. */
+/* The ".one" in a ONE ID, a step softer than the name. */
 .oneid-card-suffix {
   color: rgb(255 255 255 / 0.55);
 }

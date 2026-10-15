@@ -1,5 +1,5 @@
 // Server-only. The admin platform's Users tool: find any account, see it whole,
-// and make the two changes only the team may make (One ID, account email).
+// and make the two changes only the team may make (ONE ID, account email).
 import { isAddress } from "viem";
 
 import { retireUsername } from "@/lib/account-deletion/retired-usernames";
@@ -67,7 +67,7 @@ function toRow(profile: ProfileRecord): AdminUserRow {
   };
 }
 
-/** Accounts matching a One ID, name, email or wallet (newest first). */
+/** Accounts matching a ONE ID, name, email or wallet (newest first). */
 export async function searchAdminUsers(query: string) {
   const q = query.trim();
   if (!q) {
@@ -138,7 +138,7 @@ export async function loadAdminUser(wallet: string) {
 }
 
 /**
- * Gives an account a new One ID, on its request. The old one is held for
+ * Gives an account a new ONE ID, on its request. The old one is held for
  * 12 months for this account alone, so no one else can claim it and receive
  * payments meant for this person. A business's workspace and payment
  * identity follow.
@@ -151,7 +151,7 @@ export async function changeOneId(wallet: string, requested: string) {
   if (current.error) throw new Error(current.error.message);
   if (!current.data) throw new AdminUserError("No account has that wallet.", 404);
   const previous = normalizeUsername(String((current.data as { username?: string }).username ?? ""));
-  if (previous === next) throw new AdminUserError(`${formatUsernameLabel(next)} is already this account's One ID.`);
+  if (previous === next) throw new AdminUserError(`${formatUsernameLabel(next)} is already this account's ONE ID.`);
 
   const availability = await checkUsernameAvailability(next, lower);
   if (!availability.available) throw new AdminUserError(availability.message, 409);
@@ -162,7 +162,7 @@ export async function changeOneId(wallet: string, requested: string) {
     .eq("wallet_address", lower);
   if (update.error) {
     throw new AdminUserError(
-      /duplicate|unique/i.test(update.error.message) ? "That One ID is taken." : update.error.message,
+      /duplicate|unique/i.test(update.error.message) ? "That ONE ID is taken." : update.error.message,
       409,
     );
   }

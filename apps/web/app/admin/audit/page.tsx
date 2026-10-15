@@ -22,7 +22,7 @@ const actionLabels: Record<string, string> = {
   "adjust-points": "Adjusted ONE Points",
   "decide-verification": "Decided a business verification",
   "change-email": "Changed account email",
-  "change-one-id": "Changed One ID",
+  "change-one-id": "Changed ONE ID",
   "remove-member": "Removed from the team",
   "update-member": "Changed team access",
 };

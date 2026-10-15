@@ -99,7 +99,7 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="adm-title">Users</h1>
           <p className="adm-subtitle">
-            Find an account by One ID, name, email or wallet. One IDs and emails are locked for
+            Find an account by ONE ID, name, email or wallet. ONE IDs and emails are locked for
             customers; change them here when they ask.
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function AdminUsersPage() {
           <table className="adm-table">
             <thead>
               <tr>
-                <th>One ID</th>
+                <th>ONE ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Type</th>
@@ -175,7 +175,7 @@ export default function AdminUsersPage() {
 
 function UserPanel({ onChanged, user }: { onChanged: (user: UserDetail) => void; user: UserDetail }) {
   const rows: Array<[string, string]> = [
-    ["One ID", user.oneId ?? "—"],
+    ["ONE ID", user.oneId ?? "—"],
     ["Name", user.displayName ?? "—"],
     ["Email", user.contactEmail ?? "—"],
     ["Phone", user.phone ?? "—"],
@@ -280,9 +280,9 @@ function ChangeOneId({ onChanged, user }: { onChanged: (user: UserDetail) => voi
   return (
     <div className="adm-card grid gap-3">
       <div>
-        <p className="font-semibold">Change One ID</p>
+        <p className="font-semibold">Change ONE ID</p>
         <p className="adm-note">
-          The old One ID is held for this account for 12 months, so no one else can take it and
+          The old ONE ID is held for this account for 12 months, so no one else can take it and
           receive their payments.
         </p>
       </div>
@@ -302,7 +302,7 @@ function ChangeOneId({ onChanged, user }: { onChanged: (user: UserDetail) => voi
             }
           >
             {change.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Confirm: {user.oneId ?? "no One ID"} → {oneId}.one
+            Confirm: {user.oneId ?? "no ONE ID"} → {oneId}.one
           </Button>
           <Button onClick={() => change.setConfirming(false)} variant="ghost">
             Cancel
@@ -310,7 +310,7 @@ function ChangeOneId({ onChanged, user }: { onChanged: (user: UserDetail) => voi
         </div>
       ) : (
         <Button disabled={!ready} onClick={() => change.setConfirming(true)} variant="outline">
-          Change One ID…
+          Change ONE ID…
         </Button>
       )}
       {change.message ? (

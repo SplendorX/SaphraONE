@@ -49,7 +49,7 @@ export async function listAdminMembers() {
   return (data ?? []) as AdminMemberRow[];
 }
 
-/** A One ID (amara.one / @amara / amara) or a wallet, as the account it names. */
+/** A ONE ID (amara.one / @amara / amara) or a wallet, as the account it names. */
 async function resolveAccount(identifier: string) {
   const value = identifier.trim();
   const query = db().from(profilesTable).select("wallet_address, username, display_name");
@@ -59,7 +59,7 @@ async function resolveAccount(identifier: string) {
   ).maybeSingle();
   if (error) throw new Error(error.message);
   const row = data as { display_name?: string | null; username?: string | null; wallet_address: string } | null;
-  if (!row) throw new AdminUserError("No SaphraONE account has that One ID or wallet.", 404);
+  if (!row) throw new AdminUserError("No SaphraONE account has that ONE ID or wallet.", 404);
   return {
     label: row.username ? formatUsernameLabel(row.username) : row.display_name || row.wallet_address,
     wallet: row.wallet_address.toLowerCase(),

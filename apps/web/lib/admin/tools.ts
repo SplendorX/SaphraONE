@@ -6,7 +6,7 @@
  */
 export const adminTools = [
   {
-    description: "Look up any account; change a One ID or email on request.",
+    description: "Look up any account; change a ONE ID or email on request.",
     href: "/admin/users",
     id: "users",
     label: "Users",

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const periods = new Set(["24h", "7d", "30d", "90d"]);
 
-/** ?period=24h|7d|30d|90d &source= &account= (One ID or wallet) &minUsd= &flagged=1 */
+/** ?period=24h|7d|30d|90d &source= &account= (ONE ID or wallet) &minUsd= &flagged=1 */
 export async function GET(request: NextRequest) {
   const access = await requireAdminTool(request, "transactions");
   if (!access.ok) return access.response;

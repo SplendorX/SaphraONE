@@ -788,7 +788,7 @@ export function RecurepayCompose({
               className="recurepay-input pr-10"
               id="recurepay-recipient"
               onChange={(event) => onRecipient(event.target.value)}
-              placeholder="One ID or 0x wallet address"
+              placeholder="ONE ID or 0x wallet address"
               spellCheck={false}
               value={recipient}
             />

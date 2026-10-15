@@ -579,7 +579,7 @@ export async function resolveAllieAction(
         })}`,
         cta: "Create the request",
         handoff:
-          "The request page builds the shareable link against your own One ID.",
+          "The request page builds the shareable link against your own ONE ID.",
       };
 
     // ── Recurring ──────────────────────────────────────────────────────────
@@ -638,7 +638,7 @@ export async function resolveAllieAction(
       const contact = action.recipient.startsWith("@")
         ? null
         : matchContact(await loadContacts(ownerWallet), action.recipient);
-      // Anything that isn't a contact or an address goes over as a One ID.
+      // Anything that isn't a contact or an address goes over as a ONE ID.
       const payee = contact
         ? contact.wallet
         : isAddress(action.recipient)

@@ -43,7 +43,7 @@ type LedgerRow = {
   wallet_address: string;
 };
 
-/** A One ID or wallet as the wallet to filter on. */
+/** A ONE ID or wallet as the wallet to filter on. */
 async function walletFor(account: string) {
   const value = account.trim();
   if (isAddress(value)) return value.toLowerCase();
@@ -53,7 +53,7 @@ async function walletFor(account: string) {
     .eq("username", normalizeUsername(value))
     .maybeSingle();
   const wallet = (data as { wallet_address?: string } | null)?.wallet_address;
-  if (!wallet) throw new AdminUserError("No account has that One ID.", 404);
+  if (!wallet) throw new AdminUserError("No account has that ONE ID.", 404);
   return wallet.toLowerCase();
 }
 
@@ -93,7 +93,7 @@ export async function listLedger(filters: LedgerFilters) {
         : null;
   const shown = filters.flaggedOnly ? rows.filter((row) => flagOf(row)) : rows;
 
-  // One IDs for the wallets on screen.
+  // ONE IDs for the wallets on screen.
   const wallets = [...new Set(shown.map((row) => row.wallet_address.toLowerCase()))];
   const names = new Map<string, string>();
   if (wallets.length) {

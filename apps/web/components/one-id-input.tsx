@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /**
- * A One ID being chosen: the name, with ".one" attached after it the way a
+ * A ONE ID being chosen: the name, with ".one" attached after it the way a
  * web address shows its domain. A typed ".one" or "@" folds away, so the
  * value is always the bare name.
  */

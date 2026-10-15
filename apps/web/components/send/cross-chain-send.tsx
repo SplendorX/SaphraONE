@@ -467,7 +467,7 @@ export function CrossChainSend({
           {trimmed && !validAddress ? (
             <p className="xc-hint is-error">
               {trimmed.startsWith("@") || /\.one$/i.test(trimmed)
-                ? "One IDs are paid on Arc. Go back and use Pay to a One ID."
+                ? "ONE IDs are paid on Arc. Go back and use Pay to a ONE ID."
                 : "Enter a 0x address."}
             </p>
           ) : isOwnArcAddress ? (

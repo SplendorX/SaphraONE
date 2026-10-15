@@ -145,7 +145,7 @@ export default function AdminTransactionsPage() {
         <Input
           className="h-10 w-56"
           onChange={(event) => setAccount(event.target.value)}
-          placeholder="One ID or wallet"
+          placeholder="ONE ID or wallet"
           value={account}
         />
         <Input

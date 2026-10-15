@@ -2060,7 +2060,7 @@ export function DashboardContent({
     if (!isRecipientValid) {
       setBeneficiaryError(
         recipientResolveError ??
-          "Enter a valid beneficiary wallet address or One ID.",
+          "Enter a valid beneficiary wallet address or ONE ID.",
       );
       return;
     }
@@ -2305,7 +2305,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or One ID.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return;
     }
@@ -2502,7 +2502,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or One ID.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return false;
     }
@@ -2618,7 +2618,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or One ID.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return;
     }

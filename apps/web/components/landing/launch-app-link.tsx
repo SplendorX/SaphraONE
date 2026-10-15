@@ -72,7 +72,7 @@ function LaunchPending() {
 }
 
 /**
- * "Open SaphraONE", "Claim your One ID", "Start with ALLIE"…: to sign-in, or
+ * "Open SaphraONE", "Claim your ONE ID", "Start with ALLIE"…: to sign-in, or
  * straight into the app for someone signed in. The destination is prefetched
  * in full (page and code) as soon as the button is on screen, so the tap
  * opens it at once, and the button shows it's working until it does.

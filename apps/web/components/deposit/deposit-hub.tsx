@@ -180,7 +180,7 @@ export function DepositHub() {
               {username ? (
                 <HeroAction
                   icon={copied === "username" ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-                  label={copied === "username" ? "Copied" : "One ID"}
+                  label={copied === "username" ? "Copied" : "ONE ID"}
                   onClick={() => void copy(formatUsernameLabel(username), "username")}
                 />
               ) : null}
@@ -204,7 +204,7 @@ export function DepositHub() {
           <ul className="dep-list">
             <li>
               <MethodRow
-                body="Anyone on SaphraONE pays your One ID; any Arc wallet can send to your address."
+                body="Anyone on SaphraONE pays your ONE ID; any Arc wallet can send to your address."
                 icon={<HandCoins className="h-5 w-5" />}
                 onClick={() => setReceiveOpen(true)}
                 title="Receive from anyone"
@@ -322,7 +322,7 @@ function MethodRow({
 
 function ReceiveSheet({
   children,
-  description = "Share your QR code, One ID or address.",
+  description = "Share your QR code, ONE ID or address.",
   onClose,
   open,
   title = "Receive USDC",

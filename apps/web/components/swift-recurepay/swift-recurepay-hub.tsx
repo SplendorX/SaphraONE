@@ -633,7 +633,7 @@ export function SwiftRecurepayHub() {
       return "Connect and authorize a wallet before scheduling a payment.";
     }
     if (!isRecipientValid || !resolvedRecipientAddress) {
-      return recipientResolveError ?? "Enter a valid One ID or wallet address.";
+      return recipientResolveError ?? "Enter a valid ONE ID or wallet address.";
     }
     const value = Number(amount);
     if (!amount || !Number.isFinite(value) || value <= 0) {

@@ -14,20 +14,20 @@ const reservedUsernames = new Set([
 ]);
 
 /**
- * A One ID is chosen once, at onboarding, and an account's email once it is
+ * A ONE ID is chosen once, at onboarding, and an account's email once it is
  * set: people pay and find each other by them. Only the team changes them
  * after that (on request through support).
  */
 export const oneIdLockedMessage =
-  "Your One ID is locked once your account is set up. To change it, contact support.";
+  "Your ONE ID is locked once your account is set up. To change it, contact support.";
 export const accountEmailLockedMessage =
   "Your account email is locked once it's set. To change it, contact support.";
 
-/** How a One ID reads everywhere: `amara.one`. */
+/** How a ONE ID reads everywhere: `amara.one`. */
 export const oneIdSuffix = ".one";
 
 /**
- * The stored name inside a One ID, however it was typed: `amara.one`,
+ * The stored name inside a ONE ID, however it was typed: `amara.one`,
  * `@amara` (the older way) and `amara` all give `amara`. Names never contain
  * a dot, so the suffix can't be mistaken for part of one.
  */
@@ -43,11 +43,11 @@ export function validateUsername(value: string) {
   const username = normalizeUsername(value);
 
   if (!usernamePattern.test(username)) {
-    return "A One ID must be 3-20 characters, start with a letter, and use only lowercase letters, numbers, or underscores.";
+    return "A ONE ID must be 3-20 characters, start with a letter, and use only lowercase letters, numbers, or underscores.";
   }
 
   if (reservedUsernames.has(username)) {
-    return "That One ID is reserved.";
+    return "That ONE ID is reserved.";
   }
 
   return null;
@@ -81,7 +81,7 @@ export function usernameFromDisplayName(value?: string | null) {
   return slug;
 }
 
-/** A stored name as its One ID: `amara` → `amara.one`. */
+/** A stored name as its ONE ID: `amara` → `amara.one`. */
 export function formatUsernameLabel(username: string) {
   return `${normalizeUsername(username)}${oneIdSuffix}`;
 }

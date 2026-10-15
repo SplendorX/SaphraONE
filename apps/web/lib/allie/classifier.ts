@@ -238,7 +238,7 @@ function normalizeRecipient(raw: string) {
     return trimmed;
   }
 
-  // "gentle.one" (a One ID) and "@gentle" (the older way) both name an account.
+  // "gentle.one" (a ONE ID) and "@gentle" (the older way) both name an account.
   const isOneId = /\.one$/i.test(trimmed);
   const handle = trimmed.replace(/^@/, "").replace(/\.one$/i, "");
 
@@ -250,7 +250,7 @@ function normalizeRecipient(raw: string) {
     return null;
   }
 
-  // An "@" marks a One ID from here on: "gentle.one" or "@gentle" asks for
+  // An "@" marks a ONE ID from here on: "gentle.one" or "@gentle" asks for
   // that account, a bare "gentle" is looked up in their contacts first.
   return trimmed.startsWith("@") || isOneId ? `@${handle}` : handle;
 }

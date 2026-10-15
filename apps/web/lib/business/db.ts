@@ -34,7 +34,7 @@ export function readBusinessDbError(
 
   if (error?.code === "23505") {
     if (message.toLowerCase().includes("username")) {
-      return "That One ID is already taken.";
+      return "That ONE ID is already taken.";
     }
     return "That record already exists.";
   }

@@ -1,5 +1,5 @@
 /**
- * One IDs read as "amara.one"; the older "@amara" and a bare "amara" still
+ * ONE IDs read as "amara.one"; the older "@amara" and a bare "amara" still
  * find the same account everywhere a name is typed.
  *
  * Run: node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs \
@@ -17,7 +17,7 @@ import {
   validateUsername,
 } from "@/lib/profile-utils";
 
-describe("One ID format", () => {
+describe("ONE ID format", () => {
   it("shows a stored name as name.one", () => {
     assert.equal(formatUsernameLabel("amara"), "amara.one");
     assert.equal(formatUsernameLabel("@amara"), "amara.one");
@@ -43,7 +43,7 @@ describe("One ID format", () => {
   });
 });
 
-describe("ALLIE and One IDs", () => {
+describe("ALLIE and ONE IDs", () => {
   it("treats name.one as an account, like @name", () => {
     const result = classifyMessage("send $20 to alex.one");
     assert.equal(result?.action.type, "PaymentIntent");

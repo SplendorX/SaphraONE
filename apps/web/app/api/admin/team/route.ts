@@ -28,13 +28,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/** Add someone: { identifier: One ID or wallet, role: "member" | "owner", tools: [...] } */
+/** Add someone: { identifier: ONE ID or wallet, role: "member" | "owner", tools: [...] } */
 export async function POST(request: NextRequest) {
   const access = await requireAdminTool(request, "team");
   if (!access.ok) return access.response;
   const body = await readJsonRecord(request);
   const identifier = typeof body?.identifier === "string" ? body.identifier : "";
-  if (!identifier.trim()) return jsonError("Enter their One ID or wallet.", 400);
+  if (!identifier.trim()) return jsonError("Enter their ONE ID or wallet.", 400);
   try {
     const member = await addAdminMember({
       createdBy: access.actor.id,

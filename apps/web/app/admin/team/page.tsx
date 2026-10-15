@@ -104,7 +104,7 @@ export default function AdminTeamPage() {
         <div>
           <h1 className="adm-title">Team &amp; access</h1>
           <p className="adm-subtitle">
-            Add people by their One ID. They sign in at /admin with their own SaphraONE account and
+            Add people by their ONE ID. They sign in at /admin with their own SaphraONE account and
             see only the tools ticked here. Owners get everything, including this page.
           </p>
         </div>

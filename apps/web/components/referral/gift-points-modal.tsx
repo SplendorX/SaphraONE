@@ -132,7 +132,7 @@ export function GiftPointsModal({
                 className="pr-9"
                 id="gift-recipient"
                 onChange={(event) => setRecipient(event.target.value)}
-                placeholder="One ID or 0x address"
+                placeholder="ONE ID or 0x address"
                 spellCheck={false}
                 value={recipient}
               />

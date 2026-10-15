@@ -3,13 +3,13 @@
 -- service role; row level security keeps everyone else out.
 --
 -- The owner signs in with ADMIN_SECRET (the owner key) and adds the team on
--- /admin/team by their One ID. Team members sign in with their own SaphraONE
+-- /admin/team by their ONE ID. Team members sign in with their own SaphraONE
 -- account; each request is checked against this table.
 
 create table if not exists public.admin_members (
   -- The member's SaphraONE wallet (lowercase): the account they sign in with.
   wallet_address text primary key,
-  -- Their One ID or name when added, for the team list.
+  -- Their ONE ID or name when added, for the team list.
   label text,
   -- 'owner': every tool, and manages the team. 'member': only `tools`.
   role text not null default 'member' check (role in ('owner', 'member')),

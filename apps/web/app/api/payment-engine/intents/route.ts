@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   const recipient = normalizeRecipient(body.recipient);
 
   if (!recipient) {
-    return jsonError("A valid recipient address or One ID is required.", 400);
+    return jsonError("A valid recipient address or ONE ID is required.", 400);
   }
 
   if (body.asset !== undefined && !isPaymentIntentAsset(body.asset)) {

@@ -25,7 +25,7 @@ export async function resolveProfileByUsername(username: string) {
     .ilike("username", username)
     .maybeSingle();
   if (error) {
-    throw new Error(readCircleDbError(error, "Could not find that One ID."));
+    throw new Error(readCircleDbError(error, "Could not find that ONE ID."));
   }
   if (!data?.wallet_address) {
     throw circleErrors.notFound("User");
