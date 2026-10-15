@@ -27,6 +27,7 @@ import { arcChain } from "@/lib/chains";
 import { multichainEnabled } from "@/lib/multichain/flag";
 import { fetchProfile, formatUsernameLabel, profileUpdatedEventName } from "@/lib/profile";
 import { fetchRampStatus } from "@/lib/ramp/client";
+import { rampEntryEnabled } from "@/lib/ramp/flag";
 import { useSheetSide } from "@/lib/use-media-query";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,14 @@ export function DepositHub() {
       })
       .catch(() => undefined);
     void fetchRampStatus().then((status) => {
-      if (!cancelled) setNairaEnabled(status?.enabled === true && status.currencies.includes("NGN"));
+      if (cancelled) return;
+      const available = status?.enabled === true && status.currencies.includes("NGN");
+      setNairaEnabled(available);
+      // /deposit?method=naira opens it directly, even before the row is
+      // shown to everyone (the mainnet smoke test).
+      if (available && new URLSearchParams(window.location.search).get("method") === "naira") {
+        setView("naira");
+      }
     });
     return () => {
       cancelled = true;
@@ -247,8 +255,8 @@ export function DepositHub() {
               <MethodRow
                 body="Pay from any Nigerian bank and get USDC on Arc."
                 icon={<Landmark className="h-5 w-5" />}
-                onClick={nairaEnabled ? () => setView("naira") : undefined}
-                soon={!nairaEnabled}
+                onClick={nairaEnabled && rampEntryEnabled ? () => setView("naira") : undefined}
+                soon={!(nairaEnabled && rampEntryEnabled)}
                 title="Naira bank transfer"
               />
             </li>

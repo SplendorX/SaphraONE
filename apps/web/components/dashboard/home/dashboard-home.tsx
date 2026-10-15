@@ -4,6 +4,7 @@ import {
   ArrowDownLeft,
   ArrowDownToLine,
   ArrowLeftRight,
+  ArrowUpFromLine,
   ArrowUpRight,
   Banknote,
   Briefcase,
@@ -24,6 +25,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { checkoutEnabled } from "@/lib/checkout/flag";
+import { rampEntryEnabled } from "@/lib/ramp/flag";
 import type { ArcTokenSymbol } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,8 @@ function splitAmount(label: string) {
 }
 
 const services: Array<{ business?: boolean; href: string; icon: LucideIcon; label: string }> = [
+  // Naira bank withdrawals (Centiiv); shown once NEXT_PUBLIC_RAMP_ENABLED is "true".
+  ...(rampEntryEnabled ? [{ href: "/withdraw", icon: ArrowUpFromLine, label: "Withdraw" }] : []),
   { href: "/save", icon: PiggyBank, label: "Save" },
   { href: "/earn", icon: TrendingUp, label: "Invest" },
   { href: "/circle", icon: UsersRound, label: "Circle" },
