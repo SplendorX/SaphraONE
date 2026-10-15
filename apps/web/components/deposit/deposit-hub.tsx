@@ -8,6 +8,7 @@ import {
   Copy,
   CreditCard,
   HandCoins,
+  Landmark,
   Network,
   QrCode,
   Share2,
@@ -17,6 +18,7 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { DepositPanel } from "@/components/deposit/DepositPanel";
+import { NairaOnrampPanel } from "@/components/deposit/naira-onramp-panel";
 import { OnrampPanel } from "@/components/deposit/onramp-panel";
 import { ReceiveFromNetwork } from "@/components/deposit/receive-from-network";
 import { ReceiveShareCard } from "@/components/dashboard/receive-share-card";
@@ -24,17 +26,19 @@ import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from 
 import { arcChain } from "@/lib/chains";
 import { multichainEnabled } from "@/lib/multichain/flag";
 import { fetchProfile, formatUsernameLabel, profileUpdatedEventName } from "@/lib/profile";
+import { fetchRampStatus } from "@/lib/ramp/client";
 import { useSheetSide } from "@/lib/use-media-query";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { cn } from "@/lib/utils";
 
 import "./deposit.css";
 
-type View = "home" | "chain" | "bank" | "network";
+type View = "home" | "chain" | "bank" | "network" | "naira";
 
 const viewTitles: Record<Exclude<View, "home">, string> = {
   bank: "Bank transfer",
   chain: multichainEnabled ? "Bridge from my wallet" : "From another chain",
+  naira: "Pay with Naira",
   network: "Receive from another network",
 };
 
@@ -55,6 +59,8 @@ export function DepositHub() {
   const [copied, setCopied] = useState<"username" | "address" | null>(null);
   // Bank transfer goes live once the server has an Onramp key.
   const [onrampEnabled, setOnrampEnabled] = useState(false);
+  // Naira deposits go live once the server has a Centiiv key.
+  const [nairaEnabled, setNairaEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +70,9 @@ export function DepositHub() {
         if (!cancelled) setOnrampEnabled(payload?.enabled === true);
       })
       .catch(() => undefined);
+    void fetchRampStatus().then((status) => {
+      if (!cancelled) setNairaEnabled(status?.enabled === true && status.currencies.includes("NGN"));
+    });
     return () => {
       cancelled = true;
     };
@@ -132,7 +141,15 @@ export function DepositHub() {
           <span />
         </header>
         <div className="dep-panel">
-          {view === "chain" ? <DepositPanel /> : view === "network" ? <ReceiveFromNetwork /> : <OnrampPanel />}
+          {view === "chain" ? (
+            <DepositPanel />
+          ) : view === "network" ? (
+            <ReceiveFromNetwork />
+          ) : view === "naira" ? (
+            <NairaOnrampPanel />
+          ) : (
+            <OnrampPanel />
+          )}
         </div>
       </div>
     );
@@ -224,6 +241,15 @@ export function DepositHub() {
                 onClick={onrampEnabled ? () => setView("bank") : undefined}
                 soon={!onrampEnabled}
                 title="Bank transfer"
+              />
+            </li>
+            <li>
+              <MethodRow
+                body="Pay from any Nigerian bank and get USDC on Arc."
+                icon={<Landmark className="h-5 w-5" />}
+                onClick={nairaEnabled ? () => setView("naira") : undefined}
+                soon={!nairaEnabled}
+                title="Naira bank transfer"
               />
             </li>
             <li>
