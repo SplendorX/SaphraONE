@@ -6,7 +6,8 @@ Naira on-ramp (bank transfer → USDC on Arc) and off-ramp (USDC on Arc → Nige
 
 - Docs index: https://c-vmch.readme.io/llms.txt
 - Base URL `https://api.centiiv.io` (staging `https://api.staging.centiiv.io`).
-- Auth: `x-api-key: sk_sandbox_…` or `sk_live_…`, server-side only. We also send `X-Environment` and `X-Platform: swiftpay-web`.
+- Auth: `x-api-key` with **Protocol API** keys. `CENTIIV_API_KEY` holds the secret `sk_sandbox_…` / `sk_live_…` key, used for orders and banking. `CENTIIV_PUBLIC_KEY` holds `pk_sandbox_…` / `pk_live_…`, which `/public/quote` requires: Centiiv answers 401 "Public API endpoints require a public key" to anything else. Both stay server-side. We also send `X-Environment` and `X-Platform: swiftpay-web`.
+- `cnt-test_…` / `cnt-live_…` keys belong to Centiiv's separate **Payment API** and are rejected by the Protocol API (checked 2026-10-15).
 - `network: "ARC"` on every quote and request. Assets `NGN` and `USDC`.
 - A request expires after 30 minutes with no deposit. Treat the off-ramp deposit as exact-amount.
 - `POST /public/quote` `{ fromAsset, toAsset, amount, network }` → `{ rate, estimatedReceivableAmount, fees, totalToPay }`. Indicative only.

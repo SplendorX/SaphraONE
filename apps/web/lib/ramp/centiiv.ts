@@ -31,11 +31,12 @@ async function call<T>(
   config: CentiivConfig,
   method: "GET" | "POST",
   path: string,
-  options: { body?: unknown; idempotencyKey?: string } = {},
+  options: { body?: unknown; idempotencyKey?: string; publicKey?: boolean } = {},
 ): Promise<CentiivResult<T>> {
   const headers: Record<string, string> = {
     accept: "application/json",
-    "x-api-key": config.apiKey,
+    // Centiiv's /public/* endpoints only take the public key.
+    "x-api-key": options.publicKey && config.publicKey ? config.publicKey : config.apiKey,
     "X-Environment": config.environment === "LIVE" ? "live" : "sandbox",
     "X-Platform": "swiftpay-web",
   };
@@ -69,6 +70,9 @@ async function call<T>(
       `[ramp] Centiiv ${method} ${path} → ${response.status}`,
       text(details.message) ?? "",
       text(details.requestId) ?? "",
+      response.status === 401 || response.status === 403
+        ? "(check CENTIIV_API_KEY = sk_… and CENTIIV_PUBLIC_KEY = pk_… are Protocol API keys)"
+        : "",
     );
     const readable = response.status === 400 || response.status === 422;
     return {
@@ -90,6 +94,7 @@ export type QuoteInput = {
 export function getQuote(config: CentiivConfig, input: QuoteInput) {
   return call<CentiivQuote>(config, "POST", "/public/quote", {
     body: { ...input, network: "ARC" },
+    publicKey: true,
   });
 }
 
