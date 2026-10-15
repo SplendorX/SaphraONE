@@ -17,10 +17,14 @@ function warnOnce(message: string) {
   console.warn(`[ramp] ${message}`);
 }
 
-/** SANDBOX for `sk_sandbox_…`, LIVE for `sk_live_…`, null otherwise. */
+/**
+ * SANDBOX for `sk_sandbox_…` / `cnt-test_…`, LIVE for `sk_live_…` /
+ * `cnt-live_…`, null otherwise. Centiiv routes by the same prefixes.
+ */
 export function keyEnvironment(apiKey: string): RampEnvironment | null {
-  if (/sandbox/i.test(apiKey)) return "SANDBOX";
-  if (/live/i.test(apiKey)) return "LIVE";
+  const prefix = apiKey.trim().toLowerCase();
+  if (/^(sk|pk)_sandbox_|^cnt-test_/.test(prefix)) return "SANDBOX";
+  if (/^(sk|pk)_live_|^cnt-live_/.test(prefix)) return "LIVE";
   return null;
 }
 
