@@ -73,7 +73,9 @@ async function call<T>(
         ? "(check CENTIIV_PUBLIC_KEY is the Protocol API pk_sandbox_… / pk_live_… key)"
         : "",
     );
-    const readable = response.status === 400 || response.status === 422;
+    // Centiiv's own wording for request problems ("Account number not found
+    // on this bank." is a 404); auth and server failures stay generic.
+    const readable = [400, 404, 409, 422].includes(response.status);
     // "Validation failed" carries the useful part in details[].
     const detail = Array.isArray(details.details) ? text(details.details[0]) : null;
     const message = /^validation failed$/i.test(text(details.message) ?? "") && detail ? detail : details.message;
