@@ -9,7 +9,7 @@ import { useT } from "@/components/locale-provider";
 
 import "./one-id-showcase.css";
 
-/** Sample ONE IDs the card cycles through: illustrative, not real accounts. */
+/** Sample One IDs the card cycles through: illustrative, not real accounts. */
 const sampleIds = [
   { amount: "250.00", from: "leo", handle: "amara" },
   { amount: "48.20", from: "amara", handle: "leo" },
@@ -32,7 +32,7 @@ function usePrefersReducedMotion() {
 }
 
 /**
- * ONE ID on the landing page: the pitch beside a card that shows one. The
+ * One ID on the landing page: the pitch beside a card that shows one. The
  * handle on the card changes every few seconds; an invisible copy of the
  * longest one holds its width, so nothing around it moves.
  */
@@ -85,7 +85,7 @@ export function OneIdShowcase() {
             <div className="oneid-card-top">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="" className="oneid-card-mark" height={40} src="/brand/saphra-mark.svg" width={40} />
-              <span className="oneid-card-label">ONE ID</span>
+              <span className="oneid-card-label">One ID</span>
             </div>
             <p className="oneid-card-handle">
               <span className="oneid-card-ghost">{longestHandle}<span className="oneid-card-suffix">.one</span></span>

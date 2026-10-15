@@ -64,7 +64,7 @@ export const payrollErrors = {
       400,
     );
   },
-  invalidDestination(msg = "Invalid payment destination. Enter a valid ONE ID or 0x… wallet address.") {
+  invalidDestination(msg = "Invalid payment destination. Enter a valid One ID or 0x… wallet address.") {
     return new PayrollError("INVALID_PAYMENT_DESTINATION", msg, 400);
   },
   itemAlreadyPaid(msg = "This recipient payment has already settled.") {

@@ -74,7 +74,7 @@ export type SendHubProps = SendPaymentWizardProps & {
 type View = "home" | "to" | "chat" | "network";
 
 type Person = {
-  /** What goes in the recipient field: a ONE ID (amara.one) or a wallet. */
+  /** What goes in the recipient field: a One ID (amara.one) or a wallet. */
   value: string;
   wallet: string | null;
   name: string;
@@ -124,7 +124,7 @@ function InviteBanner() {
       <p className="sx-invite-title">Can&apos;t find who you&apos;re looking for?</p>
       <p className="sx-invite-body">
         Invite them to SaphraONE. They sign up in a minute, and from then on you can pay them by
-        their ONE ID, free and in seconds.
+        their One ID, free and in seconds.
       </p>
       <Link className="sx-invite-cta" href="/referral">
         Invite friends
@@ -407,7 +407,7 @@ export function SendHub(props: SendHubProps) {
             aria-label="Search people"
             autoComplete="off"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search a name, ONE ID or 0x wallet"
+            placeholder="Search a name, One ID or 0x wallet"
             spellCheck={false}
             value={query}
           />
@@ -490,7 +490,7 @@ export function SendHub(props: SendHubProps) {
                     body="Anyone on SaphraONE or any wallet on Arc."
                     icon={<Send className="h-5 w-5" />}
                     onClick={startNew}
-                    title="Pay to a ONE ID or Arc address"
+                    title="Pay to a One ID or Arc address"
                   />
                 </li>
                 {multichainEnabled ? (
@@ -627,7 +627,7 @@ export function SendHub(props: SendHubProps) {
 
         <section className="sx-section">
           <label className="sx-label" htmlFor="send-to">
-            ONE ID or Arc wallet
+            One ID or Arc wallet
           </label>
           <div className="sx-to sx-to-suggesting">
             <OneIdSuggestions
@@ -656,7 +656,7 @@ export function SendHub(props: SendHubProps) {
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && isRecipientValid) setView("chat");
                 }}
-                placeholder="ONE ID or 0x…"
+                placeholder="One ID or 0x…"
                 spellCheck={false}
                 value={recipientAddress}
               />

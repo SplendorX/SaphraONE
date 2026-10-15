@@ -42,7 +42,7 @@ type Step = "review" | "reason" | "confirm" | "done";
 
 const erased = [
   "Your profile: name, photo, bio, country, email and phone",
-  "Your ONE ID: no one else can take it for 12 months, then it's released",
+  "Your One ID: no one else can take it for 12 months, then it's released",
   "Saved contacts and payment recipients",
   "Payment PIN, Face ID, two-factor and sign-in security settings",
   "Recurring payments, automations and ALLIE's Agent Wallet access",

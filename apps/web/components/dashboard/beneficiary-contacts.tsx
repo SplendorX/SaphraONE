@@ -97,7 +97,7 @@ export function BeneficiaryContacts({
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name, ONE ID, or wallet"
+          placeholder="Search name, One ID, or wallet"
           value={query}
         />
       </label>
@@ -296,7 +296,7 @@ function ContactEditor({
       </label>
       <label className="grid gap-1">
         <span className="text-[0.7rem] font-semibold text-muted-foreground">
-          Wallet or ONE ID
+          Wallet or One ID
         </span>
         <span className="relative">
           <input

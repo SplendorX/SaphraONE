@@ -58,7 +58,7 @@ export async function updateBusinessProfile(input: {
     const error = validateBusinessUsername(input.username);
     if (error) throw businessErrors.invalid(error);
     const username = normalizeHandle(input.username);
-    // A business keeps the ONE ID it was given; only the team changes it.
+    // A business keeps the One ID it was given; only the team changes it.
     if (workspace.username && username !== workspace.username) {
       throw businessErrors.invalid(oneIdLockedMessage);
     }
@@ -69,7 +69,7 @@ export async function updateBusinessProfile(input: {
         .eq("username", username)
         .maybeSingle();
       if (taken.data && (taken.data as { workspace_id: string }).workspace_id !== workspace.id) {
-        throw businessErrors.conflict("That ONE ID is already taken.");
+        throw businessErrors.conflict("That One ID is already taken.");
       }
       workspaceUpdates.username = username;
     }

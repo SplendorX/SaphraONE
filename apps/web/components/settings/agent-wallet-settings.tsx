@@ -466,7 +466,7 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
     if (!recipientResolution.isValid || !recipientResolution.resolvedAddress) {
       setFeedback({
         tone: "error",
-        text: recipientResolution.error ?? "Enter a wallet address or a ONE ID that exists.",
+        text: recipientResolution.error ?? "Enter a wallet address or a One ID that exists.",
       });
       return;
     }
@@ -916,7 +916,7 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                       addRecipient();
                     }
                   }}
-                  placeholder="0x… or ONE ID"
+                  placeholder="0x… or One ID"
                   value={recipientDraft}
                 />
                 <RecipientSpinner resolution={recipientResolution} />

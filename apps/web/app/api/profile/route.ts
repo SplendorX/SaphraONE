@@ -27,9 +27,9 @@ export const runtime = "nodejs";
 const profilesTable = process.env.SUPABASE_PROFILES_TABLE ?? "profiles";
 
 /**
- * What a save may no longer change: the ONE ID once onboarding is done, and
+ * What a save may no longer change: the One ID once onboarding is done, and
  * the contact email once set. The email column arrives with a migration, so a
- * database without it locks only the ONE ID.
+ * database without it locks only the One ID.
  */
 async function readLockedFields(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
@@ -208,7 +208,7 @@ function readSupabaseError(error: { code?: string; message?: string } | null) {
 
   if (error?.code === "23505") {
     if (message.toLowerCase().includes("username")) {
-      return "That ONE ID is already taken.";
+      return "That One ID is already taken.";
     }
 
     return "A profile already exists for this wallet.";
@@ -656,7 +656,7 @@ export async function PATCH(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    // The ONE ID (once onboarding is done) and the account email (once set)
+    // The One ID (once onboarding is done) and the account email (once set)
     // are locked: only the team changes them. Sending the same value again,
     // as Settings does on every save, is fine.
     const current = await readLockedFields(supabase, walletAddress);
@@ -678,7 +678,7 @@ export async function PATCH(request: NextRequest) {
 
     if (hasUsername) {
       if (await isUsernameHeld(username, walletAddress)) {
-        return jsonError("That ONE ID isn't available. Try another.", 409);
+        return jsonError("That One ID isn't available. Try another.", 409);
       }
       updates.username = username;
     }

@@ -18,7 +18,7 @@ function fail(error: unknown, fallback: string) {
   return jsonError(error instanceof Error ? error.message : fallback, 500);
 }
 
-/** ?wallet=0x… for one account; ?q= to search by ONE ID, name, email or wallet. */
+/** ?wallet=0x… for one account; ?q= to search by One ID, name, email or wallet. */
 export async function GET(request: NextRequest) {
   const access = await requireAdminTool(request, "users");
   if (!access.ok) return access.response;

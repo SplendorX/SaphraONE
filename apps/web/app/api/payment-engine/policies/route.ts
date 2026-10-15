@@ -94,7 +94,7 @@ function readRecipients(value: unknown) {
     if (!isAddress(trimmed) && !/^@?[a-zA-Z0-9_.-]{2,32}$/.test(trimmed)) {
       return {
         ok: false,
-        error: `"${trimmed}" is not a valid address or ONE ID.`,
+        error: `"${trimmed}" is not a valid address or One ID.`,
       } as const;
     }
 

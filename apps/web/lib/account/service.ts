@@ -277,7 +277,7 @@ export async function completeAccountOnboarding(input: {
     ownerWallet: input.ownerWallet,
   });
   const username = normalizeUsername(input.username);
-  // Onboarding sets the ONE ID once; running it again can't swap it.
+  // Onboarding sets the One ID once; running it again can't swap it.
   if (
     account.account_type_selected &&
     account.username &&
@@ -549,7 +549,7 @@ async function findWalletByUsername(username: string) {
     .ilike("username", handle)
     .maybeSingle();
   if (error) {
-    throw new Error(readAccountDbError(error, "Could not look up that ONE ID."));
+    throw new Error(readAccountDbError(error, "Could not look up that One ID."));
   }
   return (data as { username: string; wallet_address: string } | null) ?? null;
 }
@@ -759,7 +759,7 @@ export async function createInvoice(input: {
   if (customerUsername) {
     const found = await findWalletByUsername(customerUsername);
     if (!found) {
-      throw accountErrors.invalid("That ONE ID was not found.");
+      throw accountErrors.invalid("That One ID was not found.");
     }
   }
   const origin = input.origin?.replace(/\/$/, "") ?? "";
@@ -909,7 +909,7 @@ export async function updateInvoice(input: {
   if (customerUsername) {
     const found = await findWalletByUsername(customerUsername);
     if (!found) {
-      throw accountErrors.invalid("That ONE ID was not found.");
+      throw accountErrors.invalid("That One ID was not found.");
     }
   }
   const supabase = accountDb();

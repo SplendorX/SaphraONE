@@ -21,7 +21,7 @@ export type ResolvedPerson = {
 };
 
 /**
- * A ONE ID field (amara.one) that works like BulkPay's: people are suggested
+ * A One ID field (amara.one) that works like BulkPay's: people are suggested
  * as you type, the username is looked up, and the line underneath says
  * exactly who (and which wallet) it is. `allowAddress` also accepts a pasted
  * 0x wallet.
@@ -69,7 +69,7 @@ export function UsernameField({
     }
     if (looksLikeAddress && !allowAddress) {
       setResolving(false);
-      setResolveError("Enter a ONE ID, not a wallet address.");
+      setResolveError("Enter a One ID, not a wallet address.");
       return;
     }
     let cancelled = false;
@@ -156,7 +156,7 @@ export function UsernameField({
             onChange(event.target.value.replace(/\s/g, "").replace(/^@+/, "").replace(/\.one$/i, ""))
           }
           onFocus={() => setFocused(true)}
-          placeholder={placeholder ?? (allowAddress ? "ONE ID or 0x…" : "ONE ID")}
+          placeholder={placeholder ?? (allowAddress ? "One ID or 0x…" : "One ID")}
           spellCheck={false}
           value={value}
         />

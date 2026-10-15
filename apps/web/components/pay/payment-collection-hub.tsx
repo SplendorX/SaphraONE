@@ -246,7 +246,7 @@ export function PaymentCollectionHub({
   const normalizedShareUsername = normalizeUsername(shareUsername);
   const shareUsernameError = normalizedShareUsername
     ? validateUsername(normalizedShareUsername)
-    : "Enter a ONE ID.";
+    : "Enter a One ID.";
   const canGenerateLink = Boolean(
     origin && isWalletValid && isAmountValid && isConnected,
   );

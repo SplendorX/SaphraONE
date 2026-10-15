@@ -1,4 +1,4 @@
-/* The shared ONE ID field. Its own file (not globals.css), so the build cache can't serve a stale copy. */
+/* The shared One ID field. Its own file (not globals.css), so the build cache can't serve a stale copy. */
 
 .uf {
   position: relative;
@@ -90,7 +90,7 @@
   object-fit: cover;
 }
 
-/* The fixed ".one" after a typed ONE ID: amara → amara.one. */
+/* The fixed ".one" after a typed One ID: amara → amara.one. */
 .uf-suffix {
   margin-left: -0.5rem;
   flex-shrink: 0;

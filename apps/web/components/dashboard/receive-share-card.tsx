@@ -192,11 +192,11 @@ export function ReceiveShareCard({
       {username ? (
         <div className="rx-tile">
           <span className="rx-tile-main">
-            <span className="rx-label">ONE ID</span>
+            <span className="rx-label">One ID</span>
             <span className="rx-value">{formatUsernameLabel(username)}</span>
           </span>
           <button
-            aria-label={copied === "username" ? "ONE ID copied" : "Copy ONE ID"}
+            aria-label={copied === "username" ? "One ID copied" : "Copy One ID"}
             className="rx-copy"
             onClick={() => void copy("username", formatUsernameLabel(username))}
             type="button"
@@ -207,8 +207,8 @@ export function ReceiveShareCard({
       ) : (
         <Link className="rx-tile rx-tile-link" href="/settings">
           <span className="rx-tile-main">
-            <span className="rx-label">ONE ID</span>
-            <span className="rx-value">Claim your ONE ID so people can pay you by name</span>
+            <span className="rx-label">One ID</span>
+            <span className="rx-value">Claim your One ID so people can pay you by name</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </Link>

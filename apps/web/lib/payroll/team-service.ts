@@ -68,7 +68,7 @@ export async function resolveDestination(input: {
   if (input.paymentDestinationType === "SWIFTPAY_USER") {
     const raw = (input.saphraUsername ?? "").trim().replace(/^@+/, "").replace(/\.one$/i, "");
     if (!raw) {
-      throw payrollErrors.invalidDestination("Enter a ONE ID.");
+      throw payrollErrors.invalidDestination("Enter a One ID.");
     }
     const profile = await findProfileByUsernameServer(raw);
     if (!profile || !isAddress(profile.wallet_address)) {

@@ -415,7 +415,7 @@ export const BatchPeopleComposer = forwardRef<
                           amountRefs.current[row.id]?.focus();
                         }
                       }}
-                      placeholder="ONE ID or 0x…"
+                      placeholder="One ID or 0x…"
                       spellCheck={false}
                       value={row.query}
                     />
@@ -585,7 +585,7 @@ export const BatchPeopleComposer = forwardRef<
       ) : (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Search className="h-4 w-4" />
-          Type a ONE ID like amara.one, or paste a 0x… wallet address, to get started.
+          Type a One ID like amara.one, or paste a 0x… wallet address, to get started.
         </div>
       )}
 

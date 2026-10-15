@@ -78,9 +78,9 @@ ${signOff}`,
 
 export function sendDeletionCompleted(to: string, key: string) {
   const html = brandedEmail({
-    body: `${paragraph("Your SaphraONE account has been deleted. Your profile, contacts, security settings and preferences have been erased. Your ONE ID is held for 12 months so no one else can take it, then it's released.")}
+    body: `${paragraph("Your SaphraONE account has been deleted. Your profile, contacts, security settings and preferences have been erased. Your One ID is held for 12 months so no one else can take it, then it's released.")}
 ${paragraph("We keep records of past transactions where the law requires it, no longer linked to your name, email or phone. Your wallet and anything in it remain yours on the blockchain.")}
-${paragraph("If you sign in again with the same Google account or email, you'll start a new, empty SaphraONE account, and you can have your old ONE ID back if it's still on hold.")}
+${paragraph("If you sign in again with the same Google account or email, you'll start a new, empty SaphraONE account, and you can have your old One ID back if it's still on hold.")}
 ${paragraph("Thank you for using SaphraONE.")}
 ${signOff}`,
     preheader: "Your account and personal data have been erased.",

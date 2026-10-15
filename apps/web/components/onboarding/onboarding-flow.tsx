@@ -332,8 +332,8 @@ export function OnboardingFlow() {
     {
       body:
         kind === "business"
-          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your ONE ID."
-          : "Your ONE ID is how people pay you instead of a long address. Choose it carefully: it's yours for good.",
+          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your One ID."
+          : "Your One ID is how people pay you instead of a long address. Choose it carefully: it's yours for good.",
       label: "Profile",
       scene: (
         <ProfileScene
@@ -344,7 +344,7 @@ export function OnboardingFlow() {
           username={username}
         />
       ),
-      title: kind === "business" ? "Put your business on the map." : "Claim your ONE ID.",
+      title: kind === "business" ? "Put your business on the map." : "Claim your One ID.",
     },
     {
       body: "A PIN, plus Face ID or fingerprint where your phone has it. Even with your phone in hand, no one else gets in.",
@@ -508,7 +508,9 @@ export function OnboardingFlow() {
             suggestion={suggestedUsername}
           />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
-          <p className="mt-1 text-xs text-muted-foreground">Your ONE ID is permanent once you continue. Only our team can change it later.</p>
+          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+            Choose carefully: you can&apos;t change your One ID after you continue.
+          </p>
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -567,7 +569,9 @@ export function OnboardingFlow() {
             suggestion={suggestedUsername}
           />
           <UsernameStatus check={usernameCheck} formatError={usernameError} />
-          <p className="mt-1 text-xs text-muted-foreground">Your ONE ID is permanent once you continue. Only our team can change it later.</p>
+          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+            Choose carefully: you can&apos;t change your One ID after you continue.
+          </p>
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect

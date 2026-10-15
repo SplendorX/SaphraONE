@@ -179,7 +179,7 @@ export function LandingPage() {
         </Stagger>
       </section>
 
-      {/* ── ONE ID ── */}
+      {/* ── One ID ── */}
       <OneIdShowcase />
 
       {/* ── The platform ── */}

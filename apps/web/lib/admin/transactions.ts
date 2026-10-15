@@ -2,6 +2,7 @@
 // transaction ledger (transaction-ledger.sql).
 import { isAddress } from "viem";
 
+import { adminTableError } from "@/lib/admin/team";
 import { AdminUserError } from "@/lib/admin/users";
 import { formatUsernameLabel, normalizeUsername } from "@/lib/profile-utils";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
@@ -42,7 +43,7 @@ type LedgerRow = {
   wallet_address: string;
 };
 
-/** A ONE ID or wallet as the wallet to filter on. */
+/** A One ID or wallet as the wallet to filter on. */
 async function walletFor(account: string) {
   const value = account.trim();
   if (isAddress(value)) return value.toLowerCase();
@@ -52,7 +53,7 @@ async function walletFor(account: string) {
     .eq("username", normalizeUsername(value))
     .maybeSingle();
   const wallet = (data as { wallet_address?: string } | null)?.wallet_address;
-  if (!wallet) throw new AdminUserError("No account has that ONE ID.", 404);
+  if (!wallet) throw new AdminUserError("No account has that One ID.", 404);
   return wallet.toLowerCase();
 }
 
@@ -92,7 +93,7 @@ export async function listLedger(filters: LedgerFilters) {
         : null;
   const shown = filters.flaggedOnly ? rows.filter((row) => flagOf(row)) : rows;
 
-  // ONE IDs for the wallets on screen.
+  // One IDs for the wallets on screen.
   const wallets = [...new Set(shown.map((row) => row.wallet_address.toLowerCase()))];
   const names = new Map<string, string>();
   if (wallets.length) {
@@ -156,13 +157,6 @@ export async function listAuditLog(filters: { target?: string | null } = {}) {
     .limit(200);
   if (filters.target?.trim()) query = query.eq("target", filters.target.trim().toLowerCase());
   const { data, error } = await query;
-  if (error) {
-    throw new AdminUserError(
-      /admin_audit_log|relation|does not exist/i.test(error.message)
-        ? "Run packages/database/supabase/admin-platform.sql in Supabase first."
-        : error.message,
-      409,
-    );
-  }
+  if (error) throw adminTableError(error);
   return data ?? [];
 }

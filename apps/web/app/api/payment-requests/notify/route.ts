@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!recipient?.wallet_address) {
-      return jsonError("That ONE ID was not found.", 404);
+      return jsonError("That One ID was not found.", 404);
     }
 
     if (recipient.wallet_address.toLowerCase() === fromWallet) {

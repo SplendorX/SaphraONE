@@ -17,7 +17,7 @@ function searchTerm(query: string) {
   return normalizeUsername(value);
 }
 
-/** Exact ONE ID first, then names that start with what was typed. */
+/** Exact One ID first, then names that start with what was typed. */
 function rank(hit: DirectoryHit, term: string) {
   const username = hit.username.toLowerCase();
   const name = hit.displayName.toLowerCase();
@@ -28,7 +28,7 @@ function rank(hit: DirectoryHit, term: string) {
 }
 
 /**
- * People whose ONE ID or name matches what's being typed into a pay field,
+ * People whose One ID or name matches what's being typed into a pay field,
  * each shown complete as `amara.one`, ready to tap. Sits under the field
  * (the parent is `position: relative`); hidden once the field holds exactly
  * one of them, or a 0x address.

@@ -229,7 +229,7 @@ export function AddTeamMemberModal({
                 <AtSign className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <p className="text-sm font-semibold">SaphraONE User</p>
-                  <p className="text-xs text-muted-foreground">Pay via ONE ID</p>
+                  <p className="text-xs text-muted-foreground">Pay via One ID</p>
                 </div>
               </button>
               <button
@@ -421,7 +421,7 @@ export function AddTeamMemberModal({
                 }
                 if (step === 2) {
                   if (destinationType === "SWIFTPAY_USER" && !saphraUsername.trim()) {
-                    setError("Please enter their ONE ID.");
+                    setError("Please enter their One ID.");
                     return;
                   }
                   if (destinationType === "EXTERNAL_WALLET" && !walletAddress.trim()) {

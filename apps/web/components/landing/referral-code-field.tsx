@@ -73,7 +73,7 @@ export function ReferralCodeField() {
           setCode(next);
           storeCode(next);
         }}
-        placeholder="Your friend's ONE ID"
+        placeholder="Your friend's One ID"
         spellCheck={false}
         value={code}
       />
