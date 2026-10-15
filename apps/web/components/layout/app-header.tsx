@@ -23,11 +23,11 @@ export function AppHeader({ actions, className }: AppHeaderProps) {
   return (
     <header className={cn("app-topbar w-full min-w-0", !onDashboard && "max-md:hidden", className)}>
       <div className="app-topbar-inner">
-        {/* Phones and tablets: the menu button leads, and the brand moves into
-            the drawer. Desktop keeps the logo here. */}
+        {/* The brand leads on every screen. Phones and tablets navigate with
+            the tab bar; its More button opens this drawer as a sheet. */}
         <div className="flex items-center gap-2 sm:gap-3">
           <PlatformNavDrawer />
-          <div className="hidden lg:flex">
+          <div className="app-topbar-brand flex">
             <SidebarBrand />
           </div>
         </div>

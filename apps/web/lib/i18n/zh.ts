@@ -57,6 +57,8 @@ export const zh: Messages = {
     until: "至",
   },
   nav: {
+    home: "首页",
+    more: "更多",
     dashboard: "仪表盘",
     overview: "总览",
     invoices: "发票",

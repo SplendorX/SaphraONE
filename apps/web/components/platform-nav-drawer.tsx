@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, MessageCircle, Menu, X } from "lucide-react";
+import { ChevronRight, MessageCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -14,13 +14,22 @@ import { navLabelKeys } from "@/lib/i18n";
 import { openSupport } from "@/lib/support/client";
 import { cn } from "@/lib/utils";
 
+import "./layout/mobile-app.css";
+
 const shouldPrefetchPlatformRoutes = process.env.NODE_ENV === "production";
 
+const openNavEvent = "saphra:open-nav";
+
+/** Opens the navigation sheet. The tab bar's More button calls this. */
+export function openPlatformNav() {
+  window.dispatchEvent(new Event(openNavEvent));
+}
+
 /**
- * The phone and tablet navigation: a menu button on the left of the top bar
- * that slides a floating panel in from the side. The panel is portalled to
- * the page body — the top bar's backdrop blur would otherwise make it the
- * containing block for `position: fixed`, trapping the drawer inside it.
+ * The phone and tablet navigation: every place in SaphraONE, opened from the
+ * tab bar's More button as a sheet that rises from the bottom. The panel is
+ * portalled to the page body — the top bar's backdrop blur would otherwise
+ * make it the containing block for `position: fixed`, trapping it inside.
  */
 export function PlatformNavDrawer() {
   const pathname = usePathname();
@@ -33,6 +42,12 @@ export function PlatformNavDrawer() {
   const items = platformNavItems.filter((item) => !item.businessOnly || Boolean(accountContext?.isBusiness));
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const open = () => setOpen(true);
+    window.addEventListener(openNavEvent, open);
+    return () => window.removeEventListener(openNavEvent, open);
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -69,7 +84,7 @@ export function PlatformNavDrawer() {
         inert={!open}
         role="dialog"
       >
-        <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-4">
+        <div className="nav-drawer-head flex items-center justify-between gap-3 px-4 pb-3 pt-4">
           <Link aria-label="SaphraONE home" className="rounded-lg" href="/dashboard" onClick={() => setOpen(false)}>
             <PlatformWordmark />
           </Link>
@@ -84,11 +99,11 @@ export function PlatformNavDrawer() {
           </button>
         </div>
 
-        <div className="mx-4 h-px bg-border" />
+        <div className="nav-drawer-rule mx-4 h-px bg-border" />
 
         <nav aria-label={t("common.slideNav")} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
-          {/* A clear line between each row. */}
-          <ul className="grid divide-y divide-foreground/10">
+          {/* A clear line between each row; on phones, a grid of tiles. */}
+          <ul className="nav-drawer-list grid divide-y divide-foreground/10">
             {items.map((item, index) => {
               const isActive =
                 pathname === item.href || (item.href !== "/business" && pathname.startsWith(`${item.href}/`));
@@ -104,7 +119,7 @@ export function PlatformNavDrawer() {
                   <Link
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.985]",
+                      "nav-drawer-link group flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-[0.985]",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -113,13 +128,15 @@ export function PlatformNavDrawer() {
                     onClick={() => setOpen(false)}
                     prefetch={shouldPrefetchPlatformRoutes}
                   >
-                    <span className="inline-flex min-w-0 items-center gap-3">
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{labelKey ? t(labelKey) : item.label}</span>
+                    <span className="nav-drawer-link-main inline-flex min-w-0 items-center gap-3">
+                      <span className="nav-drawer-icon">
+                        <Icon className="h-4 w-4 shrink-0" />
+                      </span>
+                      <span className="nav-drawer-label truncate">{labelKey ? t(labelKey) : item.label}</span>
                     </span>
                     <ChevronRight
                       className={cn(
-                        "h-4 w-4 shrink-0 transition group-hover:translate-x-0.5",
+                        "nav-drawer-chevron h-4 w-4 shrink-0 transition group-hover:translate-x-0.5",
                         isActive ? "text-primary-foreground/70" : "text-muted-foreground/60",
                       )}
                     />
@@ -130,7 +147,7 @@ export function PlatformNavDrawer() {
           </ul>
         </nav>
 
-        <div className="border-t border-border p-3">
+        <div className="nav-drawer-footer border-t border-border p-3">
           {/* Opens the Support panel (a bottom sheet on phones), not a page. */}
           <button
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
@@ -148,25 +165,5 @@ export function PlatformNavDrawer() {
     </div>
   );
 
-  return (
-    <>
-      <button
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label={t("common.openNav")}
-        className={cn(
-          "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border shadow-sm transition lg:hidden",
-          open
-            ? "border-primary/40 bg-primary/10 text-primary"
-            : "border-border/80 bg-background/70 text-foreground hover:border-primary/30",
-        )}
-        onClick={() => setOpen(true)}
-        title={t("common.navigation")}
-        type="button"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-      {mounted ? createPortal(drawer, document.body) : null}
-    </>
-  );
+  return mounted ? createPortal(drawer, document.body) : null;
 }

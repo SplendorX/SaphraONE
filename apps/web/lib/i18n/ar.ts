@@ -57,6 +57,8 @@ export const ar: Messages = {
     until: "حتى",
   },
   nav: {
+    home: "الرئيسية",
+    more: "المزيد",
     dashboard: "لوحة التحكم",
     overview: "نظرة عامة",
     invoices: "الفواتير",

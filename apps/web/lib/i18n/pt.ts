@@ -57,6 +57,8 @@ export const pt: Messages = {
     until: "Até",
   },
   nav: {
+    home: "Início",
+    more: "Mais",
     dashboard: "Painel",
     overview: "Visão geral",
     invoices: "Faturas",

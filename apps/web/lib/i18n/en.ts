@@ -55,6 +55,8 @@ export const en = {
     until: "Until",
   },
   nav: {
+    home: "Home",
+    more: "More",
     dashboard: "Dashboard",
     overview: "Overview",
     invoices: "Invoices",

@@ -57,6 +57,8 @@ export const es: Messages = {
     until: "Hasta",
   },
   nav: {
+    home: "Inicio",
+    more: "Más",
     dashboard: "Panel",
     overview: "Resumen",
     invoices: "Facturas",

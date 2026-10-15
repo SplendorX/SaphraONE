@@ -57,6 +57,8 @@ export const fr: Messages = {
     until: "Jusqu’à",
   },
   nav: {
+    home: "Accueil",
+    more: "Plus",
     dashboard: "Tableau de bord",
     overview: "Aperçu",
     invoices: "Factures",

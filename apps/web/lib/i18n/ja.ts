@@ -57,6 +57,8 @@ export const ja: Messages = {
     until: "終了",
   },
   nav: {
+    home: "ホーム",
+    more: "その他",
     dashboard: "ダッシュボード",
     overview: "概要",
     invoices: "請求書",

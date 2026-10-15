@@ -57,6 +57,8 @@ export const ko: Messages = {
     until: "종료",
   },
   nav: {
+    home: "홈",
+    more: "더보기",
     dashboard: "대시보드",
     overview: "개요",
     invoices: "인보이스",

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { OnboardingRedirect } from "@/components/business/workspace-provider";
 import { AppFrame } from "@/components/layout/app-frame";
 import { AppHeader } from "@/components/layout/app-header";
+import { isTabRoot, MobileTabBar, showsMobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { useT } from "@/components/locale-provider";
 import { pageCopyForPath } from "@/lib/i18n";
@@ -35,12 +36,17 @@ export function PlatformChrome({
   const copy = pageCopyForPath(pathname);
   const resolvedTitle = copy ? t(copy.title) : title;
   const resolvedSubtitle = copy?.subtitle ? t(copy.subtitle) : subtitle;
+  const tabBar = showsMobileTabBar(pathname);
 
   return (
     <>
       <OnboardingRedirect />
       <SidebarProvider>
-        <div className="platform-shell w-full min-w-0 bg-background">
+        <div
+          className="platform-shell w-full min-w-0 bg-background"
+          data-tab-root={tabBar && isTabRoot(pathname) ? "" : undefined}
+          data-tabbar={tabBar ? "" : undefined}
+        >
           <AppHeader actions={actions} />
           <AppFrame
             backHref={backHref}
@@ -51,6 +57,7 @@ export function PlatformChrome({
           >
             {children}
           </AppFrame>
+          {tabBar ? <MobileTabBar /> : null}
         </div>
       </SidebarProvider>
     </>

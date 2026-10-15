@@ -108,6 +108,9 @@ export const metadata: Metadata = {
 
 /** Browser and status-bar colour, matching the app's light and dark surfaces. */
 export const viewport: Viewport = {
+  // Fill the whole screen; the tab bar and sheets clear the home indicator
+  // with env(safe-area-inset-bottom).
+  viewportFit: "cover",
   themeColor: [
     { color: "#ffffff", media: "(prefers-color-scheme: light)" },
     { color: "#080609", media: "(prefers-color-scheme: dark)" },
