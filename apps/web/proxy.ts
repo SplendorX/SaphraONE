@@ -18,6 +18,7 @@ const protectedRouteMatchers = [
   "/swap",
   "/bulkpay",
   "/recurepay",
+  "/withdraw",
 ];
 
 /** Called server-to-server by Circle; they carry no browser session. */
@@ -25,6 +26,7 @@ const crossSiteExemptApiPrefixes = [
   "/api/circles/webhooks/",
   "/api/multichain/webhooks/",
   "/api/recurring/webhooks/",
+  "/api/ramp/webhooks/",
 ];
 
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -173,5 +175,6 @@ export const config = {
     "/swap/:path*",
     "/bulkpay/:path*",
     "/recurepay/:path*",
+    "/withdraw/:path*",
   ],
 };

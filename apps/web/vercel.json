@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/account-deletion",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/ramp",
+      "schedule": "0 17 * * *"
     }
   ]
 }
