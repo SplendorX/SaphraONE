@@ -14,7 +14,7 @@ import { useState, type ReactNode } from "react";
 import { cookieToInitialState, WagmiProvider } from "wagmi";
 
 import { AccountProvider } from "@/components/account/account-provider";
-import { AllieLauncher } from "@/components/allie/AllieLauncher";
+import { AllieLauncherSlot } from "@/components/allie/allie-launcher-slot";
 import { WorkspaceProvider } from "@/components/business/workspace-provider";
 import { LocaleProvider } from "@/components/locale-provider";
 import { PlatformAccessProvider } from "@/components/platform-access-gate";
@@ -63,7 +63,7 @@ export function Providers({
                   <WalletSessionBootstrap />
                   <WalletDisconnectRedirect />
                   {children}
-                  <AllieLauncher />
+                  <AllieLauncherSlot />
                   <ServiceWorkerRegistrar />
                   <WalletChainSync />
                   <WalletRequestDeepLink />

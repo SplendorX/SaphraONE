@@ -19,6 +19,7 @@ import { FeatureStories } from "@/components/landing/feature-stories";
 import { HeroWelcome } from "@/components/landing/hero-welcome";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
+import { LazyPhoto } from "@/components/landing/lazy-photo";
 import { OneIdShowcase } from "@/components/landing/one-id-showcase";
 import { ProductShowcase } from "@/components/landing/product-showcase";
 import { SecuritySection } from "@/components/landing/security-section";
@@ -143,6 +144,7 @@ export function LandingPage() {
           mobileSrc="/video/hero-bg-mobile.mp4?v=2"
           poster="/video/hero-bg-poster.jpg?v=2"
           position="60% center"
+          priority
           src="/video/hero-bg.mp4?v=2"
         />
         <HeroWelcome />
@@ -290,8 +292,7 @@ export function LandingPage() {
             </LaunchAppLink>
           </div>
           <div className="lp-cta-media">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={t("landing.home.ctaImageAlt")} draggable={false} src="/landing/pay-laptop.jpg" />
+            <LazyPhoto alt={t("landing.home.ctaImageAlt")} height={1067} src="/landing/pay-laptop.jpg" width={1600} />
           </div>
         </div>
       </section>
