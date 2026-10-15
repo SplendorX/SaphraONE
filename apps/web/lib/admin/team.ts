@@ -13,11 +13,26 @@ function db() {
   return createSupabaseAdminClient();
 }
 
-/** The table arrives with admin-platform.sql; say so rather than failing vaguely. */
-function tableError(message: string) {
-  return /admin_members|relation|does not exist/i.test(message)
-    ? new AdminUserError("Run packages/database/supabase/admin-platform.sql in Supabase first.", 409)
-    : new Error(message);
+/**
+ * A missing admin table (admin-platform.sql not run, or the API's schema
+ * cache not reloaded since) gets that advice; any other database error is
+ * shown as it is, so it isn't mistaken for a missing migration.
+ */
+export function adminTableError(error: { code?: string; message: string }) {
+  const missing =
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /could not find the table|does not exist/i.test(error.message);
+  return missing
+    ? new AdminUserError(
+        "The admin tables aren't visible yet. Run packages/database/supabase/admin-platform.sql in Supabase (it ends by reloading the schema cache), then refresh.",
+        409,
+      )
+    : new AdminUserError(`Database error: ${error.message}`, 500);
+}
+
+function tableError(error: { code?: string; message: string }) {
+  return adminTableError(error);
 }
 
 /** Only tools a member can be given; owners get everything anyway. */
@@ -30,11 +45,11 @@ function cleanTools(value: unknown) {
 
 export async function listAdminMembers() {
   const { data, error } = await db().from(adminMembersTable).select("*").order("created_at");
-  if (error) throw tableError(error.message);
+  if (error) throw tableError(error);
   return (data ?? []) as AdminMemberRow[];
 }
 
-/** A ONE ID (amara.one / @amara / amara) or a wallet, as the account it names. */
+/** A One ID (amara.one / @amara / amara) or a wallet, as the account it names. */
 async function resolveAccount(identifier: string) {
   const value = identifier.trim();
   const query = db().from(profilesTable).select("wallet_address, username, display_name");
@@ -44,7 +59,7 @@ async function resolveAccount(identifier: string) {
   ).maybeSingle();
   if (error) throw new Error(error.message);
   const row = data as { display_name?: string | null; username?: string | null; wallet_address: string } | null;
-  if (!row) throw new AdminUserError("No SaphraONE account has that ONE ID or wallet.", 404);
+  if (!row) throw new AdminUserError("No SaphraONE account has that One ID or wallet.", 404);
   return {
     label: row.username ? formatUsernameLabel(row.username) : row.display_name || row.wallet_address,
     wallet: row.wallet_address.toLowerCase(),
@@ -75,7 +90,7 @@ export async function addAdminMember(input: {
     )
     .select("*")
     .single();
-  if (error) throw tableError(error.message);
+  if (error) throw tableError(error);
   return data as AdminMemberRow;
 }
 
@@ -109,7 +124,7 @@ export async function updateAdminMember(
     .eq("wallet_address", lower)
     .select("*")
     .maybeSingle();
-  if (error) throw tableError(error.message);
+  if (error) throw tableError(error);
   if (!data) throw new AdminUserError("That person isn't on the team.", 404);
   return data as AdminMemberRow;
 }
@@ -121,5 +136,5 @@ export async function removeAdminMember(wallet: string) {
     throw new AdminUserError("Keep at least one owner who can sign in (the owner key still works).");
   }
   const { error } = await db().from(adminMembersTable).delete().eq("wallet_address", lower);
-  if (error) throw tableError(error.message);
+  if (error) throw tableError(error);
 }
