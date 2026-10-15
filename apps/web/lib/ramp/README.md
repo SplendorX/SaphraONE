@@ -6,7 +6,8 @@ Naira on-ramp (bank transfer → USDC on Arc) and off-ramp (USDC on Arc → Nige
 
 - Docs index: https://c-vmch.readme.io/llms.txt
 - Base URL `https://api.centiiv.io` (staging `https://api.staging.centiiv.io`).
-- Auth: `x-api-key` with **Protocol API** keys. `CENTIIV_API_KEY` holds the secret `sk_sandbox_…` / `sk_live_…` key, used for orders and banking. `CENTIIV_PUBLIC_KEY` holds `pk_sandbox_…` / `pk_live_…`, which `/public/quote` requires: Centiiv answers 401 "Public API endpoints require a public key" to anything else. Both stay server-side. We also send `X-Environment` and `X-Platform: swiftpay-web`.
+- Auth: `x-api-key` with the **Protocol API public key** (`CENTIIV_PUBLIC_KEY` = `pk_sandbox_…` / `pk_live_…`). Checked against the sandbox on 2026-10-15: quote, create and get request, banks and verify-account all accept only `pk_`. A secret `sk_` key gets 403 "Secret keys (sk_*) cannot be used for public API endpoints". We still keep the key server-side, and also send `X-Environment` and `X-Platform: swiftpay-web`.
+- Rates: `rate` is "to per from", so an on-ramp quote gives USDC per NGN (0.00073) and an off-ramp quote gives NGN per USDC (1356). The app shows NGN per USDC (`nairaPerUsdc`). Bank and verify responses come wrapped as `{ success, data }`.
 - `cnt-test_…` / `cnt-live_…` keys belong to Centiiv's separate **Payment API** and are rejected by the Protocol API (checked 2026-10-15).
 - `network: "ARC"` on every quote and request. Assets `NGN` and `USDC`.
 - A request expires after 30 minutes with no deposit. Treat the off-ramp deposit as exact-amount.

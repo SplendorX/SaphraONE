@@ -3,10 +3,12 @@ import { isArcMainnet } from "@/lib/network";
 import type { RampCurrency, RampEnvironment } from "@/lib/ramp/types";
 
 export type CentiivConfig = {
-  /** Secret key (sk_…): orders and banking. Server-only. */
+  /**
+   * The Protocol API public key (pk_…). Centiiv's aggregator endpoints
+   * (quotes, orders, banking) accept only this key; secret sk_ keys get a 403.
+   * Kept server-side all the same.
+   */
   apiKey: string;
-  /** Public key (pk_…): Centiiv's /public/* endpoints (quotes) require it. */
-  publicKey: string | null;
   baseUrl: string;
   webhookSecret: string | null;
   environment: RampEnvironment;
@@ -39,34 +41,36 @@ export function keyEnvironment(apiKey: string): RampEnvironment | null {
  * never meet testnet addresses.
  */
 export function centiivConfig(): CentiivConfig | null {
-  const apiKey = process.env.CENTIIV_API_KEY?.trim();
-  if (!apiKey) return null;
-
-  const environment = keyEnvironment(apiKey);
-  if (!environment || !/^sk_/i.test(apiKey)) {
-    warnOnce(
-      /^cnt-/i.test(apiKey)
-        ? "CENTIIV_API_KEY is a Payment API key (cnt-…). The ramp needs Protocol API keys: sk_sandbox_… / sk_live_… here and pk_… in CENTIIV_PUBLIC_KEY. The ramp is off."
-        : "CENTIIV_API_KEY must be a Protocol API secret key (sk_sandbox_… or sk_live_…); the ramp is off.",
-    );
+  const publicKey = process.env.CENTIIV_PUBLIC_KEY?.trim();
+  const secretOrOther = process.env.CENTIIV_API_KEY?.trim();
+  // CENTIIV_API_KEY may hold the pk_ key too; an sk_ key there can't be used.
+  const apiKey = publicKey || (secretOrOther && /^pk_/i.test(secretOrOther) ? secretOrOther : null);
+  if (!apiKey) {
+    if (secretOrOther) {
+      warnOnce(
+        /^cnt-/i.test(secretOrOther)
+          ? "CENTIIV_API_KEY is a Payment API key (cnt-…); the ramp needs the Protocol API public key in CENTIIV_PUBLIC_KEY (pk_sandbox_… / pk_live_…). The ramp is off."
+          : "Set CENTIIV_PUBLIC_KEY to your Protocol API public key (pk_sandbox_… / pk_live_…): Centiiv's quote, order and banking endpoints reject secret sk_ keys. The ramp is off.",
+      );
+    }
     return null;
   }
-  const publicKey = process.env.CENTIIV_PUBLIC_KEY?.trim() || null;
-  if (publicKey && (!/^pk_/i.test(publicKey) || keyEnvironment(publicKey) !== environment)) {
-    warnOnce(`CENTIIV_PUBLIC_KEY must be a ${environment === "LIVE" ? "pk_live_" : "pk_sandbox_"}… key; the ramp is off.`);
+
+  const environment = keyEnvironment(apiKey);
+  if (!environment || !/^pk_/i.test(apiKey)) {
+    warnOnce("CENTIIV_PUBLIC_KEY must be a Protocol API public key (pk_sandbox_… or pk_live_…); the ramp is off.");
     return null;
   }
   const mainnet = isArcMainnet();
   if ((environment === "LIVE") !== mainnet) {
     warnOnce(
-      `CENTIIV_API_KEY is a ${environment.toLowerCase()} key on an Arc ${mainnet ? "mainnet" : "testnet"} build; the ramp is off.`,
+      `The Centiiv key is a ${environment.toLowerCase()} key on an Arc ${mainnet ? "mainnet" : "testnet"} build; the ramp is off.`,
     );
     return null;
   }
 
   return {
     apiKey,
-    publicKey,
     baseUrl: (process.env.CENTIIV_API_BASE_URL?.trim() || "https://api.centiiv.io").replace(/\/$/, ""),
     webhookSecret: process.env.CENTIIV_WEBHOOK_SECRET?.trim() || null,
     environment,

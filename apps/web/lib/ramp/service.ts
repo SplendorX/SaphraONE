@@ -99,8 +99,18 @@ export function rampStatus(): RampStatusInfo {
 
 // ── Quotes ──────────────────────────────────────────────────────────────
 
+/**
+ * Centiiv's `rate` is "to per from": USDC per NGN on an on-ramp (0.00073),
+ * NGN per USDC on an off-ramp (1356). The app always shows NGN per USDC.
+ */
+export function nairaPerUsdc(rate: unknown): string | null {
+  const value = Number(rate);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return decimalText(value < 1 ? 1 / value : value, 2);
+}
+
 function quoteView(quote: CentiivQuote): RampQuote | null {
-  const rate = decimalText(quote.rate, 2);
+  const rate = nairaPerUsdc(quote.rate);
   const fees = decimalText(quote.fees, 6);
   const receive = decimalText(quote.estimatedReceivableAmount, 6);
   const totalToPay = decimalText(quote.totalToPay, 6);

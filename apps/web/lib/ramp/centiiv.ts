@@ -31,12 +31,11 @@ async function call<T>(
   config: CentiivConfig,
   method: "GET" | "POST",
   path: string,
-  options: { body?: unknown; idempotencyKey?: string; publicKey?: boolean } = {},
+  options: { body?: unknown; idempotencyKey?: string } = {},
 ): Promise<CentiivResult<T>> {
   const headers: Record<string, string> = {
     accept: "application/json",
-    // Centiiv's /public/* endpoints only take the public key.
-    "x-api-key": options.publicKey && config.publicKey ? config.publicKey : config.apiKey,
+    "x-api-key": config.apiKey,
     "X-Environment": config.environment === "LIVE" ? "live" : "sandbox",
     "X-Platform": "swiftpay-web",
   };
@@ -71,14 +70,17 @@ async function call<T>(
       text(details.message) ?? "",
       text(details.requestId) ?? "",
       response.status === 401 || response.status === 403
-        ? "(check CENTIIV_API_KEY = sk_… and CENTIIV_PUBLIC_KEY = pk_… are Protocol API keys)"
+        ? "(check CENTIIV_PUBLIC_KEY is the Protocol API pk_sandbox_… / pk_live_… key)"
         : "",
     );
     const readable = response.status === 400 || response.status === 422;
+    // "Validation failed" carries the useful part in details[].
+    const detail = Array.isArray(details.details) ? text(details.details[0]) : null;
+    const message = /^validation failed$/i.test(text(details.message) ?? "") && detail ? detail : details.message;
     return {
       ok: false,
       status: response.status,
-      message: readable ? displayMessage(details.message, GENERIC_MESSAGE) : GENERIC_MESSAGE,
+      message: readable ? displayMessage(message, GENERIC_MESSAGE) : GENERIC_MESSAGE,
     };
   }
 
@@ -94,7 +96,6 @@ export type QuoteInput = {
 export function getQuote(config: CentiivConfig, input: QuoteInput) {
   return call<CentiivQuote>(config, "POST", "/public/quote", {
     body: { ...input, network: "ARC" },
-    publicKey: true,
   });
 }
 
