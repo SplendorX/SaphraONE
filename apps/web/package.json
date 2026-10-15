@@ -36,7 +36,7 @@
     "test:circle-device": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/circle-device.test.mjs",
     "test:one-id": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/one-id.test.mjs",
     "test:admin": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/admin-tools.test.mjs",
-    "test:ramp": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/ramp/__tests__/rules.test.mjs lib/ramp/__tests__/centiiv-map.test.mjs lib/ramp/__tests__/webhook-signature.test.mjs",
+    "test:ramp": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/ramp/__tests__/rules.test.mjs lib/ramp/__tests__/centiiv-map.test.mjs lib/ramp/__tests__/webhook-signature.test.mjs lib/ramp/__tests__/verify.test.mjs",
     "test:allie": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/allie/__tests__/classifier.test.mjs lib/allie/__tests__/capabilities.test.mjs lib/allie/__tests__/agent-fees.test.mjs lib/allie/__tests__/business.test.mjs"
   },
   "dependencies": {
