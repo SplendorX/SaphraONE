@@ -41,13 +41,14 @@ function failureText(status: RampStatus, note: string | null) {
 
 export function payinFromRequest(request: Pick<CentiivRequest, "temporaryWallet">): PayinInstructions | null {
   const wallet = request.temporaryWallet;
-  const accountNumber = text(wallet?.virtualAccountNumber);
+  // The API returns accountNumber/accountName/…; the docs say virtualAccount…
+  const accountNumber = text(wallet?.accountNumber) ?? text(wallet?.virtualAccountNumber);
   if (!accountNumber) return null;
   return {
     accountNumber,
-    accountName: text(wallet?.virtualAccountName),
-    bankName: text(wallet?.virtualBankName),
-    bankCode: text(wallet?.virtualBankCode),
+    accountName: text(wallet?.accountName) ?? text(wallet?.virtualAccountName),
+    bankName: text(wallet?.bankName) ?? text(wallet?.virtualBankName),
+    bankCode: text(wallet?.bankCode) ?? text(wallet?.virtualBankCode),
   };
 }
 
@@ -71,16 +72,17 @@ export function mapRequestToPatch(request: CentiivRequest): RampOrderPatch {
   if (total) patch.total_to_pay = total;
 
   const type = (request.type ?? "").toUpperCase();
+  const expiresAt = text(request.temporaryWallet?.expiresAt);
   if (type === "ONRAMP") {
     const payin = payinFromRequest(request);
     if (payin) patch.payin_instructions = payin;
+    if (expiresAt && !Number.isNaN(Date.parse(expiresAt))) patch.deposit_expires_at = expiresAt;
     const delivery = pickDeliveryTx(request);
     if (delivery) {
       patch.delivery_tx_hash = delivery.hash;
       if (delivery.amount) patch.usdc_amount = delivery.amount;
     }
   } else if (type === "OFFRAMP") {
-    const expiresAt = text(request.temporaryWallet?.expiresAt);
     if (expiresAt && !Number.isNaN(Date.parse(expiresAt))) patch.deposit_expires_at = expiresAt;
   }
 

@@ -237,7 +237,7 @@ export async function createOnramp(input: { wallet: string; amountNgn: unknown; 
     payin_instructions: payin,
     total_to_pay: patch.total_to_pay ?? row.total_to_pay,
     status: nextStatus(row.status, patch.status ?? null),
-    deposit_expires_at: expiryFrom(result.data),
+    deposit_expires_at: patch.deposit_expires_at ?? expiryFrom(result.data),
     last_synced_at: new Date().toISOString(),
   });
   return orderView(updated ?? row);

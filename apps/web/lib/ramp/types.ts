@@ -129,6 +129,12 @@ export type ResolvedBankAccount = {
 // ── Centiiv Protocol payloads (only the fields SwiftPay reads) ─────────────
 
 export type CentiivTemporaryWallet = {
+  /** On-ramp bank account as the API returns it (sandbox, Oct 2026). */
+  accountNumber?: string | null;
+  accountName?: string | null;
+  bankName?: string | null;
+  bankCode?: string | null;
+  /** The same fields as the docs name them. */
   virtualAccountNumber?: string | null;
   virtualAccountName?: string | null;
   virtualBankName?: string | null;

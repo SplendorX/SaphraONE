@@ -40,6 +40,38 @@ describe("mapRequestToPatch", () => {
     });
   });
 
+  it("maps the on-ramp shape the sandbox actually returns", () => {
+    const patch = mapRequestToPatch({
+      id: "b633e1d6-e5a0-48d0-9a12-dbb3068d69cd",
+      status: "PENDING",
+      environment: "SANDBOX",
+      fromAsset: "NGN",
+      toAsset: "USDC",
+      amount: 5000,
+      totalToPay: 5000,
+      type: "ONRAMP",
+      beneficiary: { address: "0x000000000000000000000000000000000000dEaD", network: "ARC", isTestnet: true },
+      createdAt: "2026-10-15T21:09:03.891Z",
+      temporaryWallet: {
+        accountName: "CENTIIV/SaphraONE",
+        accountNumber: "5457663008",
+        bankCode: "090645",
+        bankName: "Nombank MFB",
+        expiresAt: "2026-10-15T21:54:03.943Z",
+      },
+      fulfillments: [{ amount: "5000" }],
+      adminNote: null,
+    });
+    assert.deepEqual(patch.payin_instructions, {
+      accountNumber: "5457663008",
+      accountName: "CENTIIV/SaphraONE",
+      bankName: "Nombank MFB",
+      bankCode: "090645",
+    });
+    assert.equal(patch.deposit_expires_at, "2026-10-15T21:54:03.943Z");
+    assert.equal(patch.total_to_pay, "5000");
+  });
+
   it("maps a new off-ramp's expiry but never its deposit address", () => {
     const patch = mapRequestToPatch({
       id: "req_off_1",
