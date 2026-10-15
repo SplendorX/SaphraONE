@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run typecheck && pnpm run test:save && pnpm run test:save-activity && pnpm run test:recurring && pnpm run test:circle && pnpm run test:payroll && pnpm run test:referral && pnpm run test:activity && pnpm run test:payment-engine && pnpm run test:fees && pnpm run test:account && pnpm run test:business-verification && pnpm run test:support && pnpm run test:allie && pnpm run test:checkout && pnpm run test:recurepay && pnpm run test:multichain && pnpm run test:tx-approval && pnpm run test:rewards && pnpm run test:ledger && pnpm run test:campaigns && pnpm run test:account-deletion && pnpm run test:circle-device && pnpm run test:one-id && pnpm run test:admin",
+    "test": "pnpm run typecheck && pnpm run test:save && pnpm run test:save-activity && pnpm run test:recurring && pnpm run test:circle && pnpm run test:payroll && pnpm run test:referral && pnpm run test:activity && pnpm run test:payment-engine && pnpm run test:fees && pnpm run test:account && pnpm run test:business-verification && pnpm run test:support && pnpm run test:allie && pnpm run test:checkout && pnpm run test:recurepay && pnpm run test:multichain && pnpm run test:tx-approval && pnpm run test:rewards && pnpm run test:ledger && pnpm run test:campaigns && pnpm run test:account-deletion && pnpm run test:circle-device && pnpm run test:one-id && pnpm run test:admin && pnpm run test:ramp",
     "test:save": "node --test lib/save/__tests__/decimal-target.test.mjs lib/save/__tests__/security-integration.test.mjs lib/save/__tests__/lock.test.mjs",
     "test:save-activity": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/save/__tests__/activity.test.mjs",
     "test:recurring": "node --test lib/recurring/__tests__/autonomous-autopay.test.mjs",
@@ -36,6 +36,7 @@
     "test:circle-device": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/circle-device.test.mjs",
     "test:one-id": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/one-id.test.mjs",
     "test:admin": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/__tests__/admin-tools.test.mjs",
+    "test:ramp": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/ramp/__tests__/rules.test.mjs lib/ramp/__tests__/centiiv-map.test.mjs lib/ramp/__tests__/webhook-signature.test.mjs",
     "test:allie": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/allie/__tests__/classifier.test.mjs lib/allie/__tests__/capabilities.test.mjs lib/allie/__tests__/agent-fees.test.mjs lib/allie/__tests__/business.test.mjs"
   },
   "dependencies": {
