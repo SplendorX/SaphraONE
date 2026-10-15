@@ -61,8 +61,13 @@ const nextConfig = {
     // Turbopack's on-disk dev cache (on by default in Next 16) served stale
     // CSS, hung the server and took 40s+ per write on this Windows setup, so
     // edits often needed a restart to show. Off: every edit is compiled fresh.
-    // Dev only; production builds are unaffected.
     turbopackFileSystemCacheForDev: false,
+    // The same cache for `next build` (on by default since Next 16.3) lives in
+    // .next/cache/turbopack, which Vercel restores between deploys. A warm
+    // build reused the previous deploy's compiled globals.css and shipped
+    // stale styles (the BulkPay redesign went out unstyled). Off: every
+    // deploy compiles all CSS from source. Builds are slower, never stale.
+    turbopackFileSystemCacheForBuild: false,
   },
   webpack(config) {
     config.externals = [
