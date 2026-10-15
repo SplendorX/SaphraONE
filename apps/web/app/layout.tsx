@@ -46,7 +46,7 @@ const shareTitle = "SaphraONE | One account. One identity. Anywhere.";
 const shareDescription =
   "Send, save and get paid in USDC with your ONE ID: a name, not a number. Settles on Arc in under a second.";
 // Versioned so apps that cache link previews fetch the new banner.
-const shareImage = "/og/saphra-share.jpg?v=2";
+const shareImage = "/og/saphra-share.jpg?v=3";
 
 function getSiteUrl() {
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
