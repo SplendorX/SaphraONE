@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -15,6 +16,7 @@ import {
   readCircleLogin,
 } from "@/lib/circle-session";
 import {
+  clearPlatformProfileConnected,
   ensurePlatformAccessCookie,
   hasPlatformAccessCookie,
   platformAccessEventName,
@@ -140,8 +142,21 @@ export function PlatformAccessProvider({ children }: { children: ReactNode }) {
 
 export function PlatformAccessGate({ children }: { children: ReactNode }) {
   const access = useContext(PlatformAccessContext);
+  const router = useRouter();
 
-  if (access === "checking") {
+  // Nobody is signed in here, yet the server let the page through: its
+  // "signed in" cookie outlived the sign-in itself (iPhone clears a site's
+  // storage on its own but keeps cookies). Drop the cookie and go straight to
+  // sign-in, coming back to this page afterwards. Opening the home-screen app
+  // (which starts on /dashboard) used to stop on a dead-end screen here.
+  useEffect(() => {
+    if (access !== "locked") return;
+    clearPlatformProfileConnected();
+    const here = `${window.location.pathname}${window.location.search}`;
+    router.replace(`/sign-in?next=${encodeURIComponent(here)}`);
+  }, [access, router]);
+
+  if (access === "checking" || access === "locked") {
     return (
       <main className="relative min-h-screen overflow-hidden px-0 py-4 text-ink sm:px-6 lg:px-8">
         <div className="dashboard-ambient pointer-events-none absolute inset-0" />
@@ -171,31 +186,6 @@ export function PlatformAccessGate({ children }: { children: ReactNode }) {
             href="/sign-in"
           >
             Go to sign in
-          </Link>
-        </section>
-      </main>
-    );
-  }
-
-  if (access === "locked") {
-    return (
-      <main className="relative min-h-screen overflow-hidden px-0 py-4 text-ink sm:px-6 lg:px-8">
-        <div className="dashboard-ambient pointer-events-none absolute inset-0" />
-        <div className="soft-grid pointer-events-none absolute inset-x-0 top-0 h-[420px]" />
-        <section className="surface-panel relative mx-auto mt-10 max-w-xl p-5 text-center sm:p-6">
-          <p className="eyebrow">Profile required</p>
-          <h1 className="mt-3 font-heading text-2xl font-semibold tracking-normal text-ink">
-            Connect from Home to continue
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Use Google login or connect and authorize an external wallet on the
-            Home page to access the SaphraONE platform.
-          </p>
-          <Link
-            className="sp-bubble mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-swift-600 px-4 text-sm font-bold text-white shadow-[0_14px_34px_rgba(66,17,143,0.24)] transition hover:-translate-y-0.5 hover:bg-swift-700"
-            href="/"
-          >
-            Go to Home
           </Link>
         </section>
       </main>
