@@ -25,7 +25,15 @@ export function HeroWelcome() {
         {t("landing.home.heroKicker")}
       </p>
       <h1 className="hero-welcome-title">
-        <span className="hero-welcome-line">{t("landing.home.heroTitleLead")} </span>
+        {/* One sentence per line: "One account." / "One identity." / "Anywhere." */}
+        {t("landing.home.heroTitleLead")
+          .split(/(?<=[.。])\s*/)
+          .filter(Boolean)
+          .map((sentence) => (
+            <span className="hero-welcome-line" key={sentence}>
+              {sentence}{" "}
+            </span>
+          ))}
         <span className="hero-welcome-line">
           <span className="hero-welcome-accent">{t("landing.home.heroTitleAccent")}</span>
         </span>
