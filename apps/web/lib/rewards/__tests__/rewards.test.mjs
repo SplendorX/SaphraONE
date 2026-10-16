@@ -108,5 +108,24 @@ describe("quest rules", async () => {
     assert.equal(describeQuestRule({ count: 1, type: "payments" }), "Make 1 payment");
     assert.equal(describeQuestRule({ count: 3, type: "payments" }), "Make 3 payments");
     assert.equal(describeQuestRule({ days: 7, type: "streak" }), "Reach a 7-day streak");
+    assert.equal(
+      describeQuestRule({ platform: "x", type: "social", url: "https://x.com/saphraone" }),
+      "Follow SaphraONE on X",
+    );
+  });
+
+  it("reads a follow-us rule with a known platform and an https link", () => {
+    assert.deepEqual(readQuestRule({ platform: "X", type: "social", url: " https://x.com/saphraone " }), {
+      platform: "x",
+      type: "social",
+      url: "https://x.com/saphraone",
+    });
+  });
+
+  it("refuses follow-us rules with an unknown platform or an unsafe link", () => {
+    assert.deepEqual(readQuestRule({ platform: "myspace", type: "social", url: "https://x.com/a" }), { type: "manual" });
+    assert.deepEqual(readQuestRule({ platform: "x", type: "social", url: "http://x.com/a" }), { type: "manual" });
+    assert.deepEqual(readQuestRule({ platform: "x", type: "social", url: "javascript:alert(1)" }), { type: "manual" });
+    assert.deepEqual(readQuestRule({ platform: "x", type: "social" }), { type: "manual" });
   });
 });

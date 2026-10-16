@@ -3,12 +3,43 @@
 import { recordLedgerEntry } from "@/lib/referral/ledger-service";
 import { referralDb } from "@/lib/referral/db";
 
-/** What a wallet has to do. "manual" quests are awarded by an admin. */
+/** Social accounts a "follow us" quest can point at. */
+export const SOCIAL_PLATFORMS = {
+  discord: "Discord",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  telegram: "Telegram",
+  threads: "Threads",
+  tiktok: "TikTok",
+  x: "X",
+  youtube: "YouTube",
+} as const;
+
+export type SocialPlatform = keyof typeof SOCIAL_PLATFORMS;
+
+/**
+ * What a wallet has to do. "manual" quests are awarded by an admin. "social"
+ * quests are claimed by the person after opening the link: a follow can't be
+ * checked without each platform's own API.
+ */
 export type QuestRule =
   | { type: "payments"; count: number }
   | { type: "volume"; usd: number }
   | { type: "streak"; days: number }
+  | { type: "social"; platform: SocialPlatform; url: string }
   | { type: "manual" };
+
+/** An https link, or null. */
+export function readSocialUrl(value: unknown) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" && url.hostname.includes(".") ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 export type QuestRow = {
   active: boolean;
@@ -34,6 +65,11 @@ export function readQuestRule(value: unknown): QuestRule {
   if (rule.type === "payments" && positive("count")) return { count: Math.floor(positive("count")!), type: "payments" };
   if (rule.type === "volume" && positive("usd")) return { type: "volume", usd: positive("usd")! };
   if (rule.type === "streak" && positive("days")) return { days: Math.floor(positive("days")!), type: "streak" };
+  if (rule.type === "social") {
+    const platform = String(rule.platform ?? "").toLowerCase();
+    const url = readSocialUrl(rule.url);
+    if (platform in SOCIAL_PLATFORMS && url) return { platform: platform as SocialPlatform, type: "social", url };
+  }
   return { type: "manual" };
 }
 
@@ -46,6 +82,8 @@ export function describeQuestRule(rule: QuestRule) {
       return `Pay $${rule.usd.toLocaleString()} in total`;
     case "streak":
       return `Reach a ${rule.days}-day streak`;
+    case "social":
+      return `Follow SaphraONE on ${SOCIAL_PLATFORMS[rule.platform]}`;
     default:
       return "Awarded by SaphraONE";
   }
@@ -151,7 +189,10 @@ export async function checkQuestsForWallet(walletAddress: string) {
   ]);
   const completed = new Set(((done.data ?? []) as Array<{ quest_id: string }>).map((row) => row.quest_id));
   const open = ((quests.data ?? []) as QuestRow[]).filter(
-    (quest) => isLive(quest) && !completed.has(quest.id) && readQuestRule(quest.rule).type !== "manual",
+    (quest) => {
+      const type = readQuestRule(quest.rule).type;
+      return isLive(quest) && !completed.has(quest.id) && type !== "manual" && type !== "social";
+    },
   );
   if (open.length === 0) return [];
 
@@ -164,4 +205,29 @@ export async function checkQuestsForWallet(walletAddress: string) {
     }
   }
   return awarded;
+}
+
+export class QuestClaimError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/**
+ * A person claims a live "follow us" quest after opening its link. Paid once
+ * per wallet (awardQuest). Returns false when they already had it.
+ */
+export async function claimSocialQuest(walletAddress: string, questId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(questId)) throw new QuestClaimError("That quest wasn't found.", 404);
+  const { data, error } = await referralDb().from("rewards_quests").select("*").eq("id", questId).maybeSingle();
+  if (error) throw new Error(error.message);
+  const quest = data as QuestRow | null;
+  if (!quest || readQuestRule(quest.rule).type !== "social") {
+    throw new QuestClaimError("That quest wasn't found.", 404);
+  }
+  if (!isLive(quest)) throw new QuestClaimError("This quest has ended.", 409);
+  return awardQuest({ quest, walletAddress });
 }

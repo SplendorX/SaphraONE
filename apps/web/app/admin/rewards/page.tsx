@@ -14,7 +14,21 @@ type QuestRule =
   | { type: "payments"; count: number }
   | { type: "volume"; usd: number }
   | { type: "streak"; days: number }
+  | { type: "social"; platform: string; url: string }
   | { type: "manual" };
+
+/** Must match SOCIAL_PLATFORMS in lib/rewards/quests.ts. */
+const socialPlatforms: Array<[string, string]> = [
+  ["x", "X"],
+  ["instagram", "Instagram"],
+  ["tiktok", "TikTok"],
+  ["telegram", "Telegram"],
+  ["youtube", "YouTube"],
+  ["linkedin", "LinkedIn"],
+  ["facebook", "Facebook"],
+  ["threads", "Threads"],
+  ["discord", "Discord"],
+];
 
 type AdminData = {
   claims: Array<{
@@ -128,6 +142,8 @@ const emptyQuest = {
   points: "50",
   ruleType: "payments",
   ruleValue: "3",
+  socialPlatform: "x",
+  socialUrl: "",
   startsAt: "",
   title: "",
 };
@@ -205,8 +221,13 @@ export default function AdminRewardsPage() {
     if (draft.ruleType === "payments") return { count: value, type: "payments" };
     if (draft.ruleType === "volume") return { type: "volume", usd: value };
     if (draft.ruleType === "streak") return { days: value, type: "streak" };
+    if (draft.ruleType === "social") {
+      return { platform: draft.socialPlatform, type: "social", url: draft.socialUrl.trim() };
+    }
     return { type: "manual" };
   }
+
+  const socialUrlValid = /^https:\/\/[^\s/]+\.[^\s]+/i.test(draft.socialUrl.trim());
 
   async function createQuest() {
     const ok = await act(
@@ -400,10 +421,38 @@ export default function AdminRewardsPage() {
                       <option value="payments">Number of payments</option>
                       <option value="volume">Total paid (USD)</option>
                       <option value="streak">Streak length (days)</option>
+                      <option value="social">Follow on social media</option>
                       <option value="manual">Awarded by hand</option>
                     </select>
                   </label>
-                  {draft.ruleType !== "manual" ? (
+                  {draft.ruleType === "social" ? (
+                    <>
+                      <label>
+                        Platform
+                        <select
+                          className="ar-input"
+                          onChange={(event) => setDraft({ ...draft, socialPlatform: event.target.value })}
+                          value={draft.socialPlatform}
+                        >
+                          {socialPlatforms.map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Account link
+                        <input
+                          className="ar-input"
+                          inputMode="url"
+                          onChange={(event) => setDraft({ ...draft, socialUrl: event.target.value })}
+                          placeholder="https://x.com/saphraone"
+                          value={draft.socialUrl}
+                        />
+                      </label>
+                    </>
+                  ) : draft.ruleType !== "manual" ? (
                     <label>
                       {draft.ruleType === "payments" ? "Payments" : draft.ruleType === "volume" ? "USD" : "Days"}
                       <input
@@ -435,11 +484,12 @@ export default function AdminRewardsPage() {
                 </div>
                 <p className="ar-hint">
                   Payments and total paid count only between the start and end. Points are paid once per person, as soon
-                  as they finish.
+                  as they finish. Follow quests show a Follow button on Rewards; the person claims the points after
+                  opening the link (a follow itself can&apos;t be checked).
                 </p>
                 <button
                   className="ar-btn is-primary"
-                  disabled={busyId === "new" || !draft.title.trim()}
+                  disabled={busyId === "new" || !draft.title.trim() || (draft.ruleType === "social" && !socialUrlValid)}
                   onClick={() => void createQuest()}
                   type="button"
                 >

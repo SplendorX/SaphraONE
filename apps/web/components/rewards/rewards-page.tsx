@@ -66,6 +66,87 @@ function RewardsSheet({
   );
 }
 
+/** Claim unlocks this long after the follow link was opened. */
+const SOCIAL_CLAIM_DELAY_MS = 5_000;
+
+/**
+ * "Follow us" quests: open the account, then claim. A follow can't be checked
+ * from here, so claiming waits until the link has been opened.
+ */
+function SocialQuestActions({
+  circleSocialUuid,
+  onClaimed,
+  questId,
+  social,
+  wallet,
+}: {
+  circleSocialUuid?: string | null;
+  onClaimed: () => void;
+  questId: string;
+  social: NonNullable<RewardsOverview["quests"][number]["social"]>;
+  wallet: string;
+}) {
+  const [openedAt, setOpenedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [claiming, setClaiming] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openedAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [openedAt]);
+
+  const ready = openedAt !== null && now - openedAt >= SOCIAL_CLAIM_DELAY_MS;
+
+  async function claim() {
+    setClaiming(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/rewards/quests/claim", {
+        body: JSON.stringify({ circleSocialUuid, ownerWallet: wallet, questId }),
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      const json = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) throw new Error(json?.message || "The quest couldn't be claimed.");
+      onClaimed();
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "The quest couldn't be claimed.");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  return (
+    <div className="rw-quest-actions">
+      <a
+        className="rw-quest-btn"
+        href={social.url}
+        onClick={() => {
+          setOpenedAt(Date.now());
+          setNow(Date.now());
+        }}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Follow on {social.platformLabel}
+      </a>
+      <button
+        className="rw-quest-btn is-primary"
+        disabled={!ready || claiming}
+        onClick={() => void claim()}
+        type="button"
+      >
+        {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        {openedAt && !ready ? "Checking…" : "Claim"}
+      </button>
+      {message ? <p className="rw-quest-error">{message}</p> : null}
+    </div>
+  );
+}
+
 /** Rewards: OnePoints from your own transactions, streaks and quests. */
 export function RewardsPage() {
   const { address: platformAddress, circleSocialUuid } = usePlatformWallet();
@@ -282,6 +363,15 @@ export function RewardsPage() {
                   </p>
                 </div>
                 <span className="rw-chip">{quest.completed ? "Done" : `+${points(quest.points)}`}</span>
+                {quest.social && !quest.completed ? (
+                  <SocialQuestActions
+                    circleSocialUuid={circleSocialUuid}
+                    onClaimed={() => void load()}
+                    questId={quest.id}
+                    social={quest.social}
+                    wallet={wallet}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>

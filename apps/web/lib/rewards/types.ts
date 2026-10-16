@@ -19,6 +19,8 @@ export type RewardsOverview = {
     points: number;
     /** Automatic quests: how far along; null for ones SaphraONE awards by hand. */
     progress: { current: number; target: number; unit: string } | null;
+    /** A "follow us" quest: the link to open, then the person claims it. */
+    social: { platform: string; platformLabel: string; url: string } | null;
     title: string;
   }>;
   streak: {

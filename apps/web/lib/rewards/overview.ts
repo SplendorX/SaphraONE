@@ -7,7 +7,13 @@ import {
   USD_PER_POINT,
 } from "@/lib/rewards/config";
 import type { RewardsOverview } from "@/lib/rewards/types";
-import { describeQuestRule, questProgress, readQuestRule, type QuestRow } from "@/lib/rewards/quests";
+import {
+  describeQuestRule,
+  questProgress,
+  readQuestRule,
+  SOCIAL_PLATFORMS,
+  type QuestRow,
+} from "@/lib/rewards/quests";
 
 function monthStart(at = new Date()) {
   return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), 1)).toISOString().slice(0, 10);
@@ -117,15 +123,22 @@ export async function loadRewardsOverview(walletAddress: string): Promise<Reward
       label: activityLabels[entry.entry_type] ?? "Points",
       points: Number(entry.display_amount),
     })),
-    quests: liveQuests.map((quest) => ({
-      completed: completed.has(quest.id),
-      description: quest.description || describeQuestRule(readQuestRule(quest.rule)),
-      endsAt: quest.ends_at,
-      id: quest.id,
-      points: Number(quest.points),
-      progress: progress.get(quest.id) ?? null,
-      title: quest.title,
-    })),
+    quests: liveQuests.map((quest) => {
+      const rule = readQuestRule(quest.rule);
+      return {
+        completed: completed.has(quest.id),
+        description: quest.description || describeQuestRule(rule),
+        endsAt: quest.ends_at,
+        id: quest.id,
+        points: Number(quest.points),
+        progress: progress.get(quest.id) ?? null,
+        social:
+          rule.type === "social"
+            ? { platform: rule.platform, platformLabel: SOCIAL_PLATFORMS[rule.platform], url: rule.url }
+            : null,
+        title: quest.title,
+      };
+    }),
     streak: {
       current,
       totalDays: Number(streak.data?.total_days ?? 0),
