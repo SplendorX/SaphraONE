@@ -38,7 +38,9 @@ const instrumentSerif = localFont({
   variable: "--font-display",
 });
 
-const siteTitle = "SaphraONE | Powering possibilities with USDC";
+// The same line the share banner leads with, so a link preview that falls
+// back to the page title still reads right.
+const siteTitle = "SaphraONE | One account. One identity. Anywhere.";
 const siteDescription =
   `Money movement infrastructure for the internet. Send, batch, request, swap, and settle stablecoins on ${arcChain.name}.`;
 const brandMark = "/brand/saphra-mark.png";
