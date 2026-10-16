@@ -124,6 +124,77 @@
   }
 }
 
+/* ── Compact title bar (components/layout/mobile-title-bar.tsx) ───────── */
+.mtitle {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mtitle {
+    position: fixed;
+    z-index: 35;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding: calc(0.45rem + env(safe-area-inset-top, 0px)) 0.85rem 0.45rem;
+    border-bottom: 1px solid color-mix(in oklch, var(--foreground) 7%, transparent);
+    background: color-mix(in oklch, var(--background) 74%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-100%);
+    transition:
+      transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 200ms ease;
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .mtitle {
+    background: rgb(255 255 255 / 0.72);
+  }
+
+  .mtitle[data-shown] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .mtitle-back {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: 9999px;
+    color: var(--foreground);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms ease;
+  }
+
+  .mtitle-back:active {
+    transform: scale(0.9);
+  }
+
+  .mtitle-title {
+    overflow: hidden;
+    font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtitle {
+    transition: none;
+  }
+}
+
 /* ── More: the navigation as a bottom sheet of tiles ──────────────────── */
 @media (max-width: 1023px) {
   html .nav-drawer-root .nav-drawer-panel {

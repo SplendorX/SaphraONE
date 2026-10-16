@@ -110,8 +110,8 @@
   right: 0.6rem;
   width: clamp(9.5rem, 46%, 17rem);
   height: auto;
-  /* Never down into the actions row, however short the card. */
-  max-height: calc(100% - 9.75rem);
+  /* Clear of the card's bottom edge, however short the card. */
+  max-height: calc(100% - 4.5rem);
   object-fit: contain;
   object-position: right top;
   pointer-events: none;
@@ -136,8 +136,7 @@
 }
 
 .dh-card .dh-card-top,
-.dh-card .dh-change,
-.dh-card .dh-actions {
+.dh-card .dh-change {
   position: relative;
   z-index: 2;
 }
@@ -281,51 +280,61 @@
   color: rgb(255 255 255 / 0.55);
 }
 
-/* The four everyday actions, as frosted glass */
+/* The four everyday actions: tiles under the card, Add money filled */
 .dh-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1.15rem;
-  padding-top: 1.05rem;
-  border-top: 1px solid rgb(255 255 255 / 0.1);
+  margin-top: -0.25rem;
 }
 
 .dh-action {
   display: grid;
   justify-items: center;
-  gap: 0.45rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgb(255 255 255 / 0.85);
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--foreground);
 }
 
 .dh-action-icon {
   display: grid;
   place-items: center;
-  width: 3.1rem;
-  height: 3.1rem;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 1.05rem;
-  background: rgb(255 255 255 / 0.08);
-  color: #ffffff;
-  backdrop-filter: blur(8px);
+  width: 3.75rem;
+  height: 3.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.35rem;
+  background: var(--card);
+  color: var(--primary);
   transition: background-color 160ms ease, transform 160ms ease;
 }
 
-.dh-action:first-child .dh-action-icon {
+.dark .dh-action-icon {
+  color: #c4b5fd;
+}
+
+html[data-light-surface="glass"]:not(.dark) .dh-action-icon {
+  border-color: rgb(18 20 26 / 0.07);
+  background: rgb(255 255 255 / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 10px 26px -16px rgb(91 33 182 / 0.35);
+}
+
+/* :root lifts it over the glass surface rule above. */
+:root .dh-actions .dh-action:first-child .dh-action-icon {
   border-color: transparent;
-  background: #ffffff;
-  color: #1a0b38;
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 12px 22px -12px rgb(91 33 182 / 0.85);
 }
 
 .dh-action:hover .dh-action-icon {
   transform: translateY(-2px);
-  background: rgb(255 255 255 / 0.16);
 }
 
-.dh-action:first-child:hover .dh-action-icon {
-  background: #ffffff;
+.dh-action:active .dh-action-icon {
+  transform: scale(0.94);
 }
 
 /* This week */
@@ -459,7 +468,14 @@
 
 /* ── Greeting: the name in a colour of its own for each theme ───────────── */
 .dh-hello {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.dh-hello-text {
   display: grid;
+  min-width: 0;
   gap: 0.1rem;
 }
 
@@ -496,10 +512,6 @@
 
 :root .dh-card-glow {
   background: radial-gradient(circle, rgb(255 255 255 / 0.22), transparent 65%);
-}
-
-:root .dh-action:first-child .dh-action-icon {
-  color: #2638e8;
 }
 
 :root .dh-split span {
@@ -633,5 +645,16 @@
 @media (prefers-reduced-motion: reduce) {
   .dh-hello-skeleton {
     animation: none;
+  }
+}
+
+/* Phones: four to a row, or three when that leaves no tile on its own. */
+@media (max-width: 639px) {
+  .dh-services {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dh-services:is(:has(> :nth-child(6):last-child), :has(> :nth-child(9):last-child)) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

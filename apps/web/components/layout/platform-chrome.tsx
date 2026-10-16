@@ -7,9 +7,15 @@ import { OnboardingRedirect } from "@/components/business/workspace-provider";
 import { AppFrame } from "@/components/layout/app-frame";
 import { AppHeader } from "@/components/layout/app-header";
 import { isTabRoot, MobileTabBar, showsMobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { MobileTitleBar } from "@/components/layout/mobile-title-bar";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { useT } from "@/components/locale-provider";
 import { pageCopyForPath } from "@/lib/i18n";
+
+import "./ios-skin.css";
+
+/** Pages that keep their own design instead of the iPhone-app look. */
+const ownDesign = /^\/(?:referral|rewards|swap)(?:\/|$)/;
 
 type PlatformChromeProps = {
   actions?: ReactNode;
@@ -37,6 +43,7 @@ export function PlatformChrome({
   const resolvedTitle = copy ? t(copy.title) : title;
   const resolvedSubtitle = copy?.subtitle ? t(copy.subtitle) : subtitle;
   const tabBar = showsMobileTabBar(pathname);
+  const iosLook = !ownDesign.test(pathname);
 
   return (
     <>
@@ -44,6 +51,7 @@ export function PlatformChrome({
       <SidebarProvider>
         <div
           className="platform-shell w-full min-w-0 bg-background"
+          data-ios={iosLook ? "" : undefined}
           data-tab-root={tabBar && isTabRoot(pathname) ? "" : undefined}
           data-tabbar={tabBar ? "" : undefined}
         >
@@ -57,6 +65,7 @@ export function PlatformChrome({
           >
             {children}
           </AppFrame>
+          {iosLook && pathname !== "/dashboard" ? <MobileTitleBar /> : null}
           {tabBar ? <MobileTabBar /> : null}
         </div>
       </SidebarProvider>

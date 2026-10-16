@@ -14,6 +14,7 @@ import {
 } from "wagmi";
 import { formatUnits, maxUint256, type Address, type Hash } from "viem";
 
+import { PageTagline } from "@/components/layout/page-tagline";
 import { useT } from "@/components/locale-provider";
 import { showSuccess } from "@/components/success-popup";
 import { AmountConfirmDialog } from "@/components/save/amount-confirm-dialog";
@@ -727,6 +728,7 @@ export function SwiftSaveHub() {
           <h1 className="pocket-bar-title">Save</h1>
           <span />
         </header>
+        <PageTagline text={t("save.heading")} />
         <SaveHero
           disabled
           hidden={hideBalance}
@@ -757,6 +759,7 @@ export function SwiftSaveHub() {
         <h1 className="pocket-bar-title">Save</h1>
         <span />
       </header>
+      <PageTagline text={t("save.heading")} />
       <SaveHero
         disabled={!isWalletAuthenticated}
         hidden={hideBalance}

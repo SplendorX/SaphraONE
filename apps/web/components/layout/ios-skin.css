@@ -1,0 +1,389 @@
+/* Phones and tablets: every app page in the look of the SaphraONE iPhone app.
+ * Hero cards in the brand gradient with the ONE loop, Liquid Glass cards with
+ * a soft purple shadow, capsule buttons and roomy fields. It restyles the
+ * pages' own classes, so markup and behaviour are unchanged.
+ *
+ * Scoped to .platform-shell[data-ios], which PlatformChrome sets on every page
+ * except Invite & Earn, Rewards and Swap (they keep their own design). The
+ * transfer animation (.tp) and Save's piggy art (.save-art) are never touched.
+ * Desktop keeps its current look. Its own file, not globals.css. */
+
+/* Taglines show only in the phone layout. */
+.ios-tagline {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  /* ── Surfaces per theme ──────────────────────────────────────────── */
+  .platform-shell[data-ios] {
+    --ios-hero:
+      radial-gradient(120% 90% at 100% 0%, rgb(255 255 255 / 0.16), transparent 55%),
+      linear-gradient(140deg, #6a0ef4 0%, #3b2cf6 55%, #1f5fe0 100%);
+    --ios-hero-shadow: 0 24px 46px -22px rgb(59 44 246 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.2);
+    --ios-card-bg: var(--card);
+    --ios-card-border: var(--border);
+    --ios-card-shadow: none;
+    --ios-blur: none;
+    --ios-round-bg: var(--card);
+    --ios-round-shadow: none;
+    --ios-field-bg: var(--card);
+    --ios-field-border: var(--border);
+    --ios-field-shadow: none;
+    --ios-cta-shadow: 0 14px 28px -14px rgb(91 33 182 / 0.85);
+  }
+
+  /* Liquid Glass: see-through white, lit along the top, lifted on lilac. */
+  html[data-light-surface="glass"]:not(.dark) .platform-shell[data-ios] {
+    --ios-card-bg: rgb(255 255 255 / 0.8);
+    --ios-card-border: rgb(18 20 26 / 0.06);
+    --ios-card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 10px 30px -18px rgb(91 33 182 / 0.28);
+    --ios-blur: blur(22px) saturate(165%);
+    --ios-round-bg: rgb(255 255 255 / 0.78);
+    --ios-round-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 8px 22px -14px rgb(91 33 182 / 0.35);
+    --ios-field-bg: rgb(255 255 255 / 0.86);
+    --ios-field-border: rgb(18 20 26 / 0.08);
+    --ios-field-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 10px 26px -20px rgb(91 33 182 / 0.35);
+  }
+
+  /* Cashmere: warm cream cards with a soft ink shadow. */
+  html[data-light-surface="cream"]:not(.dark) .platform-shell[data-ios] {
+    --ios-card-bg: #fff9f0;
+    --ios-card-border: rgb(23 17 28 / 0.07);
+    --ios-card-shadow: 0 10px 30px -22px rgb(23 17 28 / 0.35);
+    --ios-round-bg: #fff9f0;
+    --ios-round-shadow: 0 8px 20px -14px rgb(23 17 28 / 0.35);
+    --ios-field-bg: #fff9f0;
+    --ios-field-border: rgb(23 17 28 / 0.1);
+  }
+
+  /* Night: ink cards on black, a faint rim instead of a shadow. */
+  html.dark .platform-shell[data-ios] {
+    --ios-card-bg: #17111c;
+    --ios-card-border: rgb(244 235 221 / 0.07);
+    --ios-card-shadow: inset 0 1px 0 rgb(244 235 221 / 0.04);
+    --ios-round-bg: rgb(29 21 35 / 0.85);
+    --ios-round-shadow: inset 0 1px 0 rgb(244 235 221 / 0.06);
+    --ios-field-bg: #1d1523;
+    --ios-field-border: rgb(244 235 221 / 0.08);
+    --ios-field-shadow: none;
+    --ios-cta-shadow: 0 14px 30px -14px rgb(109 40 217 / 0.9);
+  }
+
+  /* ── Large titles, iPhone size ─────────────────────────────────────── */
+  .platform-shell[data-ios] header > :is(
+      .bulkpay-title,
+      .ck-title,
+      .cl-title,
+      .dep-title,
+      .insights-title,
+      .inv-title,
+      .ov-title,
+      .pocket-bar-title,
+      .pr-title,
+      .recurepay-title,
+      .req-title,
+      .st-title,
+      .sx-title,
+      .txh-title
+    ),
+  .platform-shell[data-ios] .app-frame .app-page-title h1 {
+    font-size: 2.125rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+
+  /* The serif line under a tab's title (components/layout/page-tagline.tsx). */
+  .platform-shell[data-ios] .ios-tagline {
+    display: block;
+    margin: -0.35rem 0 0.15rem;
+    color: var(--muted-foreground);
+    font-family: var(--font-display), "Instrument Serif", ui-serif, Georgia, serif;
+    font-size: 1.45rem;
+    line-height: 1.12;
+  }
+
+  .platform-shell[data-ios] .ios-tagline em {
+    color: var(--primary);
+  }
+
+  html.dark .platform-shell[data-ios] .ios-tagline em {
+    color: #c4b5fd;
+  }
+
+  /* Purple buttons glow softly, as on the iPhone screens. */
+  .platform-shell[data-ios] [data-slot="button"][data-variant="default"]:not([data-size^="icon"], :disabled, .tp *) {
+    box-shadow: 0 10px 22px -12px rgb(91 33 182 / 0.75);
+  }
+
+  /* ── Hero cards: the brand gradient, as on the iPhone balance card ─── */
+  .platform-shell[data-ios] :is(
+      .req-hero,
+      .dep-hero,
+      .st-hero,
+      .cl-hero,
+      .cr-hero,
+      .ov-hero,
+      .inv-hero,
+      .ck-hero,
+      .pr-hero,
+      .bulkpay-hero,
+      .recurepay-hero,
+      .save-hero,
+      .earn-hero
+    ) {
+    border-color: transparent;
+    border-radius: 1.75rem;
+    background: var(--ios-hero);
+    box-shadow: var(--ios-hero-shadow);
+    color: #ffffff;
+  }
+
+  /* The soft glow in each hero becomes the ONE loop from the logo. */
+  .platform-shell[data-ios] :is(
+      .req-hero-glow,
+      .dep-hero-glow,
+      .st-hero-glow,
+      .cl-hero-glow,
+      .cr-hero-glow,
+      .ov-hero-glow,
+      .inv-hero-glow,
+      .ck-hero-glow,
+      .pr-hero-glow,
+      .bulkpay-hero-glow,
+      .recurepay-hero-glow
+    ) {
+    top: auto;
+    right: -3.25rem;
+    bottom: -4.75rem;
+    left: auto;
+    width: 13rem;
+    height: 13rem;
+    border-radius: 0;
+    opacity: 1;
+    filter: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='160 392 240 240'%3E%3Cpath d='M280 632a120 120 0 1 0 0-240 120 120 0 1 0 0 240' fill='none' stroke='white' stroke-opacity='.14' stroke-width='40'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    pointer-events: none;
+  }
+
+  /* ── Cards: Liquid Glass, with the iPhone app's larger corners ─────── */
+  .platform-shell[data-ios] :is(
+      .sx-card,
+      .req-card,
+      .dep-card,
+      .st-card,
+      .cl-card,
+      .cr-panel,
+      .ov-card,
+      .inv-card,
+      .inv-list-card,
+      .ck-card,
+      .pr-card,
+      .bulkpay-card,
+      .save-card,
+      .earn-card,
+      .recurepay-card,
+      .insights-card,
+      .ramp-card,
+      .tx-card,
+      .dh-week,
+      .dh-services
+    ) {
+    border-color: var(--ios-card-border);
+    border-radius: 1.5rem;
+    background: var(--ios-card-bg);
+    box-shadow: var(--ios-card-shadow);
+    backdrop-filter: var(--ios-blur);
+  }
+
+  /* ── Round header buttons: glass circles ──────────────────────────── */
+  .platform-shell[data-ios] :is(
+      .sx-round,
+      .sx-scan-button,
+      .req-round,
+      .dep-round,
+      .st-round,
+      .cl-round,
+      .cr-round,
+      .ov-round,
+      .inv-round,
+      .ck-round,
+      .pr-round,
+      .pr-icon-button,
+      .bulkpay-round,
+      .bulkpay-icon-button,
+      .recurepay-round,
+      .pocket-round,
+      .txh-round,
+      .insights-round-button
+    ) {
+    border-color: var(--ios-card-border);
+    background: var(--ios-round-bg);
+    box-shadow: var(--ios-round-shadow);
+    backdrop-filter: var(--ios-blur);
+  }
+
+  /* ── Fields and search bars: taller, rounder, glass ───────────────── */
+  .platform-shell[data-ios] :is(
+      .sx-search,
+      .sx-to-field,
+      .txh-search,
+      .pr-search,
+      .req-field,
+      .earn-input,
+      .recurepay-input
+    ) {
+    min-height: 3.25rem;
+    border-color: var(--ios-field-border);
+    border-radius: 1.1rem;
+    background: var(--ios-field-bg);
+    box-shadow: var(--ios-field-shadow);
+  }
+
+  .platform-shell[data-ios] :is([data-slot="input"], [data-slot="select-trigger"]):not(.tp *) {
+    min-height: 2.75rem;
+    border-radius: 0.95rem;
+  }
+
+  .platform-shell[data-ios] [data-slot="textarea"]:not(.tp *) {
+    border-radius: 1.1rem;
+  }
+
+  /* ── Buttons: quiet ones become capsules; the purple ones keep the
+     brand's chat-bubble corner (app/bubble.css) and gain a glow ──────── */
+  .platform-shell[data-ios] [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]):not(.tp *) {
+    border-radius: 9999px;
+  }
+
+  .platform-shell[data-ios] :is(
+      .req-cta,
+      .sx-confirm-cta,
+      .sx-dock-cta,
+      .cl-cta,
+      .ov-complete-cta,
+      .ck-primary,
+      .pr-dock-cta,
+      .bulkpay-cta,
+      .bulkpay-dock-cta,
+      .bulkpay-intro-cta,
+      .recurepay-cta,
+      .earn-btn-primary
+    ) {
+    min-height: 3.25rem;
+    font-weight: 700;
+    box-shadow: var(--ios-cta-shadow);
+  }
+
+  .platform-shell[data-ios] :is(
+      .req-cta,
+      .sx-confirm-cta,
+      .sx-dock-cta,
+      .cl-cta,
+      .ov-complete-cta,
+      .ck-primary,
+      .pr-dock-cta,
+      .bulkpay-cta,
+      .bulkpay-dock-cta,
+      .bulkpay-intro-cta,
+      .recurepay-cta,
+      .earn-btn-primary
+    ):is(:disabled, [aria-disabled="true"]) {
+    box-shadow: none;
+  }
+
+  /* ── Row icons: rounded squares, as in the iPhone lists ───────────── */
+  .platform-shell[data-ios] :is(
+      .sx-option-icon,
+      .dep-row-icon,
+      .inv-row-icon,
+      .st-icon,
+      .req-history-icon,
+      .ck-item-icon,
+      .ov-quick-icon,
+      .pr-quick-icon,
+      .bulkpay-head-icon,
+      .cr-tile-icon,
+      .tx-icon
+    ) {
+    border-radius: 0.9rem;
+  }
+
+  /* ── Touch: everything tappable gives a little ────────────────────── */
+  .platform-shell[data-ios] :is(.sx-row, .dep-row, .st-row, .cl-row, .inv-row, .ck-row, .tx-row, .save-pocket, .cr-tile) {
+    transition: transform 140ms ease, background-color 160ms ease;
+  }
+
+  .platform-shell[data-ios] :is(.sx-row, .dep-row, .st-row, .cl-row, .inv-row, .ck-row, .tx-row, .save-pocket, .cr-tile):active {
+    transform: scale(0.985);
+  }
+
+  .platform-shell[data-ios] [data-slot="button"]:not(.tp *):active {
+    transform: scale(0.97);
+  }
+}
+
+/* ── Dialogs rise from the bottom as iOS sheets on phones ─────────────
+   Dialogs are portalled to <body>, outside the shell, hence :has(). */
+@media (max-width: 639px) {
+  html:has(.platform-shell[data-ios]) [data-slot="dialog-content"] {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.9rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 1.9rem 1.9rem 0 0;
+    translate: none;
+    animation: ios-sheet-up 340ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  html:has(.platform-shell[data-ios]) [data-slot="dialog-content"][data-state="closed"] {
+    animation: ios-sheet-down 220ms ease-in forwards;
+  }
+
+  /* The grab handle. */
+  html:has(.platform-shell[data-ios]) [data-slot="dialog-content"]::before {
+    content: "";
+    position: absolute;
+    top: 0.6rem;
+    left: 50%;
+    width: 2.6rem;
+    height: 0.3rem;
+    border-radius: 9999px;
+    background: color-mix(in oklch, var(--muted-foreground) 40%, transparent);
+    translate: -50% 0;
+  }
+}
+
+@keyframes ios-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ios-sheet-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  html:has(.platform-shell[data-ios]) [data-slot="dialog-content"] {
+    animation: none;
+  }
+
+  .platform-shell[data-ios] :is(.sx-row, .dep-row, .st-row, .cl-row, .inv-row, .ck-row, .tx-row, .save-pocket, .cr-tile),
+  .platform-shell[data-ios] [data-slot="button"] {
+    transition: none;
+  }
+}

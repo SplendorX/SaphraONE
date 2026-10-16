@@ -59,9 +59,10 @@ const services: Array<{ business?: boolean; href: string; icon: LucideIcon; labe
 ];
 
 /**
- * The dashboard, quiet and premium: a greeting, one dark balance card that
- * carries the four everyday actions, this week in two numbers, the services
- * as a grid, then transactions and the rest.
+ * The dashboard, quiet and premium, in the shape of the iPhone app: a
+ * greeting beside the avatar, one balance card, the four everyday actions as
+ * tiles under it, this week in two numbers, the services as a grid, then
+ * transactions and the rest.
  */
 export function DashboardHome({
   avatarUrl,
@@ -110,14 +111,24 @@ export function DashboardHome({
   return (
     <div className="dh">
       <header className="dh-hello">
-        <p className="dh-hello-small">{greeting()},</p>
-        {name ? (
-          <p className="dh-hello-name">{name}</p>
-        ) : isConnected ? (
-          <span aria-hidden className="dh-hello-skeleton" />
-        ) : (
-          <p className="dh-hello-name">Welcome to SaphraONE</p>
-        )}
+        <span aria-hidden className="dh-avatar">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt="" src={avatarUrl} />
+          ) : (
+            (name?.trim().charAt(0) || "S").toUpperCase()
+          )}
+        </span>
+        <span className="dh-hello-text">
+          <p className="dh-hello-small">{greeting()},</p>
+          {name ? (
+            <p className="dh-hello-name">{name}</p>
+          ) : isConnected ? (
+            <span aria-hidden className="dh-hello-skeleton" />
+          ) : (
+            <p className="dh-hello-name">Welcome to SaphraONE</p>
+          )}
+        </span>
       </header>
 
       {/* The one card that matters */}
@@ -194,13 +205,15 @@ export function DashboardHome({
           </div>
         ) : null}
 
-        <nav aria-label="Money actions" className="dh-actions">
-          <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
-          <Action href="/send" icon={Send} label="Send" />
-          <Action href="/pay" icon={QrCode} label="Request" />
-          <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
-        </nav>
       </section>
+
+      {/* The four everyday actions, as tiles under the card. */}
+      <nav aria-label="Money actions" className="dh-actions">
+        <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
+        <Action href="/send" icon={Send} label="Send" />
+        <Action href="/pay" icon={QrCode} label="Request" />
+        <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
+      </nav>
 
       {banners}
 
