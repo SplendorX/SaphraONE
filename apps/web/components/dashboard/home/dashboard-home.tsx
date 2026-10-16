@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { OnePointsMark } from "@/components/brand/one-points-mark";
+import { Announcements } from "@/components/dashboard/announcements";
 import { rampEntryEnabled } from "@/lib/ramp/flag";
 import { useOnePoints } from "@/lib/referral/use-one-points";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
@@ -191,6 +192,9 @@ export function DashboardHome({
 
       {/* Phones: ONE Points live here (the top bar's points pill is desktop's). */}
       <PointsStrip />
+
+      {/* Live campaigns and quests, each dismissible. */}
+      <Announcements />
 
       {banners}
 

@@ -1,0 +1,148 @@
+/* Home's announcement cards (components/dashboard/announcements.tsx).
+ * Campaigns warm gold, quests mint, each with flat art on the right and a
+ * close button. Several scroll sideways, the next one peeking in.
+ * Its own file, not globals.css. */
+.ann {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.15rem 0 0.35rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.ann::-webkit-scrollbar {
+  display: none;
+}
+
+.ann-card {
+  position: relative;
+  flex: 0 0 100%;
+  overflow: hidden;
+  border: 1px solid rgb(18 20 26 / 0.05);
+  border-radius: 1.5rem;
+  scroll-snap-align: start;
+}
+
+/* More than one: leave the next card peeking in. */
+.ann[data-count]:not([data-count="1"]) .ann-card {
+  flex-basis: 90%;
+}
+
+.ann-card[data-kind="campaign"] {
+  background: linear-gradient(180deg, #fffaf0 0%, #fce7bd 100%);
+  color: #2b1d05;
+}
+
+.ann-card[data-kind="quest"] {
+  background: linear-gradient(180deg, #f3fcf8 0%, #cff3e2 100%);
+  color: #0d2a1e;
+}
+
+.dark .ann-card {
+  border-color: rgb(244 235 221 / 0.08);
+}
+
+.dark .ann-card[data-kind="campaign"] {
+  background: linear-gradient(160deg, #33260f 0%, #17111c 100%);
+  color: #f7ead0;
+}
+
+.dark .ann-card[data-kind="quest"] {
+  background: linear-gradient(160deg, #0f2b20 0%, #17111c 100%);
+  color: #d8f5e8;
+}
+
+.ann-link {
+  display: flex;
+  min-height: 7.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0.9rem 1rem 1.15rem;
+  color: inherit;
+  transition: transform 140ms ease;
+}
+
+.ann-link:active {
+  transform: scale(0.985);
+}
+
+.ann-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.3rem;
+}
+
+.ann-title {
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.ann-body {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  opacity: 0.7;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ann-badge {
+  justify-self: start;
+  margin-top: 0.2rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.7);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dark .ann-badge {
+  background: rgb(255 255 255 / 0.1);
+}
+
+.ann-art {
+  flex-shrink: 0;
+  width: 5.25rem;
+  height: 5.25rem;
+  margin-right: 0.6rem;
+}
+
+.ann-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.92);
+  color: #12141a;
+  box-shadow: 0 2px 8px rgb(18 20 26 / 0.12);
+}
+
+/* A comfortable target: the hit area reaches past the drawn circle. */
+.ann-close::after {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+}
+
+.dark .ann-close {
+  background: rgb(244 235 221 / 0.14);
+  color: #f4ebdd;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ann-link {
+    transition: none;
+  }
+}
