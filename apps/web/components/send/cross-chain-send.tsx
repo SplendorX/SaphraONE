@@ -3,9 +3,12 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  CheckCheck,
   ClipboardPaste,
+  Clock,
   Loader2,
   ScanQrCode,
+  Send,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,8 +25,9 @@ import {
 } from "viem";
 
 import { NetworkLogo, NetworkPicker } from "@/components/send/network-picker";
-import { TransferProgress } from "@/components/send/transfer-progress";
 import { QrScanSheet } from "@/components/send/qr-scan-sheet";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
 import { arcChain, arcTransport } from "@/lib/chains";
 import { isCircleChallengeError } from "@/lib/circle-eip1193";
 import { userFacingErrorMessage } from "@/lib/circle-session";
@@ -52,10 +56,12 @@ import {
   type SendOutStep,
 } from "@/lib/multichain/send-out";
 import { confirmFlow, TxApprovalCancelled } from "@/lib/tx-approval/client";
+import { bottomSheetClassName, useSheetSide } from "@/lib/use-media-query";
 import { useSigningWallet } from "@/lib/use-signing-wallet";
 import { cn } from "@/lib/utils";
 
 import "./cross-chain-send.css";
+import "./cross-chain-chat.css";
 
 /**
  * Pay SaphraONE's service fee: a plain USDC transfer on Arc to the fee wallet,
@@ -133,6 +139,9 @@ export function CrossChainSend({
   const [scanOpen, setScanOpen] = useState(false);
   const [fees, setFees] = useState<Record<string, NetworkFeeView> | null>(null);
   const [feeMode, setFeeMode] = useState<FeeMode>("deduct");
+  // The amount composer, a sheet over the chat (as on Arc sends).
+  const [composerOpen, setComposerOpen] = useState(false);
+  const sheetSide = useSheetSide();
   // A send that stopped before its burn, kept so "Try again" resumes it (and
   // never charges the service fee twice).
   const resumeRef = useRef<{
@@ -408,7 +417,10 @@ export function CrossChainSend({
           <button
             className="sx-next"
             disabled={!validAddress || !network}
-            onClick={() => setStage("amount")}
+            onClick={() => {
+              setStage("amount");
+              setComposerOpen(true);
+            }}
             type="button"
           >
             Next
@@ -440,7 +452,10 @@ export function CrossChainSend({
                 id="xc-to"
                 onChange={(event) => setDestination(event.target.value.replace(/\s/g, ""))}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && validAddress) setStage("amount");
+                  if (event.key === "Enter" && validAddress) {
+                    setStage("amount");
+                    setComposerOpen(true);
+                  }
                 }}
                 placeholder="0x…"
                 spellCheck={false}
@@ -500,91 +515,39 @@ export function CrossChainSend({
     );
   }
 
-  // The two ends of the animation: Arc, and the network it goes to.
-  const fromLogo = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img alt={arcChain.name} height={32} src={arcChain.iconUrl} width={32} />
-  );
-  const toLogo = network ? <NetworkLogo chain={network} /> : null;
-  const stepLabels = SEND_OUT_STEPS.map((entry) => sendOutStepLabel(entry, network?.name ?? ""));
-
-  // ── Done ──────────────────────────────────────────────────────────────────
-  if (stage === "done" && transfer && network) {
-    const delivered = transfer.status === "delivered";
-    const onHold = transfer.status === "on-hold";
-    const summary = `${money(transfer.received ?? quote?.receive ?? transfer.amount)} USDC to ${short(transfer.destination)} on ${network.name}`;
-    return (
-      <div className="sx-page">
-        <div className="xc-done">
-          {/* Picks up where the sending screen left off: Circle is delivering. */}
-          <TransferProgress
-            current={SEND_OUT_STEPS.indexOf("deliver")}
-            details={{
-              amount: `${money(transfer.received ?? quote?.receive ?? transfer.amount)} USDC`,
-              eyebrow: "Sent to another network",
-              explorerLabel: `View on ${network.name}`,
-              explorerUrl: transfer.destinationTxUrl ?? undefined,
-              rows: [
-                { label: "To", value: short(transfer.destination) },
-                { label: "Network", value: network.name },
-                { label: "You sent", value: `${money(transfer.amount)} USDC` },
-                ...(transfer.fee ? [{ label: "Network fee (Circle)", value: `${money(transfer.fee)} USDC` }] : []),
-                ...(transfer.serviceFee && Number(transfer.serviceFee) > 0
-                  ? [{ label: "Service fee", value: `${money(transfer.serviceFee)} USDC` }]
-                  : []),
-              ],
-            }}
-            doneSubtitle={`To ${short(transfer.destination)} on ${network.name}.`}
-            doneTitle="Delivered"
-            from={fromLogo}
-            onClose={onBack}
-            holdSubtitle={`${summary}. We couldn't confirm it automatically, so our team is checking it. Don't send it again; it shows in Activity once it's cleared.`}
-            skipIntro
-            state={delivered ? "done" : onHold ? "hold" : "running"}
-            steps={stepLabels}
-            to={toLogo}
-          />
-          {/* While Circle delivers, the receipt isn't up yet: it's fine to leave. */}
-          {!delivered && !onHold ? (
-            <>
-              <p className="xc-done-sub">{summary}. This usually takes under a minute; you can leave this page.</p>
-              <button className="sx-send xc-cta" onClick={onBack} type="button">
-                Done
-              </button>
-            </>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Sending: the coin travels Arc → network, one step at a time ───────────
-  if (stage === "sending" && network) {
-    return (
-      <div className="sx-page">
-        <TransferProgress
-          current={step ? SEND_OUT_STEPS.indexOf(step) : -1}
-          doneTitle="Delivered"
-          from={fromLogo}
-          state="running"
-          steps={stepLabels}
-          to={toLogo}
-        />
-        {wallet.kind === "circle" ? <p className="sx-muted xc-progress-note">Confirm when asked.</p> : null}
-      </div>
-    );
-  }
-
-  // ── Amount, quote ─────────────────────────────────────────────────────────
+  // ── Amount, sending and done: one chat with the address ───────────────────
+  // The send reads like a message thread: SaphraONE's notes come in on the
+  // left, your payment goes out on the right and its status ticks along under
+  // it, and the amount is typed in a composer sheet (as on Arc sends).
   const sending = stage === "sending";
+  const done = stage === "done" && transfer !== null;
+  const delivered = done && transfer?.status === "delivered";
+  const onHold = done && transfer?.status === "on-hold";
+  const stepLabels = SEND_OUT_STEPS.map((entry) => sendOutStepLabel(entry, network?.name ?? ""));
+  const sentAmount = transfer?.received ?? quote?.receive ?? transfer?.amount ?? debitAmount;
+  const bubbleStatus = delivered
+    ? "Delivered"
+    : onHold
+      ? "Being checked"
+      : done
+        ? stepLabels[SEND_OUT_STEPS.indexOf("deliver")]
+        : step
+          ? stepLabels[SEND_OUT_STEPS.indexOf(step)]
+          : "Starting…";
+  const sentAt = transfer?.createdAt ? new Date(transfer.createdAt) : new Date();
+
   return (
-    <div className="sx-page">
-      <header className="sx-bar">
+    <div className="sx-chat xc-chat">
+      <header className="sx-chat-head">
         <button
           aria-label="Back"
           className="sx-round"
           disabled={sending}
           onClick={() => {
+            if (done) {
+              onBack();
+              return;
+            }
             setError(null);
             setStage("to");
           }}
@@ -592,132 +555,251 @@ export function CrossChainSend({
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="sx-title">Amount</h1>
+        <div className="sx-chat-who">
+          {network ? <NetworkLogo chain={network} className="xc-chat-avatar" /> : null}
+          <span className="sx-chat-name">{short(trimmed)}</span>
+          <span className="sx-chat-wallet">USDC on {network?.name}</span>
+        </div>
         <span />
       </header>
 
-      <div className="xc-recipient">
-        <span className="xc-recipient-label">To</span>
-        <span className="xc-recipient-value">
-          {short(trimmed)} <em>on {network?.name}</em>
-        </span>
+      <div className="sx-log xc-log">
+        <p className="sx-day">Today</p>
+
+        {/* SaphraONE's note, like the first message in a new chat. */}
+        <div className="sx-bubble-row is-in">
+          <div className="sx-bubble xc-note">
+            <span className="xc-note-from">SaphraONE</span>
+            <span>
+              Send only to an address that accepts <strong>USDC on {network?.name}</strong>. A payment to the wrong
+              network or address can&apos;t be reversed.
+            </span>
+          </div>
+        </div>
+        {isOwnArcAddress ? (
+          <div className="sx-bubble-row is-in">
+            <div className="sx-bubble xc-note">
+              <span>This is your own SaphraONE address. Make sure you control it on {network?.name}.</span>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Your payment, once it is on its way. */}
+        {sending || done ? (
+          <div>
+            <div className="sx-bubble-row is-out">
+              {delivered ? <CheckCheck className="sx-bubble-check h-5 w-5" /> : null}
+              <div className="sx-bubble xc-sent">
+                <span className="sx-bubble-amount">{money(sentAmount)} USDC</span>
+                <span className="sx-bubble-note xc-sent-status">
+                  {delivered ? null : onHold ? (
+                    <Clock className="h-3.5 w-3.5" />
+                  ) : (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {bubbleStatus}
+                </span>
+              </div>
+            </div>
+            <p className="sx-bubble-time is-out">
+              {sentAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+              {delivered && transfer?.destinationTxUrl ? (
+                <>
+                  {" · "}
+                  <a className="xc-chat-link" href={transfer.destinationTxUrl} rel="noreferrer" target="_blank">
+                    View on {network?.name}
+                  </a>
+                </>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
+
+        {sending && wallet.kind === "circle" ? (
+          <div className="sx-bubble-row is-in">
+            <div className="sx-bubble xc-note">
+              <span>Confirm when asked, and keep this page open until it says Delivering.</span>
+            </div>
+          </div>
+        ) : null}
+
+        {done && transfer ? (
+          <div className="sx-bubble-row is-in">
+            <div className="sx-bubble xc-note">
+              <span className="xc-note-from">SaphraONE</span>
+              <span>
+                {delivered
+                  ? `Delivered to ${short(transfer.destination)} on ${network?.name}.`
+                  : onHold
+                    ? "We couldn't confirm it automatically, so our team is checking it. Don't send it again; it shows in Activity once it's cleared."
+                    : "On its way. This usually takes under a minute, and you can leave this page."}
+              </span>
+              <span className="xc-note-rows">
+                <span>You sent {money(transfer.amount)} USDC</span>
+                {transfer.fee ? <span>Network fee (Circle) {money(transfer.fee)} USDC</span> : null}
+                {transfer.serviceFee && Number(transfer.serviceFee) > 0 ? (
+                  <span>Service fee {money(transfer.serviceFee)} USDC</span>
+                ) : null}
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        {error ? (
+          <div className="sx-bubble-row is-in">
+            <div className="sx-bubble xc-note is-error">
+              <span>{error}</span>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <section className="sx-section">
-        <label className="sx-label" htmlFor="xc-amount">
-          {feeMode === "add" ? "They receive (USDC)" : "You send (USDC)"}
-        </label>
-        <div className="xc-amount">
-          <input
-            disabled={sending}
-            id="xc-amount"
-            inputMode="decimal"
-            onChange={(event) => {
-              const next = event.target.value.replace(/,/g, ".");
-              if (/^\d*(\.\d{0,6})?$/.test(next)) setAmount(next);
-            }}
-            placeholder="0.00"
-            value={amount}
-          />
-          {usdcBalance !== undefined ? (
-            <button
-              className="xc-max"
-              disabled={sending}
-              onClick={() => setAmount(String(Math.floor(Number(usdcBalance) * 1e6) / 1e6))}
-              type="button"
-            >
-              Max
-            </button>
-          ) : null}
-        </div>
-        <p className="sx-muted">
-          {usdcBalance !== undefined
-            ? `Available on ${arcChain.name}: ${hideBalance ? "••••" : `${money(usdcBalance)} USDC`}`
-            : `From your ${arcChain.name} balance`}
-        </p>
-      </section>
-
-      <div aria-label="Network fee" className="xc-feemode" role="radiogroup">
-        {(
-          [
-            ["deduct", "Take fee from amount"],
-            ["add", "Add fee on top"],
-          ] as const
-        ).map(([mode, label]) => (
-          <button
-            aria-checked={feeMode === mode}
-            className={cn("xc-feemode-option", feeMode === mode && "is-active")}
-            disabled={sending}
-            key={mode}
-            onClick={() => setFeeMode(mode)}
-            role="radio"
+      <div className="sx-dock">
+        {done ? (
+          <Button className="sx-dock-cta" onClick={onBack} type="button">
+            Done
+          </Button>
+        ) : (
+          <Button
+            className="sx-dock-cta"
+            disabled={sending || !network}
+            onClick={() => setComposerOpen(true)}
             type="button"
           >
-            {label}
-          </button>
-        ))}
+            {sending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+              </>
+            ) : resumeRef.current ? (
+              "Try again"
+            ) : (
+              "Send money"
+            )}
+          </Button>
+        )}
       </div>
 
-      <section className="xc-quote" aria-live="polite">
-        {quoting ? (
-          <p className="sx-muted">
-            <Loader2 className="h-4 w-4 animate-spin" /> Getting the network fee…
-          </p>
-        ) : quote ? (
-          <>
-            <div className="xc-quote-row">
-              <span>You send</span>
-              <span>{money(quote.amount)} USDC</span>
+      <Sheet onOpenChange={setComposerOpen} open={composerOpen}>
+        <SheetContent
+          className={cn("gap-0 p-0", sheetSide === "bottom" ? bottomSheetClassName : "w-full sm:max-w-md")}
+          showCloseButton={false}
+          side={sheetSide}
+        >
+          {sheetSide === "bottom" ? <SheetGrabber /> : null}
+          <div className="sx-sheet sx-amount-sheet">
+            <SheetTitle className="text-center text-lg font-bold">
+              Send to {short(trimmed)} on {network?.name}
+            </SheetTitle>
+            <SheetDescription className="sr-only">Enter the amount to send</SheetDescription>
+            <div className="sx-balance">
+              {usdcBalance !== undefined
+                ? `USDC on ${arcChain.name}: ${hideBalance ? "••••" : money(usdcBalance)}`
+                : `From your ${arcChain.name} balance`}
             </div>
-            <div className="xc-quote-row">
-              <span>Network fee (Circle)</span>
-              <span>{money(quote.fee)} USDC</span>
+            <div className="sx-amount-row">
+              <input
+                aria-label={feeMode === "add" ? "They receive (USDC)" : "You send (USDC)"}
+                className="sx-amount"
+                inputMode="decimal"
+                onChange={(event) => {
+                  const next = event.target.value.replace(/,/g, ".");
+                  if (/^\d*(\.\d{0,6})?$/.test(next)) setAmount(next);
+                }}
+                placeholder="0.00"
+                value={amount}
+              />
+              {usdcBalance !== undefined ? (
+                <button
+                  className="sx-chip"
+                  onClick={() => setAmount(String(Math.floor(Number(usdcBalance) * 1e6) / 1e6))}
+                  type="button"
+                >
+                  MAX
+                </button>
+              ) : null}
             </div>
-            {hasServiceFee ? (
-              <div className="xc-quote-row">
-                <span>Service fee</span>
-                <span>{money(quote.serviceFee)} USDC</span>
-              </div>
-            ) : null}
-            <div className="xc-quote-row">
-              <span>They receive at least</span>
-              <strong>{money(quote.receive)} USDC</strong>
-            </div>
-            {hasServiceFee ? (
-              <div className="xc-quote-row">
-                <span>Total from your balance</span>
-                <strong>{money(quote.total)} USDC</strong>
-              </div>
-            ) : null}
-            <div className="xc-quote-row">
-              <span>Arrives</span>
-              <span>in about 30 seconds, on {network?.name}</span>
-            </div>
-          </>
-        ) : (
-          <p className="sx-muted">
-            Enter at least {minimumSend} USDC to see the fees.
-            {network?.key === "ethereum" ? " Ethereum costs more than the other networks (about $1.20)." : ""}
-          </p>
-        )}
-        {quoteError ? <p className="xc-hint is-error">{quoteError}</p> : null}
-        {overBalance ? <p className="xc-hint is-error">That is more than your USDC balance.</p> : null}
-      </section>
 
-      {error ? <p className="xc-hint is-error">{error}</p> : null}
-      {!wallet.canSign && wallet.reason ? <p className="xc-hint is-error">{wallet.reason}</p> : null}
+            <div aria-label="Network fee" className="xc-feemode" role="radiogroup">
+              {(
+                [
+                  ["deduct", "Take fee from amount"],
+                  ["add", "Add fee on top"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  aria-checked={feeMode === mode}
+                  className={cn("xc-feemode-option", feeMode === mode && "is-active")}
+                  key={mode}
+                  onClick={() => setFeeMode(mode)}
+                  role="radio"
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-      <button className="sx-send xc-cta" disabled={!canSend || sending} onClick={() => void send()} type="button">
-        {sending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Sending…
-          </>
-        ) : resumeRef.current ? (
-          "Try again"
-        ) : (
-          `Send${debitAmount ? ` ${money(debitAmount)} USDC` : ""}`
-        )}
-      </button>
+            <section className="xc-quote" aria-live="polite">
+              {quoting ? (
+                <p className="sx-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Getting the network fee…
+                </p>
+              ) : quote ? (
+                <>
+                  <div className="xc-quote-row">
+                    <span>Network fee (Circle)</span>
+                    <span>{money(quote.fee)} USDC</span>
+                  </div>
+                  {hasServiceFee ? (
+                    <div className="xc-quote-row">
+                      <span>Service fee</span>
+                      <span>{money(quote.serviceFee)} USDC</span>
+                    </div>
+                  ) : null}
+                  <div className="xc-quote-row">
+                    <span>They receive at least</span>
+                    <strong>{money(quote.receive)} USDC</strong>
+                  </div>
+                  <div className="xc-quote-row">
+                    <span>From your balance</span>
+                    <strong>{money(quote.total)} USDC</strong>
+                  </div>
+                  <div className="xc-quote-row">
+                    <span>Arrives</span>
+                    <span>in about 30 seconds</span>
+                  </div>
+                </>
+              ) : (
+                <p className="sx-muted">
+                  Enter at least {minimumSend} USDC to see the fees.
+                  {network?.key === "ethereum" ? " Ethereum costs more than the other networks (about $1.20)." : ""}
+                </p>
+              )}
+              {quoteError ? <p className="xc-hint is-error">{quoteError}</p> : null}
+              {overBalance ? <p className="xc-hint is-error">That is more than your USDC balance.</p> : null}
+              {!wallet.canSign && wallet.reason ? <p className="xc-hint is-error">{wallet.reason}</p> : null}
+            </section>
+
+            <div className="sx-note-row xc-send-row">
+              <span className="xc-send-total">
+                {canSend ? `Send ${money(debitAmount)} USDC` : "Enter an amount"}
+              </span>
+              <button
+                aria-label="Send"
+                className="sx-send"
+                disabled={!canSend || sending}
+                onClick={() => {
+                  setComposerOpen(false);
+                  void send();
+                }}
+                type="button"
+              >
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
