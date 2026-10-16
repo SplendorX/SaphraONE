@@ -3,9 +3,7 @@
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCheck,
   ClipboardPaste,
-  Clock,
   Loader2,
   ScanQrCode,
   Send,
@@ -26,6 +24,7 @@ import {
 
 import { NetworkLogo, NetworkPicker } from "@/components/send/network-picker";
 import { QrScanSheet } from "@/components/send/qr-scan-sheet";
+import { TransferProgress } from "@/components/send/transfer-progress";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
 import { arcChain, arcTransport } from "@/lib/chains";
@@ -515,27 +514,86 @@ export function CrossChainSend({
     );
   }
 
-  // ── Amount, sending and done: one chat with the address ───────────────────
-  // The send reads like a message thread: SaphraONE's notes come in on the
-  // left, your payment goes out on the right and its status ticks along under
-  // it, and the amount is typed in a composer sheet (as on Arc sends).
-  const sending = stage === "sending";
-  const done = stage === "done" && transfer !== null;
-  const delivered = done && transfer?.status === "delivered";
-  const onHold = done && transfer?.status === "on-hold";
+  // The two ends of the animation: Arc, and the network it goes to.
+  const fromLogo = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img alt={arcChain.name} height={32} src={arcChain.iconUrl} width={32} />
+  );
+  const toLogo = network ? <NetworkLogo chain={network} /> : null;
   const stepLabels = SEND_OUT_STEPS.map((entry) => sendOutStepLabel(entry, network?.name ?? ""));
-  const sentAmount = transfer?.received ?? quote?.receive ?? transfer?.amount ?? debitAmount;
-  const bubbleStatus = delivered
-    ? "Delivered"
-    : onHold
-      ? "Being checked"
-      : done
-        ? stepLabels[SEND_OUT_STEPS.indexOf("deliver")]
-        : step
-          ? stepLabels[SEND_OUT_STEPS.indexOf(step)]
-          : "Starting…";
-  const sentAt = transfer?.createdAt ? new Date(transfer.createdAt) : new Date();
 
+  // ── Done ──────────────────────────────────────────────────────────────────
+  if (stage === "done" && transfer && network) {
+    const delivered = transfer.status === "delivered";
+    const onHold = transfer.status === "on-hold";
+    const summary = `${money(transfer.received ?? quote?.receive ?? transfer.amount)} USDC to ${short(transfer.destination)} on ${network.name}`;
+    return (
+      <div className="sx-page">
+        <div className="xc-done">
+          {/* Picks up where the sending screen left off: Circle is delivering. */}
+          <TransferProgress
+            current={SEND_OUT_STEPS.indexOf("deliver")}
+            details={{
+              amount: `${money(transfer.received ?? quote?.receive ?? transfer.amount)} USDC`,
+              eyebrow: "Sent to another network",
+              explorerLabel: `View on ${network.name}`,
+              explorerUrl: transfer.destinationTxUrl ?? undefined,
+              rows: [
+                { label: "To", value: short(transfer.destination) },
+                { label: "Network", value: network.name },
+                { label: "You sent", value: `${money(transfer.amount)} USDC` },
+                ...(transfer.fee ? [{ label: "Network fee (Circle)", value: `${money(transfer.fee)} USDC` }] : []),
+                ...(transfer.serviceFee && Number(transfer.serviceFee) > 0
+                  ? [{ label: "Service fee", value: `${money(transfer.serviceFee)} USDC` }]
+                  : []),
+              ],
+            }}
+            doneSubtitle={`To ${short(transfer.destination)} on ${network.name}.`}
+            doneTitle="Delivered"
+            from={fromLogo}
+            onClose={onBack}
+            holdSubtitle={`${summary}. We couldn't confirm it automatically, so our team is checking it. Don't send it again; it shows in Activity once it's cleared.`}
+            skipIntro
+            state={delivered ? "done" : onHold ? "hold" : "running"}
+            steps={stepLabels}
+            to={toLogo}
+          />
+          {/* While Circle delivers, the receipt isn't up yet: it's fine to leave. */}
+          {!delivered && !onHold ? (
+            <>
+              <p className="xc-done-sub">{summary}. This usually takes under a minute; you can leave this page.</p>
+              <button className="sx-send xc-cta" onClick={onBack} type="button">
+                Done
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Sending: the coin travels Arc → network, one step at a time ───────────
+  if (stage === "sending" && network) {
+    return (
+      <div className="sx-page">
+        <TransferProgress
+          current={step ? SEND_OUT_STEPS.indexOf(step) : -1}
+          doneTitle="Delivered"
+          from={fromLogo}
+          state="running"
+          steps={stepLabels}
+          to={toLogo}
+        />
+        {wallet.kind === "circle" ? <p className="sx-muted xc-progress-note">Confirm when asked.</p> : null}
+      </div>
+    );
+  }
+
+  // ── Amount: a chat with the address ───────────────────────────────────────
+  // Choosing the amount reads like a message thread: SaphraONE's notes come
+  // in on the left and the amount is typed in a composer sheet (as on Arc
+  // sends). Sending and delivery use the animation above.
+  const sending = stage === "sending";
   return (
     <div className="sx-chat xc-chat">
       <header className="sx-chat-head">
@@ -544,10 +602,6 @@ export function CrossChainSend({
           className="sx-round"
           disabled={sending}
           onClick={() => {
-            if (done) {
-              onBack();
-              return;
-            }
             setError(null);
             setStage("to");
           }}
@@ -584,67 +638,6 @@ export function CrossChainSend({
           </div>
         ) : null}
 
-        {/* Your payment, once it is on its way. */}
-        {sending || done ? (
-          <div>
-            <div className="sx-bubble-row is-out">
-              {delivered ? <CheckCheck className="sx-bubble-check h-5 w-5" /> : null}
-              <div className="sx-bubble xc-sent">
-                <span className="sx-bubble-amount">{money(sentAmount)} USDC</span>
-                <span className="sx-bubble-note xc-sent-status">
-                  {delivered ? null : onHold ? (
-                    <Clock className="h-3.5 w-3.5" />
-                  ) : (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  )}
-                  {bubbleStatus}
-                </span>
-              </div>
-            </div>
-            <p className="sx-bubble-time is-out">
-              {sentAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-              {delivered && transfer?.destinationTxUrl ? (
-                <>
-                  {" · "}
-                  <a className="xc-chat-link" href={transfer.destinationTxUrl} rel="noreferrer" target="_blank">
-                    View on {network?.name}
-                  </a>
-                </>
-              ) : null}
-            </p>
-          </div>
-        ) : null}
-
-        {sending && wallet.kind === "circle" ? (
-          <div className="sx-bubble-row is-in">
-            <div className="sx-bubble xc-note">
-              <span>Confirm when asked, and keep this page open until it says Delivering.</span>
-            </div>
-          </div>
-        ) : null}
-
-        {done && transfer ? (
-          <div className="sx-bubble-row is-in">
-            <div className="sx-bubble xc-note">
-              <span className="xc-note-from">SaphraONE</span>
-              <span>
-                {delivered
-                  ? `Delivered to ${short(transfer.destination)} on ${network?.name}.`
-                  : onHold
-                    ? "We couldn't confirm it automatically, so our team is checking it. Don't send it again; it shows in Activity once it's cleared."
-                    : "On its way. This usually takes under a minute, and you can leave this page."}
-              </span>
-              <span className="xc-note-rows">
-                <span>You sent {money(transfer.amount)} USDC</span>
-                {transfer.fee ? <span>Network fee (Circle) {money(transfer.fee)} USDC</span> : null}
-                {transfer.serviceFee && Number(transfer.serviceFee) > 0 ? (
-                  <span>Service fee {money(transfer.serviceFee)} USDC</span>
-                ) : null}
-              </span>
-            </div>
-          </div>
-        ) : null}
-
         {error ? (
           <div className="sx-bubble-row is-in">
             <div className="sx-bubble xc-note is-error">
@@ -655,12 +648,7 @@ export function CrossChainSend({
       </div>
 
       <div className="sx-dock">
-        {done ? (
-          <Button className="sx-dock-cta" onClick={onBack} type="button">
-            Done
-          </Button>
-        ) : (
-          <Button
+        <Button
             className="sx-dock-cta"
             disabled={sending || !network}
             onClick={() => setComposerOpen(true)}
@@ -676,7 +664,6 @@ export function CrossChainSend({
               "Send money"
             )}
           </Button>
-        )}
       </div>
 
       <Sheet onOpenChange={setComposerOpen} open={composerOpen}>

@@ -50,19 +50,6 @@
   color: var(--destructive);
 }
 
-/* Your payment, going out on the right, with its status under the amount. */
-.xc-sent-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.xc-chat-link {
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 /* The composer's last row: what will leave the balance, then the send arrow. */
 .xc-send-row {
   align-items: center;
