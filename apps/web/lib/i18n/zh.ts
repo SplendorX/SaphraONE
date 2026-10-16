@@ -239,6 +239,12 @@ export const zh: Messages = {
     usernameChecking: "正在检查…",
     usernameAvailable: "{name}.one 可以使用。",
     usernameTaken: "该 ONE ID 已被占用，请换一个。",
+    oneIdAvailableShort: "可用",
+    oneIdTakenShort: "已被占用",
+    oneIdClaim: "领取",
+    oneIdClaimed: "已领取",
+    oneIdChange: "更改",
+    oneIdClaimFirst: "领取你的 ONE ID 后继续。",
     countryHint: "你的账户将按所在国家的地区进行设置。",
   },
   landing: {

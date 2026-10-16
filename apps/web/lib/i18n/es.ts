@@ -256,6 +256,12 @@ export const es: Messages = {
     usernameChecking: "Comprobando…",
     usernameAvailable: "{name}.one está disponible.",
     usernameTaken: "Ese ONE ID ya está en uso. Prueba otro.",
+    oneIdAvailableShort: "Disponible",
+    oneIdTakenShort: "Ocupado",
+    oneIdClaim: "Reclamar",
+    oneIdClaimed: "Reclamado",
+    oneIdChange: "Cambiar",
+    oneIdClaimFirst: "Reclama tu ONE ID para continuar.",
     countryHint: "Tu cuenta se configura para la región de tu país.",
   },
   landing: {

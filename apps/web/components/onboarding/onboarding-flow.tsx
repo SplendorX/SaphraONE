@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Check, CheckCircle2, Coins, Loader2, ShieldCheck, UserRound, XCircle } from "lucide-react";
+import { Briefcase, Check, Coins, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
@@ -13,7 +13,7 @@ import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Input } from "@/components/ui/input";
-import { OneIdInput } from "@/components/one-id-input";
+import { OneIdClaimBox } from "@/components/onboarding/one-id-claim-box";
 import { PaymentSecuritySettings } from "@/components/settings/payment-security-settings";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { useLocale, useT } from "@/components/locale-provider";
@@ -60,43 +60,6 @@ function UsernameSuggestion({
   );
 }
 
-function UsernameStatus({ check, formatError }: { check: UsernameCheck; formatError: string | null }) {
-  const t = useT();
-  let content: React.ReactNode = null;
-  let tone = "text-muted-foreground";
-  if (formatError) {
-    content = formatError;
-  } else if (check.state === "checking") {
-    content = (
-      <>
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        {t("onboarding.usernameChecking")}
-      </>
-    );
-  } else if (check.state === "available") {
-    tone = "text-emerald-600 dark:text-emerald-400";
-    content = (
-      <>
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        {t("onboarding.usernameAvailable", { name: check.username })}
-      </>
-    );
-  } else if (check.state === "taken") {
-    tone = "text-destructive";
-    content = (
-      <>
-        <XCircle className="h-3.5 w-3.5" />
-        {t("onboarding.usernameTaken")}
-      </>
-    );
-  }
-  return (
-    <p aria-live="polite" className={cn("mt-2 flex min-h-4 items-center gap-1.5 text-xs", tone)} id="onboarding-username-status">
-      {content}
-    </p>
-  );
-}
-
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
@@ -110,6 +73,8 @@ export function OnboardingFlow() {
   const workspaceContext = useOptionalWorkspace();
   const [step, setStep] = useState<Step>("language");
   const [username, setUsername] = useState("");
+  // The ONE ID the person tapped Claim on; locked for good when they continue.
+  const [claimedUsername, setClaimedUsername] = useState<string | null>(null);
   // The name made at sign-in (from the Google name, or the wallet). Offered,
   // never filled in: the person picks their own @username here.
   const [suggestedUsername, setSuggestedUsername] = useState<string | null>(null);
@@ -235,6 +200,39 @@ export function OnboardingFlow() {
   // Continue waits for the check, and never goes ahead with a taken name.
   const usernameBlocked =
     Boolean(usernameError) || usernameCheck.state === "checking" || usernameCheck.state === "taken";
+  const oneIdClaimed =
+    Boolean(claimedUsername) && claimedUsername === normalizeUsername(username) && !usernameBlocked;
+
+  function renderOneIdField(label: string, className: string) {
+    return (
+      <div className={className}>
+        <span className="block text-sm font-medium">{label}</span>
+        <OneIdClaimBox
+          availability={usernameCheck.state}
+          claimed={oneIdClaimed}
+          disabled={busy}
+          formatError={usernameError}
+          id="onboarding-one-id"
+          onChange={setUsername}
+          onClaim={() => setClaimedUsername(normalizeUsername(username))}
+          onUnclaim={() => setClaimedUsername(null)}
+          value={username}
+        />
+        {!oneIdClaimed ? (
+          <UsernameSuggestion current={username} onPick={setUsername} suggestion={suggestedUsername} />
+        ) : null}
+        {!oneIdClaimed && username && usernameError ? (
+          <p className="mt-2 text-xs text-muted-foreground">{usernameError}</p>
+        ) : null}
+        {!oneIdClaimed && usernameCheck.state === "taken" ? (
+          <p className="mt-2 text-xs text-destructive">{t("onboarding.usernameTaken")}</p>
+        ) : null}
+        <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+          Choose carefully: you can&apos;t change your ONE ID after you continue.
+        </p>
+      </div>
+    );
+  }
   const countryMissing = !findCountry(country);
   const contactEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
   const contactEmailInvalid = Boolean(contactEmail.trim()) && !contactEmailValid;
@@ -492,25 +490,7 @@ export function OnboardingFlow() {
               value={fullName}
             />
           </label>
-          <label className="mt-5 block text-sm font-medium">
-            {t("onboarding.username")}
-            <OneIdInput
-              aria-describedby="onboarding-username-status"
-              className="mt-2"
-              onValueChange={setUsername}
-              placeholder="yourname"
-              value={username}
-            />
-          </label>
-          <UsernameSuggestion
-            current={username}
-            onPick={setUsername}
-            suggestion={suggestedUsername}
-          />
-          <UsernameStatus check={usernameCheck} formatError={usernameError} />
-          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Choose carefully: you can&apos;t change your ONE ID after you continue.
-          </p>
+          {renderOneIdField(t("onboarding.username"), "mt-5")}
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -538,12 +518,15 @@ export function OnboardingFlow() {
               {t("common.back")}
             </Button>
             <Button
-              disabled={busy || usernameBlocked || countryMissing}
+              disabled={busy || usernameBlocked || !oneIdClaimed || countryMissing}
               onClick={() => void finish("personal")}
             >
               {t("onboarding.continuePersonal")}
             </Button>
           </div>
+          {!oneIdClaimed ? (
+            <p className="mt-3 text-xs text-muted-foreground">{t("onboarding.oneIdClaimFirst")}</p>
+          ) : null}
         </section>
       ) : null}
 
@@ -553,25 +536,7 @@ export function OnboardingFlow() {
           <p className="mt-3 text-sm text-muted-foreground">
             {t("onboarding.createBusinessProfileBody")}
           </p>
-          <label className="mt-8 block text-sm font-medium">
-            {t("common.username")}
-            <OneIdInput
-              aria-describedby="onboarding-username-status"
-              className="mt-2"
-              onValueChange={setUsername}
-              placeholder="acme"
-              value={username}
-            />
-          </label>
-          <UsernameSuggestion
-            current={username}
-            onPick={setUsername}
-            suggestion={suggestedUsername}
-          />
-          <UsernameStatus check={usernameCheck} formatError={usernameError} />
-          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
-            Choose carefully: you can&apos;t change your ONE ID after you continue.
-          </p>
+          {renderOneIdField(t("common.username"), "mt-8")}
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -672,13 +637,21 @@ export function OnboardingFlow() {
             </Button>
             <Button
               disabled={
-                busy || usernameBlocked || countryMissing || !businessName.trim() || !contactEmailValid
+                busy ||
+                usernameBlocked ||
+                !oneIdClaimed ||
+                countryMissing ||
+                !businessName.trim() ||
+                !contactEmailValid
               }
               onClick={() => void finish("business")}
             >
               {t("onboarding.createBusinessCta")}
             </Button>
           </div>
+          {!oneIdClaimed ? (
+            <p className="mt-3 text-xs text-muted-foreground">{t("onboarding.oneIdClaimFirst")}</p>
+          ) : null}
         </section>
       ) : null}
 

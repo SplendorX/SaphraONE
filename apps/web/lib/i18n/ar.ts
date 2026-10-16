@@ -255,6 +255,12 @@ export const ar: Messages = {
     usernameChecking: "جارٍ التحقق…",
     usernameAvailable: "{name}.one متاح.",
     usernameTaken: "هذا الـ ONE ID مأخوذ. جرّب واحدًا آخر.",
+    oneIdAvailableShort: "متاح",
+    oneIdTakenShort: "محجوز",
+    oneIdClaim: "احجز",
+    oneIdClaimed: "محجوز لك",
+    oneIdChange: "تغيير",
+    oneIdClaimFirst: "احجز ONE ID الخاص بك للمتابعة.",
     countryHint: "يُهيّأ حسابك وفق منطقة بلدك.",
   },
   landing: {

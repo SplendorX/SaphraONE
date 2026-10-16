@@ -255,6 +255,12 @@ export const de: Messages = {
     usernameChecking: "Wird geprüft…",
     usernameAvailable: "{name}.one ist verfügbar.",
     usernameTaken: "Diese ONE ID ist vergeben. Versuch eine andere.",
+    oneIdAvailableShort: "Verfügbar",
+    oneIdTakenShort: "Vergeben",
+    oneIdClaim: "Sichern",
+    oneIdClaimed: "Gesichert",
+    oneIdChange: "Ändern",
+    oneIdClaimFirst: "Sichere deine ONE ID, um fortzufahren.",
     countryHint: "Dein Konto wird für die Region deines Landes eingerichtet.",
   },
   landing: {

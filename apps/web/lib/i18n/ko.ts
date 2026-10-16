@@ -239,6 +239,12 @@ export const ko: Messages = {
     usernameChecking: "확인 중…",
     usernameAvailable: "{name}.one을(를) 사용할 수 있습니다.",
     usernameTaken: "이미 사용 중인 ONE ID입니다. 다른 ID를 입력하세요.",
+    oneIdAvailableShort: "사용 가능",
+    oneIdTakenShort: "사용 중",
+    oneIdClaim: "받기",
+    oneIdClaimed: "받음",
+    oneIdChange: "변경",
+    oneIdClaimFirst: "계속하려면 ONE ID를 받으세요.",
     countryHint: "계정은 국가의 지역에 맞게 설정됩니다.",
   },
   landing: {

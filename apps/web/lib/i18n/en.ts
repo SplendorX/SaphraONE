@@ -256,6 +256,12 @@ export const en = {
     usernameChecking: "Checking…",
     usernameAvailable: "{name}.one is available.",
     usernameTaken: "That ONE ID is taken. Try another.",
+    oneIdAvailableShort: "Available",
+    oneIdTakenShort: "Taken",
+    oneIdClaim: "Claim",
+    oneIdClaimed: "Claimed",
+    oneIdChange: "Change",
+    oneIdClaimFirst: "Claim your ONE ID to continue.",
     countryHint: "Your account is set up for your country's region.",
   },
   landing: {

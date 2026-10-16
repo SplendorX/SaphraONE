@@ -239,6 +239,12 @@ export const ja: Messages = {
     usernameChecking: "確認中…",
     usernameAvailable: "{name}.one は使用できます。",
     usernameTaken: "この ONE ID は使用されています。別の ID をお試しください。",
+    oneIdAvailableShort: "利用可能",
+    oneIdTakenShort: "使用済み",
+    oneIdClaim: "取得",
+    oneIdClaimed: "取得済み",
+    oneIdChange: "変更",
+    oneIdClaimFirst: "続けるには ONE ID を取得してください。",
     countryHint: "アカウントはお住まいの国の地域に合わせて設定されます。",
   },
   landing: {

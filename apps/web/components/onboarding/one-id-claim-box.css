@@ -1,0 +1,188 @@
+/* Onboarding's ONE ID claim box. Its own file (not globals.css), so the build cache can't serve a stale copy. */
+
+.oc-box {
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.6rem;
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.35rem 0.35rem 1.15rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+  border-radius: 9999px;
+  background: var(--card);
+  box-shadow: 0 10px 30px -18px color-mix(in oklch, var(--primary) 70%, transparent);
+  cursor: text;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.oc-box:focus-within {
+  border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+.oc-field {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: baseline;
+  overflow: hidden;
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: text;
+}
+
+.oc-name {
+  display: inline-grid;
+  min-width: 1ch;
+  max-width: 100%;
+}
+
+.oc-mirror,
+.oc-name input {
+  grid-area: 1 / 1;
+  font: inherit;
+  letter-spacing: -0.01em;
+  white-space: pre;
+}
+
+.oc-mirror {
+  visibility: hidden;
+  overflow: hidden;
+}
+
+.oc-name input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+}
+
+.oc-name input::placeholder {
+  color: color-mix(in oklch, var(--muted-foreground) 70%, transparent);
+}
+
+.oc-suffix {
+  flex-shrink: 0;
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  opacity: 0.75;
+}
+
+.oc-status {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+.oc-status.is-good {
+  color: #16a34a;
+}
+
+.oc-status.is-bad {
+  color: var(--destructive);
+}
+
+.dark .oc-status.is-good {
+  color: #4ade80;
+}
+
+.oc-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.oc-claim {
+  flex-shrink: 0;
+  height: 2.85rem;
+  padding: 0 1.35rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #6d28d9, #4f46e5 55%, #2563eb);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow: 0 8px 20px -10px rgb(79 70 229 / 0.8);
+  transition: filter 150ms ease, opacity 150ms ease, transform 150ms ease;
+}
+
+.oc-claim:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.oc-claim:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.oc-claim:disabled {
+  cursor: default;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+/* Claimed: the name is theirs, with a way back until they continue. */
+.oc-box.is-claimed {
+  padding-left: 0.6rem;
+  border-color: color-mix(in oklch, #16a34a 45%, var(--border));
+  background: color-mix(in oklch, #16a34a 6%, var(--card));
+  cursor: default;
+}
+
+.oc-claimed-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 9999px;
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.oc-name-static {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oc-change {
+  flex-shrink: 0;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.oc-change:hover:not(:disabled) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+/* Narrow phones: the status keeps its dot and drops the word. */
+@container (max-width: 22rem) {
+  .oc-status-text {
+    display: none;
+  }
+
+  .oc-claim {
+    padding: 0 1rem;
+  }
+}
