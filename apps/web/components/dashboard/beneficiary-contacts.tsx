@@ -82,7 +82,7 @@ export function BeneficiaryContacts({
             Beneficiaries
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Saved names with username or wallet. Pick one to fill Pay.
+            Saved names with ONE ID or wallet. Pick one to fill Pay.
           </p>
         </div>
         <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.9rem] border border-border bg-primary/8 text-primary">

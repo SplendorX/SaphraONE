@@ -82,7 +82,7 @@ export function RecipientStatus({
           {resolvedUsername
             ? `${resolvedUsername}.one · ${short}`
             : pastedUsername
-              ? `Belongs to @${pastedUsername} · ${short}`
+              ? `Belongs to ${pastedUsername}.one · ${short}`
               : `Wallet ${short} (no SaphraONE account)`}
         </span>
       </span>

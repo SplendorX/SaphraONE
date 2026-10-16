@@ -4,7 +4,6 @@ import { BeneficiaryPickerSheet } from "@/components/beneficiary-picker-sheet";
 import { RecipientStatus } from "@/components/recipient-status";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AtSign,
   CheckCircle2,
   Loader2,
   Plus,
@@ -248,7 +247,7 @@ export const BatchPeopleComposer = forwardRef<
       const query = row.query.trim();
       if (!query && !row.amount.trim()) return;
       if (!query) {
-        errors.push(`Person ${line}: add a username or wallet.`);
+        errors.push(`Person ${line}: add a ONE ID or wallet.`);
         return;
       }
       if (row.resolving) return;
@@ -389,7 +388,7 @@ export const BatchPeopleComposer = forwardRef<
                     </button>
                   </div>
                   <label className="bp-field">
-                    <AtSign className="h-4 w-4 text-primary" />
+                    <UserRound className="h-4 w-4 text-primary" />
                     <input
                       autoCapitalize="off"
                       autoComplete="off"
@@ -487,7 +486,7 @@ export const BatchPeopleComposer = forwardRef<
                     />
                   ) : (
                     <p className="mt-1.5 truncate text-xs text-muted-foreground">
-                      Enter a username or wallet address
+                      Enter a ONE ID or wallet address
                     </p>
                   )}
                 </div>

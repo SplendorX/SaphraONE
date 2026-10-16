@@ -117,7 +117,7 @@ export function GiftPointsModal({
         <SheetHeader className="p-0">
           <SheetTitle>Gift OnePoints</SheetTitle>
           <SheetDescription>
-            Send points to another SaphraONE user by username or wallet. They
+            Send points to another SaphraONE user by ONE ID or wallet. They
             can redeem them for USDC or unlock premium features.
           </SheetDescription>
         </SheetHeader>

@@ -7,7 +7,7 @@ import {
   AlertCircle,
   Archive,
   ArrowLeft,
-  AtSign,
+  UserRound,
   ExternalLink,
   Loader2,
   Pause,
@@ -202,7 +202,7 @@ export default function TeamMemberDetailPage({
                   <div className="mt-1 flex items-center gap-2">
                     {member.payment_destination_type === "SWIFTPAY_USER" ? (
                       <>
-                        <AtSign className="h-4 w-4 text-primary" />
+                        <UserRound className="h-4 w-4 text-primary" />
                         <span className="font-semibold text-foreground">
                           @{member.swiftpay_username}
                         </span>

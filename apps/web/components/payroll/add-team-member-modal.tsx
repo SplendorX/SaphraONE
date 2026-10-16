@@ -2,7 +2,7 @@
 
 import { arcChain } from "@/lib/chains";
 import { useState } from "react";
-import { AtSign, Loader2, Wallet, X } from "lucide-react";
+import { Loader2, UserRound, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UsernameField } from "@/components/username-field";
@@ -226,7 +226,7 @@ export function AddTeamMemberModal({
                     : "border-border bg-card text-muted-foreground hover:border-primary/50"
                 }`}
               >
-                <AtSign className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <p className="text-sm font-semibold">SaphraONE User</p>
                   <p className="text-xs text-muted-foreground">Pay via ONE ID</p>

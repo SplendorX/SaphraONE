@@ -94,7 +94,7 @@ export function BulkpayIntro({
       </p>
       <ul className="bulkpay-intro-points">
         <li>
-          <Users className="h-4 w-4" /> Pay by @username or wallet, or import a CSV
+          <Users className="h-4 w-4" /> Pay by ONE ID or wallet, or import a CSV
         </li>
         <li>
           <ShieldCheck className="h-4 w-4" /> {feeNote}
