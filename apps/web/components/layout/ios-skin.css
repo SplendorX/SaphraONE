@@ -84,7 +84,8 @@
       .req-title,
       .st-title,
       .sx-title,
-      .txh-title
+      .txh-title,
+      .ntf-title
     ),
   .platform-shell[data-ios] .app-frame .app-page-title h1 {
     font-size: 2.125rem;
@@ -92,18 +93,20 @@
     letter-spacing: -0.035em;
   }
 
-  /* The serif line under a tab's title (components/layout/page-tagline.tsx). */
+  /* The line under a tab's title (components/layout/page-tagline.tsx). */
   .platform-shell[data-ios] .ios-tagline {
     display: block;
     margin: -0.35rem 0 0.15rem;
     color: var(--muted-foreground);
-    font-family: var(--font-display), "Instrument Serif", ui-serif, Georgia, serif;
-    font-size: 1.45rem;
-    line-height: 1.12;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
   }
 
   .platform-shell[data-ios] .ios-tagline em {
     color: var(--primary);
+    font-style: normal;
+    font-weight: 700;
   }
 
   html.dark .platform-shell[data-ios] .ios-tagline em {
@@ -187,7 +190,7 @@
       .ramp-card,
       .tx-card,
       .dh-week,
-      .dh-services
+      .ntf-card
     ) {
     border-color: var(--ios-card-border);
     border-radius: 1.5rem;
@@ -215,7 +218,8 @@
       .recurepay-round,
       .pocket-round,
       .txh-round,
-      .insights-round-button
+      .insights-round-button,
+      .ntf-round
     ) {
     border-color: var(--ios-card-border);
     background: var(--ios-round-bg);

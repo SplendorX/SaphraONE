@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, MessageCircle, X } from "lucide-react";
+import { ArrowLeftRight, ChevronRight, MessageCircle, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { PlatformWordmark } from "@/components/brand/platform-wordmark";
 import { useT } from "@/components/locale-provider";
 import { platformNavItems } from "@/components/platform-nav";
 import { navLabelKeys } from "@/lib/i18n";
+import { rampEntryEnabled } from "@/lib/ramp/flag";
 import { openSupport } from "@/lib/support/client";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,12 @@ export function PlatformNavDrawer() {
   const closeRef = useRef<HTMLButtonElement>(null);
   const accountContext = useOptionalAccount();
 
-  const items = platformNavItems.filter((item) => !item.businessOnly || Boolean(accountContext?.isBusiness));
+  const navItems = platformNavItems.filter((item) => !item.businessOnly || Boolean(accountContext?.isBusiness));
+  // With the Naira ramp on, Withdraw takes Swap's tile on Home, so Swap
+  // lives here instead, after Dashboard.
+  const items = rampEntryEnabled
+    ? [navItems[0], { href: "/swap", icon: ArrowLeftRight, label: "Swap" }, ...navItems.slice(1)]
+    : navItems;
 
   useEffect(() => setMounted(true), []);
 

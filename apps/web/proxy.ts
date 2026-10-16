@@ -10,6 +10,7 @@ const protectedRouteMatchers = [
   "/insights",
   "/transactions",
   "/dashboard",
+  "/notifications",
   "/deposit",
   "/business",
   "/pay",

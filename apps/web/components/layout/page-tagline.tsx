@@ -1,7 +1,7 @@
 /**
- * The serif line under a tab's large title on phones, as in the iPhone app:
- * "Build your savings, *one payment at a time.*" The part after the last
- * comma is set in italic purple. Hidden on desktop (components/layout/ios-skin.css).
+ * The line under a tab's large title on phones: "Build your savings, one
+ * payment at a time." The part after the last comma is set in purple.
+ * Hidden on desktop (components/layout/ios-skin.css).
  */
 export function PageTagline({ text }: { text: string }) {
   const cut = text.lastIndexOf(", ");
