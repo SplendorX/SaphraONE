@@ -341,7 +341,12 @@ export function RewardsPage() {
       {/* Quests, when any are live */}
       {data.quests.length > 0 ? (
         <section className="rw-card">
-          <h2 className="rw-card-title">Quests</h2>
+          <div className="rw-card-row">
+            <h2 className="rw-card-title">Quests</h2>
+            <span className="rw-muted rw-small">
+              {data.quests.filter((quest) => quest.completed).length} / {data.quests.length}
+            </span>
+          </div>
           <ul className="rw-quests">
             {data.quests.map((quest) => (
               <li className={cn(quest.completed && "is-done")} key={quest.id}>
@@ -351,6 +356,11 @@ export function RewardsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="rw-activity-label">{quest.title}</p>
                   {quest.description ? <p className="rw-activity-sub">{quest.description}</p> : null}
+                  {quest.reward.kind === "percent" && !quest.completed ? (
+                    <p className="rw-activity-sub">
+                      {quest.reward.percent}% back in points, up to {points(quest.points)}
+                    </p>
+                  ) : null}
                   {quest.progress && !quest.completed ? (
                     <div className="rw-quest-progress">
                       <span
@@ -364,9 +374,27 @@ export function RewardsPage() {
                       : null}
                     {quest.progress && !quest.completed && quest.endsAt ? " · " : null}
                     {quest.endsAt ? `Ends ${new Date(quest.endsAt).toLocaleDateString()}` : null}
+                    {quest.placesLeft !== null && !quest.completed
+                      ? `${quest.progress || quest.endsAt ? " · " : ""}${points(quest.placesLeft)} place${quest.placesLeft === 1 ? "" : "s"} left`
+                      : null}
                   </p>
+                  {!quest.completed ? (
+                    <p className="rw-quest-how">
+                      {quest.automatic
+                        ? "Completes automatically once you do it."
+                        : quest.social
+                          ? "Follow, then claim your points."
+                          : "SaphraONE awards this one."}
+                    </p>
+                  ) : null}
                 </div>
-                <span className="rw-chip">{quest.completed ? "Done" : `+${points(quest.points)}`}</span>
+                <span className="rw-chip">
+                  {quest.completed
+                    ? "Done"
+                    : quest.reward.kind === "percent"
+                      ? `up to ${points(quest.points)}`
+                      : `+${points(quest.points)}`}
+                </span>
                 {quest.social && !quest.completed ? (
                   <SocialQuestActions
                     circleSocialUuid={circleSocialUuid}

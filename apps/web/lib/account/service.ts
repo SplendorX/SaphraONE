@@ -1295,6 +1295,12 @@ export async function confirmInvoicePayment(input: {
     relatedTxHash: txHash,
     title,
   });
+  if (nextStatus === "PAID") {
+    // "Get invoices paid" quests (a business has no other trigger for them).
+    void import("@/lib/rewards/quests").then(({ checkQuestsSoon }) =>
+      checkQuestsSoon(publicInvoice.destinationWallet),
+    );
+  }
   return getPublicInvoice(input.publicId, { markViewed: false });
 }
 

@@ -1,34 +1,58 @@
 "use client";
 
 import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { adminLoadError, useAdminKey } from "@/components/admin/use-admin-key";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { arcChain } from "@/lib/chains";
+import {
+  describeQuestRule,
+  QUEST_AUDIENCES,
+  QUEST_TYPES,
+  readQuestRule,
+  SOCIAL_PLATFORMS,
+  type QuestAudience,
+  type QuestRule,
+  type QuestRuleType,
+} from "@/lib/rewards/quest-rules";
 import { cn } from "@/lib/utils";
 
 import "./admin-rewards.css";
 
-type QuestRule =
-  | { type: "payments"; count: number }
-  | { type: "volume"; usd: number }
-  | { type: "streak"; days: number }
-  | { type: "social"; platform: string; url: string }
-  | { type: "manual" };
+type AdminQuest = {
+  active: boolean;
+  audience: QuestAudience;
+  completions: number;
+  description: string;
+  endsAt: string | null;
+  id: string;
+  maxCompletions: number | null;
+  points: number;
+  reward: { kind: "fixed"; points: number } | { kind: "percent"; percent: number; maxPoints: number };
+  rewardText: string;
+  rule: QuestRule;
+  ruleText: string;
+  slug: string;
+  startsAt: string;
+  title: string;
+};
 
-/** Must match SOCIAL_PLATFORMS in lib/rewards/quests.ts. */
-const socialPlatforms: Array<[string, string]> = [
-  ["x", "X"],
-  ["instagram", "Instagram"],
-  ["tiktok", "TikTok"],
-  ["telegram", "Telegram"],
-  ["youtube", "YouTube"],
-  ["linkedin", "LinkedIn"],
-  ["facebook", "Facebook"],
-  ["threads", "Threads"],
-  ["discord", "Discord"],
-];
+type QuestCompletion = { completedAt: string; points: number | null; username: string | null; wallet: string };
+
+const questGroups = ["Payments", "Activity", "Features", "Business", "Other"] as const;
+
+function audienceLabel(audience: QuestAudience) {
+  return QUEST_AUDIENCES.find(([value]) => value === audience)?.[1] ?? "Everyone";
+}
+
+/** An ISO time as a datetime-local value, in the admin's own time zone. */
+function toLocalInput(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
 
 type AdminData = {
   claims: Array<{
@@ -60,19 +84,7 @@ type AdminData = {
     tier: string;
     txHash: string;
   }>;
-  quests: Array<{
-    active: boolean;
-    completions: number;
-    description: string;
-    endsAt: string | null;
-    id: string;
-    points: number;
-    rule: QuestRule;
-    ruleText: string;
-    slug: string;
-    startsAt: string;
-    title: string;
-  }>;
+  quests: AdminQuest[];
 };
 
 const explorer = arcChain.blockExplorers.default.url;
@@ -137,15 +149,22 @@ function Decision({
 }
 
 const emptyQuest = {
+  audience: "all" as QuestAudience,
+  count: "3",
+  days: "7",
   description: "",
   endsAt: "",
+  maxCompletions: "",
+  minUsd: "",
+  percent: "10",
   points: "50",
-  ruleType: "payments",
-  ruleValue: "3",
+  rewardKind: "fixed" as "fixed" | "percent",
+  ruleType: "payments" as QuestRuleType,
   socialPlatform: "x",
   socialUrl: "",
   startsAt: "",
   title: "",
+  usd: "100",
 };
 
 export default function AdminRewardsPage() {
@@ -159,6 +178,10 @@ export default function AdminRewardsPage() {
   const [draft, setDraft] = useState(emptyQuest);
   const [awardWallet, setAwardWallet] = useState<Record<string, string>>({});
   const [awardReason, setAwardReason] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [completions, setCompletions] = useState<Record<string, QuestCompletion[] | "loading" | undefined>>({});
+  const formRef = useRef<HTMLElement>(null);
 
   const headers = useCallback(
     (): Record<string, string> => ({
@@ -216,34 +239,97 @@ export default function AdminRewardsPage() {
     }
   }
 
+  const draftType = QUEST_TYPES[draft.ruleType];
+  const percentReward = Boolean(draftType.percent) && draft.rewardKind === "percent";
+
+  /**
+   * The rule as typed. Sent unchecked so the server can refuse a bad number
+   * instead of quietly turning it into a hand-awarded quest.
+   */
+  function rawRuleFromDraft(): Record<string, unknown> {
+    const type = draft.ruleType;
+    if (type === "social") return { platform: draft.socialPlatform, type, url: draft.socialUrl.trim() };
+    const minUsd = draftType.minUsd && draft.minUsd.trim() ? { minUsd: Number(draft.minUsd) } : {};
+    if (draftType.param === "count") return { count: Number(draft.count), type, ...minUsd };
+    if (draftType.param === "usd") return { type, usd: Number(draft.usd) };
+    if (draftType.param === "days") return { days: Number(draft.days), type };
+    return { type };
+  }
+
+  /** How the rule will read, for the preview line. */
   function ruleFromDraft(): QuestRule {
-    const value = Number(draft.ruleValue);
-    if (draft.ruleType === "payments") return { count: value, type: "payments" };
-    if (draft.ruleType === "volume") return { type: "volume", usd: value };
-    if (draft.ruleType === "streak") return { days: value, type: "streak" };
-    if (draft.ruleType === "social") {
-      return { platform: draft.socialPlatform, type: "social", url: draft.socialUrl.trim() };
-    }
-    return { type: "manual" };
+    return readQuestRule(rawRuleFromDraft());
   }
 
   const socialUrlValid = /^https:\/\/[^\s/]+\.[^\s]+/i.test(draft.socialUrl.trim());
 
-  async function createQuest() {
-    const ok = await act(
-      "new",
-      {
-        action: "create_quest",
-        description: draft.description,
-        endsAt: draft.endsAt || null,
-        points: Number(draft.points),
-        rule: ruleFromDraft(),
-        startsAt: draft.startsAt || null,
-        title: draft.title,
-      },
-      "Quest created",
-    );
-    if (ok) setDraft(emptyQuest);
+  /** Fills the form from a quest: to change it, or as a copy for a new one. */
+  function startEdit(quest: AdminQuest, copy: boolean) {
+    const rule = quest.rule as QuestRule & { count?: number; days?: number; minUsd?: number; usd?: number; platform?: string; url?: string };
+    setDraft({
+      ...emptyQuest,
+      audience: quest.audience,
+      count: rule.count ? String(rule.count) : emptyQuest.count,
+      days: rule.days ? String(rule.days) : emptyQuest.days,
+      description: quest.description,
+      endsAt: copy ? "" : toLocalInput(quest.endsAt),
+      maxCompletions: quest.maxCompletions ? String(quest.maxCompletions) : "",
+      minUsd: rule.minUsd ? String(rule.minUsd) : "",
+      percent: quest.reward.kind === "percent" ? String(quest.reward.percent) : emptyQuest.percent,
+      points: String(quest.points),
+      rewardKind: quest.reward.kind,
+      ruleType: rule.type,
+      socialPlatform: rule.platform ?? emptyQuest.socialPlatform,
+      socialUrl: rule.url ?? "",
+      startsAt: copy ? "" : toLocalInput(quest.startsAt),
+      title: copy ? `${quest.title} (copy)` : quest.title,
+      usd: rule.usd ? String(rule.usd) : emptyQuest.usd,
+    });
+    setEditingId(copy ? null : quest.id);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function saveQuest() {
+    const editing = data?.quests.find((quest) => quest.id === editingId) ?? null;
+    const fields = {
+      audience: draftType.businessOnly ? "business" : draft.audience,
+      description: draft.description,
+      endsAt: draft.endsAt ? new Date(draft.endsAt).toISOString() : null,
+      maxCompletions: draft.maxCompletions.trim() ? Number(draft.maxCompletions) : null,
+      points: Number(draft.points),
+      rewardPercent: percentReward ? Number(draft.percent) : null,
+      rule: rawRuleFromDraft(),
+      startsAt: draft.startsAt ? new Date(draft.startsAt).toISOString() : null,
+      title: draft.title,
+    };
+    const ok = editing
+      ? await act(editing.id, { action: "update_quest", active: editing.active, ...fields }, "Quest saved")
+      : await act("new", { action: "create_quest", ...fields }, "Quest created");
+    if (ok) {
+      setDraft(emptyQuest);
+      setEditingId(null);
+    }
+  }
+
+  async function toggleCompletions(id: string) {
+    if (completions[id]) {
+      setCompletions((current) => ({ ...current, [id]: undefined }));
+      return;
+    }
+    setCompletions((current) => ({ ...current, [id]: "loading" }));
+    try {
+      const response = await fetch("/api/admin/rewards", {
+        body: JSON.stringify({ action: "quest_completions", id }),
+        headers: headers(),
+        method: "POST",
+      });
+      const json = (await response.json()) as { completions?: QuestCompletion[]; message?: string };
+      if (!response.ok) throw new Error(json.message || "Could not load.");
+      setCompletions((current) => ({ ...current, [id]: json.completions ?? [] }));
+    } catch (cause) {
+      setCompletions((current) => ({ ...current, [id]: undefined }));
+      setMessage({ text: cause instanceof Error ? cause.message : "Could not load.", tone: "error" });
+    }
   }
 
   const counts = data ? { claims: data.claims.length, discounts: data.discounts.length, held: data.held.length } : null;
@@ -385,14 +471,14 @@ export default function AdminRewardsPage() {
           </>
         ) : (
           <>
-            {/* New quest */}
-            <section className="ar-section">
-              <h2>New quest</h2>
+            {/* New or edited quest */}
+            <section className="ar-section" ref={formRef}>
+              <h2>{editingId ? "Edit quest" : "New quest"}</h2>
               <div className="ar-form">
                 <input
                   className="ar-input"
                   onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-                  placeholder="Title, e.g. Send 3 payments this week"
+                  placeholder="Title, e.g. Your first $100 payment"
                   value={draft.title}
                 />
                 <input
@@ -403,28 +489,69 @@ export default function AdminRewardsPage() {
                 />
                 <div className="ar-grid">
                   <label>
-                    Points
-                    <input
-                      className="ar-input"
-                      inputMode="decimal"
-                      onChange={(event) => setDraft({ ...draft, points: event.target.value })}
-                      value={draft.points}
-                    />
-                  </label>
-                  <label>
-                    Rule
+                    What to do
                     <select
                       className="ar-input"
-                      onChange={(event) => setDraft({ ...draft, ruleType: event.target.value })}
+                      onChange={(event) => setDraft({ ...draft, ruleType: event.target.value as QuestRuleType })}
                       value={draft.ruleType}
                     >
-                      <option value="payments">Number of payments</option>
-                      <option value="volume">Total paid (USD)</option>
-                      <option value="streak">Streak length (days)</option>
-                      <option value="social">Follow on social media</option>
-                      <option value="manual">Awarded by hand</option>
+                      {questGroups.map((group) => (
+                        <optgroup key={group} label={group}>
+                          {(Object.entries(QUEST_TYPES) as Array<[QuestRuleType, (typeof QUEST_TYPES)[QuestRuleType]]>)
+                            .filter(([, info]) => info.group === group)
+                            .map(([value, info]) => (
+                              <option key={value} value={value}>
+                                {info.label}
+                                {info.businessOnly ? " (business)" : ""}
+                              </option>
+                            ))}
+                        </optgroup>
+                      ))}
                     </select>
                   </label>
+                  {draftType.param === "count" ? (
+                    <label>
+                      How many times
+                      <input
+                        className="ar-input"
+                        inputMode="numeric"
+                        onChange={(event) => setDraft({ ...draft, count: event.target.value })}
+                        value={draft.count}
+                      />
+                    </label>
+                  ) : draftType.param === "usd" ? (
+                    <label>
+                      Amount (USD)
+                      <input
+                        className="ar-input"
+                        inputMode="decimal"
+                        onChange={(event) => setDraft({ ...draft, usd: event.target.value })}
+                        value={draft.usd}
+                      />
+                    </label>
+                  ) : draftType.param === "days" ? (
+                    <label>
+                      Days
+                      <input
+                        className="ar-input"
+                        inputMode="numeric"
+                        onChange={(event) => setDraft({ ...draft, days: event.target.value })}
+                        value={draft.days}
+                      />
+                    </label>
+                  ) : null}
+                  {draftType.minUsd ? (
+                    <label>
+                      Each at least (USD, optional)
+                      <input
+                        className="ar-input"
+                        inputMode="decimal"
+                        onChange={(event) => setDraft({ ...draft, minUsd: event.target.value })}
+                        placeholder="Any amount"
+                        value={draft.minUsd}
+                      />
+                    </label>
+                  ) : null}
                   {draft.ruleType === "social" ? (
                     <>
                       <label>
@@ -434,7 +561,7 @@ export default function AdminRewardsPage() {
                           onChange={(event) => setDraft({ ...draft, socialPlatform: event.target.value })}
                           value={draft.socialPlatform}
                         >
-                          {socialPlatforms.map(([value, label]) => (
+                          {Object.entries(SOCIAL_PLATFORMS).map(([value, label]) => (
                             <option key={value} value={value}>
                               {label}
                             </option>
@@ -452,17 +579,64 @@ export default function AdminRewardsPage() {
                         />
                       </label>
                     </>
-                  ) : draft.ruleType !== "manual" ? (
+                  ) : null}
+                  <label>
+                    Who it&apos;s for
+                    <select
+                      className="ar-input"
+                      disabled={Boolean(draftType.businessOnly)}
+                      onChange={(event) => setDraft({ ...draft, audience: event.target.value as QuestAudience })}
+                      value={draftType.businessOnly ? "business" : draft.audience}
+                    >
+                      {QUEST_AUDIENCES.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Reward
+                    <select
+                      className="ar-input"
+                      disabled={!draftType.percent}
+                      onChange={(event) => setDraft({ ...draft, rewardKind: event.target.value as "fixed" | "percent" })}
+                      value={draftType.percent ? draft.rewardKind : "fixed"}
+                    >
+                      <option value="fixed">Fixed points</option>
+                      <option value="percent">% of the payment back</option>
+                    </select>
+                  </label>
+                  {percentReward ? (
                     <label>
-                      {draft.ruleType === "payments" ? "Payments" : draft.ruleType === "volume" ? "USD" : "Days"}
+                      Percent back
                       <input
                         className="ar-input"
                         inputMode="decimal"
-                        onChange={(event) => setDraft({ ...draft, ruleValue: event.target.value })}
-                        value={draft.ruleValue}
+                        onChange={(event) => setDraft({ ...draft, percent: event.target.value })}
+                        value={draft.percent}
                       />
                     </label>
                   ) : null}
+                  <label>
+                    {percentReward ? "Most points" : "Points"}
+                    <input
+                      className="ar-input"
+                      inputMode="decimal"
+                      onChange={(event) => setDraft({ ...draft, points: event.target.value })}
+                      value={draft.points}
+                    />
+                  </label>
+                  <label>
+                    First N people only (optional)
+                    <input
+                      className="ar-input"
+                      inputMode="numeric"
+                      onChange={(event) => setDraft({ ...draft, maxCompletions: event.target.value })}
+                      placeholder="No limit"
+                      value={draft.maxCompletions}
+                    />
+                  </label>
                   <label>
                     Starts (empty = now)
                     <input
@@ -483,18 +657,41 @@ export default function AdminRewardsPage() {
                   </label>
                 </div>
                 <p className="ar-hint">
-                  Payments and total paid count only between the start and end. Points are paid once per person, as soon
-                  as they finish. Follow quests show a Follow button on Rewards; the person claims the points after
-                  opening the link (a follow itself can&apos;t be checked).
+                  <strong>{describeQuestRule(ruleFromDraft())}</strong>
+                  {" · "}
+                  {percentReward
+                    ? `${draft.percent || "?"}% of the payment back in points, up to ${draft.points || "?"}`
+                    : `${draft.points || "?"} points`}
+                  {draft.maxCompletions ? ` · first ${draft.maxCompletions} people` : ""}
                 </p>
-                <button
-                  className="ar-btn is-primary"
-                  disabled={busyId === "new" || !draft.title.trim() || (draft.ruleType === "social" && !socialUrlValid)}
-                  onClick={() => void createQuest()}
-                  type="button"
-                >
-                  Create quest
-                </button>
+                <p className="ar-hint">
+                  Everything except follow and hand-awarded quests completes on its own: payments are read back from
+                  Arc, and features from their own records. Things done count only between the start and end; a state
+                  (2FA on, verified, the current streak) counts whenever it is true. Points are paid once per person.
+                  Follow quests show a Follow button; the person claims after opening the link.
+                </p>
+                <div className="ar-buttons">
+                  <button
+                    className="ar-btn is-primary"
+                    disabled={busyId === (editingId ?? "new") || !draft.title.trim() || (draft.ruleType === "social" && !socialUrlValid)}
+                    onClick={() => void saveQuest()}
+                    type="button"
+                  >
+                    {editingId ? "Save changes" : "Create quest"}
+                  </button>
+                  {editingId ? (
+                    <button
+                      className="ar-btn"
+                      onClick={() => {
+                        setEditingId(null);
+                        setDraft(emptyQuest);
+                      }}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </section>
 
@@ -505,15 +702,21 @@ export default function AdminRewardsPage() {
               {data.quests.map((quest) => {
                 const ended = quest.endsAt ? new Date(quest.endsAt).getTime() < Date.now() : false;
                 const upcoming = new Date(quest.startsAt).getTime() > Date.now();
+                const full = quest.maxCompletions !== null && quest.completions >= quest.maxCompletions;
+                const list = completions[quest.id];
                 return (
                   <article className="ar-row" key={quest.id}>
                     <div className="ar-facts">
                       <strong>{quest.title}</strong>
-                      <span className={cn("ar-tag", (!quest.active || ended) && "is-warn")}>
-                        {!quest.active ? "Paused" : ended ? "Ended" : upcoming ? "Scheduled" : "Live"}
+                      <span className={cn("ar-tag", (!quest.active || ended || full) && "is-warn")}>
+                        {!quest.active ? "Paused" : ended ? "Ended" : full ? "Full" : upcoming ? "Scheduled" : "Live"}
                       </span>
                       <span>
-                        {quest.ruleText} · {quest.points} points · {quest.completions} completed
+                        {quest.ruleText} · {quest.rewardText}
+                      </span>
+                      <span>
+                        {audienceLabel(quest.audience)} · {quest.completions}
+                        {quest.maxCompletions !== null ? ` of ${quest.maxCompletions}` : ""} completed
                       </span>
                       <span>
                         {when(quest.startsAt)}
@@ -522,6 +725,12 @@ export default function AdminRewardsPage() {
                     </div>
                     <div className="ar-decision">
                       <div className="ar-buttons">
+                        <button className="ar-btn" onClick={() => startEdit(quest, false)} type="button">
+                          Edit
+                        </button>
+                        <button className="ar-btn" onClick={() => startEdit(quest, true)} type="button">
+                          Duplicate
+                        </button>
                         <button
                           className="ar-btn"
                           disabled={busyId === quest.id}
@@ -532,7 +741,62 @@ export default function AdminRewardsPage() {
                         >
                           {quest.active ? "Pause" : "Activate"}
                         </button>
+                        {!ended ? (
+                          <button
+                            className="ar-btn"
+                            disabled={busyId === quest.id}
+                            onClick={() => void act(quest.id, { action: "end_quest" }, "Ended")}
+                            type="button"
+                          >
+                            End now
+                          </button>
+                        ) : null}
+                        {quest.completions === 0 ? (
+                          confirmDelete === quest.id ? (
+                            <>
+                              <button
+                                className="ar-btn is-danger"
+                                disabled={busyId === quest.id}
+                                onClick={() => {
+                                  setConfirmDelete(null);
+                                  void act(quest.id, { action: "delete_quest" }, "Deleted");
+                                }}
+                                type="button"
+                              >
+                                Delete for good
+                              </button>
+                              <button className="ar-btn" onClick={() => setConfirmDelete(null)} type="button">
+                                Keep
+                              </button>
+                            </>
+                          ) : (
+                            <button className="ar-btn is-danger" onClick={() => setConfirmDelete(quest.id)} type="button">
+                              Delete
+                            </button>
+                          )
+                        ) : (
+                          <button className="ar-btn" onClick={() => void toggleCompletions(quest.id)} type="button">
+                            {list ? "Hide who completed" : "Who completed"}
+                          </button>
+                        )}
                       </div>
+                      {list ? (
+                        list === "loading" ? (
+                          <p className="ar-hint">Loading…</p>
+                        ) : list.length === 0 ? (
+                          <p className="ar-hint">Nobody yet.</p>
+                        ) : (
+                          <ul className="ar-completions">
+                            {list.map((entry) => (
+                              <li key={entry.wallet}>
+                                <span>{entry.username ? `${entry.username}.one` : short(entry.wallet)}</span>
+                                <span>{entry.points !== null ? `${entry.points} pts` : ""}</span>
+                                <span>{when(entry.completedAt)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      ) : null}
                       <input
                         className="ar-input"
                         onChange={(event) => setAwardWallet({ ...awardWallet, [quest.id]: event.target.value.trim() })}

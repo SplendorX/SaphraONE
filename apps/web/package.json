@@ -30,7 +30,7 @@
     "test:recurepay": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/recurring/__tests__/recurepay-plan.test.mjs",
     "test:multichain": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/multichain/__tests__/rules.test.mjs lib/multichain/__tests__/chains.test.mjs",
     "test:tx-approval": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/tx-approval/__tests__/approval-rules.test.mjs",
-    "test:rewards": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/rewards/__tests__/rewards.test.mjs",
+    "test:rewards": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/rewards/__tests__/rewards.test.mjs lib/rewards/__tests__/quest-rules.test.mjs",
     "test:ledger": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/ledger/__tests__/classify.test.mjs",
     "test:campaigns": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/campaigns/__tests__/rules.test.mjs",
     "test:account-deletion": "node --experimental-strip-types --import ./lib/payment-engine/__tests__/register.mjs --test lib/account-deletion/__tests__/rules.test.mjs",

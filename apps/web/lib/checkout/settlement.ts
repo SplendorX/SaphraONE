@@ -124,6 +124,11 @@ export async function claimTransferForCharge(input: {
     becamePaid = (paid.data ?? []).length > 0;
   }
 
+  if (becamePaid) {
+    // "Take Checkout payments" quests for the merchant.
+    void import("@/lib/rewards/quests").then(({ checkQuestsSoon }) => checkQuestsSoon(charge.wallet_address));
+  }
+
   const tip = moneyNumber(next.tipAmount);
   const extra = !becamePaid && next.status === "PAID";
   void createSavingsNotificationResult({

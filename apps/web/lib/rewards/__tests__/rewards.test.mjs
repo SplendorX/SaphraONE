@@ -89,7 +89,7 @@ describe("discounts", () => {
 });
 
 describe("quest rules", async () => {
-  const { describeQuestRule, readQuestRule } = await import("@/lib/rewards/quests");
+  const { describeQuestRule, readQuestRule } = await import("@/lib/rewards/quest-rules");
 
   it("reads the three automatic rules", () => {
     assert.deepEqual(readQuestRule({ count: 3, type: "payments" }), { count: 3, type: "payments" });

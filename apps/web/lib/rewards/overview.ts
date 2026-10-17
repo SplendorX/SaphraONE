@@ -7,13 +7,17 @@ import {
   USD_PER_POINT,
 } from "@/lib/rewards/config";
 import type { RewardsOverview } from "@/lib/rewards/types";
+import { loadAccount } from "@/lib/account/auth";
 import {
   describeQuestRule,
-  questProgress,
+  isAutomaticQuest,
+  questFitsAccount,
+  readQuestAudience,
+  readQuestReward,
   readQuestRule,
   SOCIAL_PLATFORMS,
-  type QuestRow,
-} from "@/lib/rewards/quests";
+} from "@/lib/rewards/quest-rules";
+import { checkQuestsForWallet, type QuestRow } from "@/lib/rewards/quests";
 
 function monthStart(at = new Date()) {
   return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), 1)).toISOString().slice(0, 10);
@@ -49,6 +53,16 @@ export async function loadRewardsOverview(walletAddress: string): Promise<Reward
   const week = currentWeek();
   const nowIso = new Date().toISOString();
 
+  // Opening Rewards completes anything already done (a quest finished by
+  // saving, invoicing or turning on 2FA has no payment to trigger it).
+  const account = await loadAccount(wallet).catch(() => null);
+  const accountType: "BUSINESS" | "PERSONAL" = account?.account_type === "BUSINESS" ? "BUSINESS" : "PERSONAL";
+  const questAccount = account ? { account_type: accountType, avatar_url: account.avatar_url } : null;
+  const check = await checkQuestsForWallet(wallet, { account: questAccount }).catch((cause) => {
+    console.warn("[rewards] quest check", cause instanceof Error ? cause.message : cause);
+    return null;
+  });
+
   const [summary, ledger, usage, streak, days, quests, completions, claims] = await Promise.all([
     getOnePointsSummary(wallet),
     listOnePointsLedger(wallet, 20),
@@ -71,7 +85,7 @@ export async function loadRewardsOverview(walletAddress: string): Promise<Reward
       .lte("day", week[6]),
     db
       .from("rewards_quests")
-      .select("id,slug,title,description,points,starts_at,ends_at,rule,active")
+      .select("*")
       .eq("active", true)
       .lte("starts_at", nowIso)
       .order("starts_at", { ascending: false }),
@@ -94,11 +108,24 @@ export async function loadRewardsOverview(walletAddress: string): Promise<Reward
   const activeDays = new Set(((days.data ?? []) as Array<{ day: string }>).map((row) => row.day));
   const completed = new Set(((completions.data ?? []) as Array<{ quest_id: string }>).map((row) => row.quest_id));
 
-  const liveQuests = ((quests.data ?? []) as QuestRow[]).filter((quest) => !quest.ends_at || quest.ends_at > nowIso);
-  const progress = await questProgress(
-    wallet,
-    liveQuests.filter((quest) => !completed.has(quest.id)),
-  ).catch(() => new Map());
+  const liveQuests = ((quests.data ?? []) as QuestRow[]).filter(
+    (quest) =>
+      (!quest.ends_at || quest.ends_at > nowIso) && questFitsAccount(quest.audience, accountType),
+  );
+  const progress = check?.progress ?? new Map();
+
+  // Places left on quests limited to the first N people.
+  const limited = liveQuests.filter((quest) => quest.max_completions && !completed.has(quest.id));
+  const taken = new Map<string, number>();
+  await Promise.all(
+    limited.map(async (quest) => {
+      const { count } = await db
+        .from("rewards_quest_completions")
+        .select("quest_id", { count: "exact", head: true })
+        .eq("quest_id", quest.id);
+      taken.set(quest.id, count ?? 0);
+    }),
+  );
 
   let previousLimit = 0;
   return {
@@ -125,21 +152,33 @@ export async function loadRewardsOverview(walletAddress: string): Promise<Reward
       label: activityLabels[entry.entry_type] ?? "Points",
       points: Number(entry.display_amount),
     })),
-    quests: liveQuests.map((quest) => {
+    quests: liveQuests.flatMap((quest) => {
       const rule = readQuestRule(quest.rule);
-      return {
-        completed: completed.has(quest.id),
+      const reward = readQuestReward(quest.rule, Number(quest.points));
+      const done = completed.has(quest.id);
+      const placesLeft = quest.max_completions
+        ? Math.max(0, quest.max_completions - (taken.get(quest.id) ?? 0))
+        : null;
+      // A full quest disappears for everyone who didn't make it.
+      if (!done && placesLeft === 0) return [];
+      const state = progress.get(quest.id) ?? null;
+      return [{
+        audience: readQuestAudience(quest.audience),
+        automatic: isAutomaticQuest(rule),
+        completed: done,
         description: quest.description || describeQuestRule(rule),
         endsAt: quest.ends_at,
         id: quest.id,
+        placesLeft,
         points: Number(quest.points),
-        progress: progress.get(quest.id) ?? null,
+        progress: state ? { current: state.current, target: state.target, unit: state.unit } : null,
+        reward: reward.kind === "percent" ? { kind: "percent" as const, percent: reward.percent } : { kind: "fixed" as const },
         social:
           rule.type === "social"
             ? { platform: rule.platform, platformLabel: SOCIAL_PLATFORMS[rule.platform], url: rule.url }
             : null,
         title: quest.title,
-      };
+      }];
     }),
     streak: {
       current,

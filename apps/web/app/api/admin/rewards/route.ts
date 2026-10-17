@@ -6,7 +6,10 @@ import {
   AdminRewardsError,
   awardQuestToWallet,
   createQuest,
+  deleteQuest,
+  endQuest,
   failDiscount,
+  listQuestCompletions,
   loadAdminRewards,
   markClaimPaid,
   markDiscountPaid,
@@ -77,6 +80,14 @@ export async function POST(request: NextRequest) {
       case "set_quest_active":
         await setQuestActive(id, body.active === true);
         break;
+      case "end_quest":
+        await endQuest(id);
+        break;
+      case "delete_quest":
+        await deleteQuest(id);
+        break;
+      case "quest_completions":
+        return NextResponse.json({ completions: await listQuestCompletions(id) }, { headers: noStore });
       case "award_quest":
         await awardQuestToWallet(id, body.wallet, body.reason);
         break;

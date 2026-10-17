@@ -3,7 +3,16 @@ import { recordLedgerEntry } from "@/lib/referral/ledger-service";
 import { referralDb } from "@/lib/referral/db";
 import { payUsdcFromTreasury, TreasuryError } from "@/lib/referral/treasury";
 import { premiumProductLabels, type PremiumProduct } from "@/lib/rewards/premium";
-import { awardQuest, describeQuestRule, readQuestRule, type QuestRow } from "@/lib/rewards/quests";
+import { usernamesForWallets } from "@/lib/business/service";
+import {
+  describeQuestReward,
+  describeQuestRule,
+  QUEST_TYPES,
+  readQuestAudience,
+  readQuestReward,
+  readQuestRule,
+} from "@/lib/rewards/quest-rules";
+import { awardQuest, type QuestRow } from "@/lib/rewards/quests";
 
 /** A payout with no answer after this long is shown as stuck. */
 const STUCK_AFTER_MS = 10 * 60 * 1000;
@@ -124,11 +133,15 @@ export async function loadAdminRewards() {
     })),
     quests: ((quests.data ?? []) as QuestRow[]).map((quest) => ({
       active: quest.active,
+      audience: readQuestAudience(quest.audience),
       completions: completionCounts.get(quest.id) ?? 0,
       description: quest.description,
       endsAt: quest.ends_at,
       id: quest.id,
+      maxCompletions: quest.max_completions ?? null,
       points: Number(quest.points),
+      reward: readQuestReward(quest.rule, Number(quest.points)),
+      rewardText: describeQuestReward(readQuestReward(quest.rule, Number(quest.points))),
       rule: readQuestRule(quest.rule),
       ruleText: describeQuestRule(readQuestRule(quest.rule)),
       slug: quest.slug,
@@ -301,15 +314,53 @@ function questFields(input: Record<string, unknown>) {
   const startsAt = date(input.startsAt) ?? new Date().toISOString();
   const endsAt = date(input.endsAt);
   if (endsAt && endsAt <= startsAt) throw new AdminRewardsError("The end has to be after the start.");
+
+  const rawRule = (input.rule ?? {}) as Record<string, unknown>;
+  const rule = readQuestRule(rawRule);
+  if (rule.type === "manual" && rawRule.type !== "manual") {
+    throw new AdminRewardsError("Fill in the rule: the number it needs, or a valid https link.");
+  }
+  const info = QUEST_TYPES[rule.type];
+  // Business features can only be done by Business accounts.
+  const audience = info.businessOnly ? "business" : readQuestAudience(input.audience);
+
+  let rewardPercent: number | null = null;
+  if (input.rewardPercent !== undefined && input.rewardPercent !== null && input.rewardPercent !== "") {
+    rewardPercent = Number(input.rewardPercent);
+    if (!info.percent) {
+      throw new AdminRewardsError("A percentage reward works only on payment quests.");
+    }
+    if (!Number.isFinite(rewardPercent) || rewardPercent <= 0 || rewardPercent > 100) {
+      throw new AdminRewardsError("The percentage must be between 0 and 100.");
+    }
+  }
+
+  let maxCompletions: number | null = null;
+  if (input.maxCompletions !== undefined && input.maxCompletions !== null && input.maxCompletions !== "") {
+    maxCompletions = Number(input.maxCompletions);
+    if (!Number.isInteger(maxCompletions) || maxCompletions < 1 || maxCompletions > 10_000_000) {
+      throw new AdminRewardsError("The limit must be a whole number of people.");
+    }
+  }
+
   return {
     active: input.active !== false,
+    audience,
     description: typeof input.description === "string" ? input.description.trim().slice(0, 300) : "",
     ends_at: endsAt,
+    max_completions: maxCompletions,
     points,
-    rule: readQuestRule(input.rule),
+    rule: rewardPercent ? { ...rule, rewardPercent } : rule,
     starts_at: startsAt,
     title,
   };
+}
+
+/** A clear message when rewards-quests-v2.sql hasn't been run yet. */
+function questDbError(error: { message: string }) {
+  return /audience|max_completions|points_awarded|updated_at/i.test(error.message)
+    ? new AdminRewardsError("Run packages/database/supabase/rewards-quests-v2.sql in Supabase first.", 500)
+    : new Error(error.message);
 }
 
 export async function createQuest(input: Record<string, unknown>) {
@@ -317,7 +368,7 @@ export async function createQuest(input: Record<string, unknown>) {
   const slug =
     `${fields.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "quest"}-${Date.now().toString(36)}`;
   const { data, error } = await referralDb().from("rewards_quests").insert({ ...fields, slug }).select("id").single();
-  if (error) throw new Error(error.message);
+  if (error) throw questDbError(error);
   const id = (data as { id: string }).id;
   await audit("create_quest", "rewards_quest", id, "Created", fields);
   return { id };
@@ -325,9 +376,69 @@ export async function createQuest(input: Record<string, unknown>) {
 
 export async function updateQuest(id: string, input: Record<string, unknown>) {
   const fields = questFields(input);
-  const { error } = await referralDb().from("rewards_quests").update(fields).eq("id", id);
-  if (error) throw new Error(error.message);
+  const { data, error } = await referralDb()
+    .from("rewards_quests")
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("id");
+  if (error) throw questDbError(error);
+  if ((data ?? []).length === 0) throw new AdminRewardsError("Quest not found.", 404);
   await audit("update_quest", "rewards_quest", id, "Updated", fields);
+}
+
+/** Ends a quest now: it leaves Rewards, and nobody else can complete it. */
+export async function endQuest(id: string) {
+  const now = new Date().toISOString();
+  const { data, error } = await referralDb().from("rewards_quests").select("starts_at").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new AdminRewardsError("Quest not found.", 404);
+  // A quest that never started is simply paused, so its dates stay valid.
+  const update =
+    (data as { starts_at: string }).starts_at >= now ? { active: false } : { ends_at: now };
+  const result = await referralDb().from("rewards_quests").update(update).eq("id", id);
+  if (result.error) throw new Error(result.error.message);
+  await audit("end_quest", "rewards_quest", id, "Ended", update);
+}
+
+/** Deletes a quest nobody has completed; one with completions can only end. */
+export async function deleteQuest(id: string) {
+  const { count, error } = await referralDb()
+    .from("rewards_quest_completions")
+    .select("quest_id", { count: "exact", head: true })
+    .eq("quest_id", id);
+  if (error) throw new Error(error.message);
+  if ((count ?? 0) > 0) {
+    throw new AdminRewardsError("People have completed this quest, so it stays on record. End it instead.", 409);
+  }
+  const removed = await referralDb().from("rewards_quests").delete().eq("id", id).select("id");
+  if (removed.error) throw new Error(removed.error.message);
+  if ((removed.data ?? []).length === 0) throw new AdminRewardsError("Quest not found.", 404);
+  await audit("delete_quest", "rewards_quest", id, "Deleted");
+}
+
+/** Who completed a quest, newest first (up to 200), with their ONE IDs. */
+export async function listQuestCompletions(id: string) {
+  const { data, error } = await referralDb()
+    .from("rewards_quest_completions")
+    .select("*")
+    .eq("quest_id", id)
+    .order("completed_at", { ascending: false })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as Array<{
+    completed_at: string;
+    points_awarded?: number | string | null;
+    wallet_address: string;
+  }>;
+  const usernames = await usernamesForWallets(rows.map((row) => row.wallet_address)).catch(
+    () => ({}) as Record<string, string>,
+  );
+  return rows.map((row) => ({
+    completedAt: row.completed_at,
+    points: row.points_awarded === null || row.points_awarded === undefined ? null : Number(row.points_awarded),
+    username: usernames[row.wallet_address.toLowerCase()] ?? null,
+    wallet: row.wallet_address,
+  }));
 }
 
 export async function setQuestActive(id: string, active: boolean) {
@@ -344,7 +455,8 @@ export async function awardQuestToWallet(questId: string, walletAddress: unknown
   const { data, error } = await referralDb().from("rewards_quests").select("*").eq("id", questId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new AdminRewardsError("Quest not found.", 404);
-  const awarded = await awardQuest({ awardedBy: "admin", quest: data as QuestRow, walletAddress: wallet });
-  if (!awarded) throw new AdminRewardsError("That wallet already has this quest.", 409);
+  const result = await awardQuest({ awardedBy: "admin", quest: data as QuestRow, walletAddress: wallet });
+  if (result === "already") throw new AdminRewardsError("That wallet already has this quest.", 409);
+  if (result === "full") throw new AdminRewardsError("Every place on this quest has been taken.", 409);
   await audit("award_quest", "rewards_quest", questId, why, { wallet });
 }

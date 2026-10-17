@@ -679,6 +679,14 @@
   transition: width 400ms ease;
 }
 
+/* How a quest completes: on its own, by claiming, or by SaphraONE. */
+.rw-quest-how {
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
 /* "Follow us" quests: open the account, then claim. */
 .rw-quests li {
   flex-wrap: wrap;
