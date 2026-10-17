@@ -74,12 +74,15 @@ export async function referrerStanding(referrerWallet: string, policy?: TierPoli
       .select("referred_wallet")
       .eq("referrer_wallet", referrer)
       .neq("status", "REVERSED")
+      // A creator partner's bounties aren't payments.
+      .neq("source", "partner_bounty")
       .gte("created_at", since),
     db
       .from("referral_fee_earnings")
       .select("volume_usd")
       .eq("referrer_wallet", referrer)
       .neq("status", "REVERSED")
+      .neq("source", "partner_bounty")
       .gte("created_at", monthStartIso()),
   ]);
   const perReferral = new Map<string, number>();

@@ -14,6 +14,7 @@ import { stablecoinUsdValue } from "@/lib/referral/fx";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
 import type { ReferralActivityType } from "@/lib/referral/types";
 import { accrueReferralCommission } from "@/lib/referral/usdc-commission";
+import { accruePartnerBounty } from "@/lib/partners/bounty";
 import { applyPartnerPerks } from "@/lib/partners/perks";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
 
@@ -153,6 +154,8 @@ export async function POST(request: NextRequest) {
         console.error("[referral:commission]", cause instanceof Error ? cause.message : cause);
         return null;
       });
+      // A creator partner's bounty once this member becomes active.
+      after(() => accruePartnerBounty(wallet));
       return jsonOk({
         isReferred: true,
         referrerCommissionUsdc: earning ? Number(earning.amount_usdc) : 0,

@@ -1,0 +1,112 @@
+/* A creator partner's offers on Invite & Earn (partner-dashboard.tsx). */
+.pd-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.2rem 1.25rem 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 30%, var(--border));
+  border-radius: 1.6rem;
+  background: color-mix(in oklch, var(--primary) 6%, var(--card));
+}
+
+.pd-head,
+.pd-offer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pd-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.pd-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.pd-terms,
+.pd-empty {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.pd-offer {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.pd-offer-head strong {
+  min-width: 0;
+  font-size: 0.95rem;
+}
+
+.pd-chip {
+  flex-shrink: 0;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.pd-chip.is-live {
+  background: color-mix(in oklch, #16a34a 16%, transparent);
+  color: #15803d;
+}
+
+.dark .pd-chip.is-live {
+  color: #4ade80;
+}
+
+.pd-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.8rem;
+  background: var(--card);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.pd-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pd-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.pd-stats dt {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
+.pd-stats dd {
+  font-size: 0.95rem;
+  font-weight: 700;
+}

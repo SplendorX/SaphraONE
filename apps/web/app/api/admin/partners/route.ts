@@ -5,7 +5,9 @@ import {
   createOffer,
   createPartner,
   loadAdminPartners,
+  loadAdminReport,
   loadHeldMembers,
+  partnerStatement,
   releaseMember,
   revokeMember,
   setOfferStatus,
@@ -70,6 +72,10 @@ export async function POST(request: NextRequest) {
       case "offer_status":
         await setOfferStatus(body.id, body.status);
         return ok();
+      case "report":
+        return NextResponse.json({ report: await loadAdminReport() }, { headers: noStore });
+      case "statement":
+        return ok({ csv: await partnerStatement(body.id) });
       case "release_member":
         await releaseMember(body.wallet, actor.label);
         return ok();

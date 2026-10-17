@@ -9,6 +9,7 @@ import {
   readPerksInput,
 } from "@/lib/partners/rules";
 import type { MemberRow, OfferRow, PartnerRow, PerkEventRow, PerkRow } from "@/lib/partners/types";
+import { offerReports, partnerStatementCsv } from "@/lib/partners/report";
 import { referralDb, referralTables } from "@/lib/referral/db";
 
 function fail(message: string | undefined, fallback: string): never {
@@ -285,4 +286,27 @@ export async function revokeMember(wallet: unknown, reviewer: string, reason: un
     }
   }
   return { reversed: open?.length ?? 0 };
+}
+
+/** The funnel and money report for every offer that has gone live. */
+export async function loadAdminReport() {
+  const db = partnersDb();
+  const [offers, partners] = await Promise.all([
+    db.from(partnerTables.offers).select("*").neq("status", "DRAFT").order("created_at", { ascending: false }),
+    db.from(partnerTables.partners).select("*"),
+  ]);
+  if (offers.error) fail(offers.error.message, "Could not load the report.");
+  return offerReports((offers.data ?? []) as OfferRow[], (partners.data ?? []) as PartnerRow[]);
+}
+
+/** A partner's earnings statement as CSV. */
+export async function partnerStatement(partnerId: unknown) {
+  const { data, error } = await partnersDb()
+    .from(partnerTables.partners)
+    .select("*")
+    .eq("id", id(partnerId, "partner"))
+    .maybeSingle();
+  if (error) fail(error.message, "Could not load the partner.");
+  if (!data) throw new PartnerError("Partner not found.", 404);
+  return partnerStatementCsv(data as PartnerRow);
 }

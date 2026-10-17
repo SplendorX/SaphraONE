@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount } from "wagmi";
 
+import { PartnerDashboard } from "@/components/referral/partner-dashboard";
 import { ShareModal } from "@/components/referral/share-modal";
 import { showSuccess } from "@/components/success-popup";
 import { arcChain } from "@/lib/chains";
@@ -199,6 +200,9 @@ export function InviteEarnV2() {
         <p className="ie-note">{usd(data.heldUsdc)} is held while we review some referral activity.</p>
       ) : null}
       {error ? <p className="ie-error">{error}</p> : null}
+
+      {/* Creator partners: their offer links and what they brought in */}
+      <PartnerDashboard circleSocialUuid={circleSocialUuid} wallet={wallet} />
 
       {/* How it works */}
       <section className="ie-card">

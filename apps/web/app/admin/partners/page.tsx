@@ -15,6 +15,7 @@ import {
 } from "@/lib/partners/config";
 import type { AdminPartner } from "@/lib/partners/admin";
 import type { HeldMember } from "@/lib/partners/admin";
+import type { OfferReport } from "@/lib/partners/report";
 import { perkSummary } from "@/lib/partners/rules";
 import { cn } from "@/lib/utils";
 
@@ -131,6 +132,7 @@ export default function AdminPartnersPage() {
   const [perkDrafts, setPerkDrafts] = useState(defaultPerkDrafts);
   const [offerEdits, setOfferEdits] = useState<Record<string, { budgetUsdc: string; endsAt: string; maxMembers: string }>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [report, setReport] = useState<OfferReport[] | null>(null);
 
   const headers = useCallback(
     (): Record<string, string> => ({
@@ -178,6 +180,23 @@ export default function AdminPartnersPage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function loadReport() {
+    const json = await act("report", { action: "report" }, "Report updated.");
+    if (json) setReport((json.report as OfferReport[]) ?? []);
+  }
+
+  /** The partner's earnings statement, as a CSV download. */
+  async function downloadStatement(partner: AdminPartner) {
+    const json = await act(`statement:${partner.id}`, { action: "statement", id: partner.id }, "Statement downloaded.");
+    if (typeof json?.csv !== "string") return;
+    const url = URL.createObjectURL(new Blob([json.csv], { type: "text/csv" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `partner-${partner.handle || partner.id.slice(0, 8)}-statement.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   async function savePartner() {
@@ -318,6 +337,43 @@ export default function AdminPartnersPage() {
           </section>
         ) : null}
 
+        {/* Report */}
+        <section className="ar-section">
+          <h2>Report</h2>
+          <p className="ar-hint">
+            Per offer: visits → signups → with perks → active (5+ payments in 30 days), the fees their members paid, what
+            the perks cost (budget taken, including perks still on hold), what the partner earned, and the net.
+          </p>
+          <div className="ar-buttons">
+            <button className="ar-btn" disabled={busy === "report"} onClick={() => void loadReport()} type="button">
+              {busy === "report" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {report ? "Refresh report" : "Load report"}
+            </button>
+          </div>
+          {report && report.length === 0 ? <p className="ar-empty">No live offers yet.</p> : null}
+          {(report ?? []).map((row) => (
+            <article className="ar-row" key={row.offerId}>
+              <div className="ar-facts">
+                <strong>
+                  {row.title} · /join/{row.code}
+                </strong>
+                <span className={cn("ar-tag", row.netUsd < 0 && "is-warn")}>Net {usdc(row.netUsd)}</span>
+                <span>
+                  {row.clicks} visits → {row.signups} signups → {row.withPerks} with perks ({row.held} held) → {row.activated} active
+                </span>
+                <span>
+                  Volume {usdc(row.volumeUsd)} · fees {usdc(row.feesUsd)} · perks {usdc(row.perksCommittedUsd)} of{" "}
+                  {usdc(row.budgetUsd)} ({usdc(row.perksPaidUsd)} paid out) · partner {usdc(row.commissionUsdc)} commission +{" "}
+                  {usdc(row.bountiesUsdc)} bounties
+                </span>
+                <span>
+                  Cost per active member: {row.costPerActivatedUsd === null ? "—" : usdc(row.costPerActivatedUsd)}
+                </span>
+              </div>
+            </article>
+          ))}
+        </section>
+
         {/* Partner form */}
         <section className="ar-section">
           <h2>{editingPartner ? "Edit partner" : "New partner"}</h2>
@@ -373,7 +429,7 @@ export default function AdminPartnersPage() {
                 <input className="ar-input" inputMode="decimal" onChange={(event) => setPartnerDraft({ ...partnerDraft, bountyUsdc: event.target.value })} value={partnerDraft.bountyUsdc} />
               </label>
               <label>
-                Bounties per month (max)
+                Bounties per month (0 = no limit)
                 <input className="ar-input" inputMode="numeric" onChange={(event) => setPartnerDraft({ ...partnerDraft, bountyMonthlyCap: event.target.value })} value={partnerDraft.bountyMonthlyCap} />
               </label>
               <label>
@@ -546,6 +602,14 @@ export default function AdminPartnersPage() {
               <div className="ar-buttons">
                 <button className="ar-btn" onClick={() => editPartner(partner)} type="button">
                   Edit
+                </button>
+                <button
+                  className="ar-btn"
+                  disabled={busy === `statement:${partner.id}`}
+                  onClick={() => void downloadStatement(partner)}
+                  type="button"
+                >
+                  Statement (CSV)
                 </button>
                 {partner.status !== "ACTIVE" ? (
                   <button className="ar-btn" onClick={() => void act(partner.id, { action: "partner_status", id: partner.id, status: "ACTIVE" }, "Partner active.")} type="button">
