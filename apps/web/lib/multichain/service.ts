@@ -16,6 +16,7 @@ import { AppKit } from "@circle-fin/app-kit";
 import { createCircleWalletsAdapter } from "@circle-fin/adapter-circle-wallets";
 
 import { recordAccountActivity } from "@/lib/activity/service";
+import { readCircleError } from "@/lib/agent-wallet/client";
 import { arcAppKitChain, getDepositErrorMessage } from "@/lib/deposit-to-arc";
 import {
   multichainChainByCircleBlockchain,
@@ -41,6 +42,7 @@ import {
   recoverSweepWithoutResult,
   STALE_SWEEP_MS,
   sweepFeeUnits,
+  sweepRetryDelayMs,
   unitsToUsdc,
   usdcToUnits,
 } from "@/lib/multichain/rules";
@@ -51,8 +53,10 @@ import {
   insertDepositAddress,
   insertSweep,
   listActiveDepositAddresses,
+  listDepositsBySweepIds,
   listDepositsForAddress,
   listOpenSweeps,
+  listStrandedDeposits,
   moveDeposits,
   profileExists,
   recordDeposit,
@@ -179,7 +183,7 @@ export async function detectDeposits(address: DepositAddressRow) {
 
 // ─── Sweep ───────────────────────────────────────────────────────────────────
 
-type BridgeStep = { name?: string; state?: string; txHash?: string; errorMessage?: string };
+type BridgeStep = { name?: string; state?: string; txHash?: string; error?: unknown; errorMessage?: string };
 type BridgeResultLike = { state?: string; steps?: BridgeStep[] };
 
 const burnSteps = new Set(["burn", "transfer", "depositForBurn"]);
@@ -189,6 +193,20 @@ function stepHash(result: BridgeResultLike, names: Set<string>) {
   return result.steps?.find((step) => names.has(step.name ?? "") && step.txHash)?.txHash?.toLowerCase() ?? null;
 }
 
+/**
+ * What actually failed under an App Kit error. App Kit files many causes under
+ * one label ("RPC endpoint error on Base" covers rate limits and refused gas
+ * estimates alike) and keeps the original in `cause.trace.rawError`.
+ */
+function rawCause(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const cause = (error as { cause?: unknown }).cause as { trace?: { rawError?: unknown } } | undefined;
+  const raw = cause?.trace?.rawError ?? cause;
+  if (!raw || raw === error) return null;
+  const message = readCircleError(raw, "").split("\n")[0].trim();
+  return message && message !== error.message ? message : null;
+}
+
 /** App Kit results can carry bigints and Error objects; store plain JSON. */
 function toJson(value: unknown) {
   return JSON.parse(
@@ -196,7 +214,7 @@ function toJson(value: unknown) {
       typeof inner === "bigint"
         ? inner.toString()
         : inner instanceof Error
-          ? { message: inner.message, name: inner.name }
+          ? { cause: rawCause(inner), message: inner.message, name: inner.name }
           : inner,
     ),
   ) as unknown;
@@ -204,7 +222,9 @@ function toJson(value: unknown) {
 
 function errorText(error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : fallback;
-  return getDepositErrorMessage(message.split("\n")[0] || fallback).slice(0, 500);
+  const text = getDepositErrorMessage(message.split("\n")[0] || fallback);
+  const cause = rawCause(error);
+  return (cause ? `${text} (${cause})` : text).slice(0, 500);
 }
 
 /** Run (or resume) the CCTP bridge for a claimed sweep and record what happened. */
@@ -253,7 +273,7 @@ async function runBridge(sweep: ChainSweepRow, address: DepositAddressRow, resum
     const failed = result.steps?.find((step) => step.state === "error");
     await updateSweep(sweep.id, ["SWEEPING"], {
       bridge_result: stored,
-      last_error: errorText(failed?.errorMessage, "Sweep stopped before the burn."),
+      last_error: errorText(failed?.error ?? failed?.errorMessage, "Sweep stopped before the burn."),
       state: "FAILED",
     });
     await moveDeposits({ sweepId: sweep.id }, ["SWEEPING"], { state: "FAILED" });
@@ -271,6 +291,24 @@ async function runBridge(sweep: ChainSweepRow, address: DepositAddressRow, resum
   });
   await moveDeposits({ sweepId: sweep.id }, ["SWEEPING", "FAILED"], { state: "BURNED" });
   if (burned) await tryCredit(burned);
+}
+
+/**
+ * Bring deposits left on hold by an earlier sweep that never burned into the
+ * sweep now taking the balance, so they are credited with the USDC they
+ * brought. Only what fits beside the sweep's own deposits moves: money that
+ * is no longer at the address is never claimed twice.
+ */
+async function adoptStrandedDeposits(address: DepositAddressRow, sweep: ChainSweepRow) {
+  const stranded = await listStrandedDeposits(address.id);
+  if (stranded.length === 0) return;
+  const carried = (await listDepositsBySweepIds([sweep.id])).reduce((sum, row) => sum + usdcToUnits(row.amount_in), 0n);
+  const adopted = depositsForSweep(stranded, usdcToUnits(sweep.amount) - carried);
+  await moveDeposits({ ids: adopted.map((row) => row.id) }, ["NEEDS_REVIEW"], {
+    last_error: null,
+    state: "SWEEPING",
+    sweep_id: sweep.id,
+  });
 }
 
 /** Credit a burned sweep once the Arc mint is on chain. */
@@ -370,10 +408,14 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
     return burned ? tryCredit(burned) : sweep;
   }
 
-  if (sweep.attempts >= MAX_SWEEP_ATTEMPTS) {
-    await updateSweep(sweep.id, ["SWEEPING", "FAILED"], { state: "NEEDS_REVIEW" }, sweep.updated_at);
-    await moveDeposits({ sweepId: sweep.id }, ["SWEEPING", "FAILED"], { state: "NEEDS_REVIEW" });
+  // Nothing burned yet, so the USDC is still on its own network: keep trying,
+  // spaced out, rather than parking the deposit for a person. An outage at
+  // Circle or the network's RPC clears on its own.
+  if (sweep.state === "FAILED" && Date.now() - new Date(sweep.updated_at).getTime() < sweepRetryDelayMs(sweep.attempts)) {
     return sweep;
+  }
+  if (sweep.attempts >= MAX_SWEEP_ATTEMPTS) {
+    console.error("[multichain] sweep keeps failing", sweep.id, `attempt ${sweep.attempts + 1}`, sweep.last_error);
   }
 
   if (sweepsPaused()) return sweep;
@@ -388,6 +430,7 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
     );
     if (!claimed) return sweep;
     await moveDeposits({ sweepId: sweep.id }, ["FAILED"], { state: "SWEEPING" });
+    await adoptStrandedDeposits(address, claimed);
     await runBridge(claimed, address, result);
     return claimed;
   }
@@ -395,7 +438,6 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
   // No result on record: ask the chain what already happened.
   const found = await findBurnSince(address, sweep.started_at);
   const decision = recoverSweepWithoutResult({
-    attempts: sweep.attempts,
     burnTxHash: found.burnTxHash,
     pendingOutbound: found.pendingOutbound,
   });
@@ -411,11 +453,6 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
     return burned ? tryCredit(burned) : sweep;
   }
   if (decision === "wait") return sweep;
-  if (decision === "review") {
-    await updateSweep(sweep.id, ["SWEEPING", "FAILED"], { state: "NEEDS_REVIEW" }, sweep.updated_at);
-    await moveDeposits({ sweepId: sweep.id }, ["SWEEPING", "FAILED"], { state: "NEEDS_REVIEW" });
-    return sweep;
-  }
 
   // Nothing burned and nothing moving: start over with what is there now.
   const balance = await depositUsdcBalance(address.provider_wallet_id!, chainFor(address));
@@ -443,6 +480,7 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
   );
   if (!claimed) return sweep;
   await moveDeposits({ sweepId: sweep.id }, ["FAILED"], { state: "SWEEPING" });
+  await adoptStrandedDeposits(address, claimed);
   await runBridge(claimed, address);
   return claimed;
 }
@@ -496,6 +534,7 @@ export async function sweepAddress(address: DepositAddressRow) {
     ["DETECTED", "CONFIRMED", "BELOW_MIN"],
     { state: "SWEEPING", sweep_id: sweep.id },
   );
+  await adoptStrandedDeposits(address, sweep);
   await runBridge(sweep, address);
   return sweep;
 }

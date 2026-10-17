@@ -227,6 +227,31 @@ export async function findOpenSweep(depositAddressId: string) {
 }
 
 /**
+ * Deposits on hold under a sweep that never burned. Their USDC never left the
+ * address, so whichever sweep takes the balance next is carrying it.
+ */
+export async function listStrandedDeposits(depositAddressId: string) {
+  const { data: sweeps, error: sweepError } = await db()
+    .from("chain_sweeps")
+    .select("id")
+    .eq("deposit_address_id", depositAddressId)
+    .eq("state", "NEEDS_REVIEW")
+    .is("burn_tx_hash", null);
+  if (sweepError) fail(sweepError, "Sweeps could not be read.");
+  const ids = (sweeps ?? []).map((row) => (row as { id: string }).id);
+  if (ids.length === 0) return [] as ChainDepositRow[];
+
+  const { data, error } = await db()
+    .from("chain_deposits")
+    .select("*")
+    .eq("deposit_address_id", depositAddressId)
+    .eq("state", "NEEDS_REVIEW")
+    .in("sweep_id", ids);
+  if (error) fail(error, "Deposits could not be read.");
+  return (data ?? []) as ChainDepositRow[];
+}
+
+/**
  * Claim the address for a new sweep. Returns null when another sweep is
  * already in flight (the one-in-flight index refused the row).
  */
