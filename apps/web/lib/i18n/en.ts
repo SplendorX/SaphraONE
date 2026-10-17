@@ -272,6 +272,7 @@ export const en = {
       navAllie: "ALLIE",
       navBusiness: "Business",
       navSecurity: "Security",
+      navDevelopers: "Developers",
       navFaq: "FAQ",
       heroKicker: "Live on Arc · Wallets secured by Circle",
       heroTitleLead: "One account. One identity.",

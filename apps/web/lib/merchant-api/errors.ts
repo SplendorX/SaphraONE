@@ -1,3 +1,5 @@
+import { apiBaseUrl } from "@/lib/developers/site";
+
 /**
  * Errors of the public Checkout API. Kept apart from the app's
  * BusinessHttpError so the JSON shape sites code against stays stable:
@@ -59,8 +61,8 @@ export const apiErrors = {
       code: "api_key_wrong_mode",
       message:
         mode === "test"
-          ? "This is a test key. Use it with the SaphraONE sandbox, not app.saphra.one."
-          : "This is a live key. Use it with app.saphra.one, not the sandbox.",
+          ? `This is a test key. Use it with the sandbox API (${apiBaseUrl("sandbox")}).`
+          : `This is a live key. Use it with the live API (${apiBaseUrl("live")}).`,
       status: 401,
       type: "authentication_error",
     }),

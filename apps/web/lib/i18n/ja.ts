@@ -255,6 +255,7 @@ export const ja: Messages = {
       navAllie: "ALLIE",
       navBusiness: "ビジネス",
       navSecurity: "セキュリティ",
+      navDevelopers: "開発者",
       navFaq: "よくある質問",
       heroKicker: "Arc で稼働中 · ウォレットは Circle が保護",
       heroTitleLead: "ひとつのアカウント。ひとつのID。",

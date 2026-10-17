@@ -10,11 +10,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
 
 import { LandingVideoBackground } from "@/components/landing/landing-video-background";
 import { AllieShowcase } from "@/components/landing/allie-showcase";
 import { BusinessShowcase } from "@/components/landing/business-showcase";
+import { DevelopersShowcase } from "@/components/landing/developers-showcase";
 import { FeatureStories } from "@/components/landing/feature-stories";
 import { HeroWelcome } from "@/components/landing/hero-welcome";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -23,6 +23,7 @@ import { LazyPhoto } from "@/components/landing/lazy-photo";
 import { OneIdShowcase } from "@/components/landing/one-id-showcase";
 import { ProductShowcase } from "@/components/landing/product-showcase";
 import { SecuritySection } from "@/components/landing/security-section";
+import { useSignInReturn } from "@/components/landing/use-sign-in-return";
 import { FadeUp, Stagger, StaggerItem } from "@/components/design/motion";
 import { MarketingShell } from "@/components/layout/marketing-shell";
 import { useT } from "@/components/locale-provider";
@@ -115,26 +116,7 @@ export function LandingPage() {
     { answer: t("landing.home.faq6A"), question: t("landing.home.faq6Q") },
   ];
 
-  useEffect(() => {
-    // Sign-in has its own page. Google returns to the site root (its redirect
-    // URI), and older links say /#sign-in: send both there, keeping the query
-    // (?next=) and Google's hash so the sign-in can finish on /sign-in.
-    const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    const queryParams = new URLSearchParams(window.location.search);
-    const googleReturn = Boolean(
-      hashParams.get("id_token") ||
-        hashParams.get("error") ||
-        hashParams.get("state") ||
-        queryParams.get("id_token") ||
-        queryParams.get("code") ||
-        queryParams.get("error") ||
-        queryParams.get("state"),
-    );
-    if (googleReturn || window.location.hash === "#sign-in" || queryParams.get("next")) {
-      const hash = window.location.hash === "#sign-in" ? "" : window.location.hash;
-      window.location.replace(`/sign-in${window.location.search}${hash}`);
-    }
-  }, []);
+  useSignInReturn();
 
   return (
     <MarketingShell>
@@ -226,6 +208,7 @@ export function LandingPage() {
 
       <FeatureStories />
       <BusinessShowcase />
+      <DevelopersShowcase />
 
       {/* ── Security ── */}
       <SecuritySection />

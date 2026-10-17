@@ -271,6 +271,7 @@ export const pt: Messages = {
       navAllie: "ALLIE",
       navBusiness: "Empresas",
       navSecurity: "Segurança",
+      navDevelopers: "Desenvolvedores",
       navFaq: "Perguntas",
       heroKicker: "Ativo na Arc · Carteiras protegidas pela Circle",
       heroTitleLead: "Uma conta. Uma identidade.",

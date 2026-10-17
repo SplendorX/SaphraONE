@@ -2,11 +2,18 @@ import "@/lib/env-compat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import {
+  developerMode,
+  developerSurfaceFor,
+  developerUrls,
+  requestHost,
+} from "@/lib/developers/site";
 import { platformAccessCookieName } from "@/lib/platform-access";
 import { readWalletToken, walletSessionCookieName } from "@/lib/wallet-session";
 
 const protectedRouteMatchers = [
   "/activity",
+  "/developers/console",
   "/insights",
   "/transactions",
   "/dashboard",
@@ -40,8 +47,10 @@ function allowedOrigins(request: NextRequest) {
     const proto = request.headers.get("x-forwarded-proto") ?? "https";
     origins.add(`${proto}://${forwardedHost.split(",")[0].trim()}`);
   }
+  const developers = developerUrls();
   for (const value of [
     process.env.NEXT_PUBLIC_APP_URL,
+    developers.portal,
     ...(process.env.SAPHRA_ALLOWED_ORIGINS ?? "").split(","),
   ]) {
     try {
@@ -116,8 +125,96 @@ function isProtectedRoute(pathname: string) {
   );
 }
 
-export function proxy(request: NextRequest) {
+function hasSignInCookie(request: NextRequest) {
+  return (
+    request.cookies.get(platformAccessCookieName)?.value === "1" ||
+    Boolean(request.cookies.get(walletSessionCookieName)?.value)
+  );
+}
+
+function apiNotFound(message: string) {
+  return NextResponse.json(
+    { error: { code: "resource_missing", message, type: "not_found_error" } },
+    { headers: { "Cache-Control": "no-store" }, status: 404 },
+  );
+}
+
+/**
+ * The API host (api.saphra.one): `/v1/…` is the Checkout API, served by the
+ * same routes as `/api/v1/…` on the app. Anything else is a JSON 404.
+ */
+function routeApiHost(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === "/" || pathname === "/v1") {
+    const mode = developerMode();
+    return NextResponse.json(
+      {
+        docs: `${developerUrls(mode).portal}/docs`,
+        livemode: mode === "live",
+        name: "SaphraONE Checkout API",
+        object: "api",
+        version: "v1",
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (pathname.startsWith("/v1/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/api${pathname}`;
+    return { rewrite: url };
+  }
+  if (pathname.startsWith("/api/v1/")) return { rewrite: null };
+  return apiNotFound(`Unrecognized request URL (${request.method} ${pathname}). See the API reference.`);
+}
+
+/** Paths the portal host serves as they are: sign-in and everything it calls. */
+const portalPassthroughPrefixes = ["/api/", "/sign-in", "/onboarding", "/checkout/", "/_next/"];
+
+/**
+ * The developer portal (developers.saphra.one) is the app's /developers pages
+ * at the root: `/docs` shows /developers/docs. Sign-in works here as on the
+ * app (same accounts and sessions); app pages send the visitor to the app.
+ */
+function routePortalHost(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  if (portalPassthroughPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix))) {
+    return null;
+  }
+  // One address per page: /developers/docs here is /docs.
+  if (pathname === "/developers" || pathname.startsWith("/developers/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.slice("/developers".length) || "/";
+    return NextResponse.redirect(url, 308);
+  }
+  if (isProtectedRoute(pathname)) {
+    const app = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (app) return NextResponse.redirect(new URL(`${pathname}${search}`, app));
+  }
+  if ((pathname === "/console" || pathname.startsWith("/console/")) && !hasSignInCookie(request)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/sign-in";
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${search}`);
+    return NextResponse.redirect(url);
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = pathname === "/" ? "/developers" : `/developers${pathname}`;
+  return NextResponse.rewrite(url);
+}
+
+export function proxy(request: NextRequest) {
+  const surface = developerSurfaceFor(requestHost(request.headers));
+  let apiRewrite: URL | null = null;
+  if (surface === "api") {
+    const routed = routeApiHost(request);
+    if (routed instanceof NextResponse) return routed;
+    apiRewrite = routed.rewrite;
+  } else if (surface === "portal") {
+    const routed = routePortalHost(request);
+    if (routed) return routed;
+  }
+
+  const pathname = apiRewrite?.pathname ?? request.nextUrl.pathname;
 
   if (pathname.startsWith("/api/")) {
     if (isForgedCrossSiteRequest(request)) {
@@ -136,17 +233,14 @@ export function proxy(request: NextRequest) {
         { headers: { "Cache-Control": "no-store" }, status: 423 },
       );
     }
-    return NextResponse.next();
+    return apiRewrite ? NextResponse.rewrite(apiRewrite) : NextResponse.next();
   }
 
   if (!isProtectedRoute(pathname)) {
     return NextResponse.next();
   }
 
-  if (
-    request.cookies.get(platformAccessCookieName)?.value === "1" ||
-    Boolean(request.cookies.get(walletSessionCookieName)?.value)
-  ) {
+  if (hasSignInCookie(request)) {
     return NextResponse.next();
   }
 
@@ -177,5 +271,8 @@ export const config = {
     "/bulkpay/:path*",
     "/recurepay/:path*",
     "/withdraw/:path*",
+    "/developers/console/:path*",
+    // Everything else (not assets): the developer hosts route every page.
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|.*\\.[a-zA-Z0-9]+$).*)",
   ],
 };

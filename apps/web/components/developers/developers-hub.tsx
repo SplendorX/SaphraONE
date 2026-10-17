@@ -25,6 +25,7 @@ import {
   fetchApiKeys,
   revokeApiKeyClient,
 } from "@/lib/merchant-api/client";
+import { apiBaseUrl, developerUrls } from "@/lib/developers/site";
 import type { ApiMode } from "@/lib/merchant-api/ids";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 
@@ -48,8 +49,8 @@ async function copyText(text: string, label: string) {
   }
 }
 
-function quickStart(origin: string, mode: ApiMode) {
-  return `curl ${origin}/api/v1/checkout/sessions \\
+function quickStart(mode: ApiMode) {
+  return `curl ${apiBaseUrl()}/checkout/sessions \\
   -H "Authorization: Bearer sk_${mode}_…" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: order-1042" \\
@@ -63,7 +64,12 @@ function quickStart(origin: string, mode: ApiMode) {
   }'`;
 }
 
-export function DevelopersHub() {
+/**
+ * API keys and the quick start. `portal`: inside the developer console, which
+ * draws its own navigation and payments list.
+ */
+export function DevelopersHub({ variant = "app" }: { variant?: "app" | "portal" } = {}) {
+  const inPortal = variant === "portal";
   const {
     account,
     circleSocialUuid: accountSocialUuid,
@@ -92,12 +98,6 @@ export function DevelopersHub() {
   const [revealed, setRevealed] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [origin, setOrigin] = useState("");
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
   const loadKeys = useCallback(async () => {
     if (!auth) return;
     try {
@@ -119,7 +119,7 @@ export function DevelopersHub() {
   if (accountLoading && !account) {
     return (
       <div className="ck-page">
-        <DevelopersBar />
+        {inPortal ? null : <DevelopersBar />}
         <div className="flex justify-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -130,7 +130,7 @@ export function DevelopersHub() {
   if (!accountLoading && !isBusinessAccount) {
     return (
       <div className="ck-page">
-        <DevelopersBar />
+        {inPortal ? null : <DevelopersBar />}
         <section className="ck-card ck-intro">
           <span className="ck-intro-icon">
             <Terminal className="h-7 w-7" />
@@ -184,7 +184,7 @@ export function DevelopersHub() {
 
   return (
     <div className="ck-page">
-      <DevelopersBar />
+      {inPortal ? null : <DevelopersBar />}
 
       <section className="ck-card">
         <h2 className="ck-card-title">
@@ -323,7 +323,7 @@ export function DevelopersHub() {
         ) : null}
       </section>
 
-      {mode && origin ? (
+      {mode ? (
         <section className="ck-card">
           <h2 className="ck-card-title">
             <Terminal className="h-4 w-4 text-primary" />
@@ -331,13 +331,13 @@ export function DevelopersHub() {
           </h2>
           <p className="ck-muted text-sm">
             Create a session from your server, then redirect the buyer to the <code>url</code> in the
-            response. Check <code>GET /api/v1/checkout/sessions/&#123;id&#125;</code> for{" "}
+            response. Check <code>GET /v1/checkout/sessions/&#123;id&#125;</code> for{" "}
             <code>&quot;status&quot;: &quot;complete&quot;</code> before you ship the order.
           </p>
-          <pre className="dv-code">{quickStart(origin, mode)}</pre>
+          <pre className="dv-code">{quickStart(mode)}</pre>
           <button
             className="ck-quiet-link justify-self-start"
-            onClick={() => void copyText(quickStart(origin, mode), "Example")}
+            onClick={() => void copyText(quickStart(mode), "Example")}
             type="button"
           >
             Copy example
@@ -345,13 +345,24 @@ export function DevelopersHub() {
         </section>
       ) : null}
 
-      <Link className="dv-next" href="/business/checkout?tab=online">
-        <span>
-          <span className="block font-semibold">Online payments</span>
-          <span className="ck-muted block text-xs">Every checkout your site has started</span>
-        </span>
-        <ArrowRight className="h-4 w-4" />
-      </Link>
+      {inPortal ? null : (
+        <>
+          <a className="dv-next" href={`${developerUrls().portal}/docs`}>
+            <span>
+              <span className="block font-semibold">Developer docs</span>
+              <span className="ck-muted block text-xs">Guides, API reference and the developer console</span>
+            </span>
+            <ArrowRight className="h-4 w-4" />
+          </a>
+          <Link className="dv-next" href="/business/checkout?tab=online">
+            <span>
+              <span className="block font-semibold">Online payments</span>
+              <span className="ck-muted block text-xs">Every checkout your site has started</span>
+            </span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </>
+      )}
     </div>
   );
 }

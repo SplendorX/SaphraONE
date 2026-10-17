@@ -22,7 +22,14 @@ function timeLabel(value: string) {
 }
 
 /** Checkouts a website started with the API: newest first, refreshed while open. */
-export function OnlinePaymentsPanel({ auth }: { auth: MerchantAuth | null }) {
+export function OnlinePaymentsPanel({
+  auth,
+  showDevelopersLink = true,
+}: {
+  auth: MerchantAuth | null;
+  /** The link to API keys; off inside the developer console, which has them a tab away. */
+  showDevelopersLink?: boolean;
+}) {
   const [charges, setCharges] = useState<ChargeWithPayments[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +57,7 @@ export function OnlinePaymentsPanel({ auth }: { auth: MerchantAuth | null }) {
 
   return (
     <>
+      {showDevelopersLink ? (
       <Link className="dv-next" href="/business/developers">
         <span className="flex items-center gap-3">
           <span className="ck-item-icon">
@@ -62,6 +70,7 @@ export function OnlinePaymentsPanel({ auth }: { auth: MerchantAuth | null }) {
         </span>
         <ArrowRight className="h-4 w-4" />
       </Link>
+      ) : null}
 
       <section className="ck-card">
         <h2 className="ck-card-title">

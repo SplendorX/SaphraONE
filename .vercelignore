@@ -19,6 +19,8 @@ terminals/
 output/
 tmp/
 docs/
+!apps/web/app/developers/docs/
+!apps/web/components/developers/docs/
 .agents/
 apps/web/.agents/
 apps/web/.claude/

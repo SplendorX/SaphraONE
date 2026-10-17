@@ -255,6 +255,7 @@ export const ko: Messages = {
       navAllie: "ALLIE",
       navBusiness: "비즈니스",
       navSecurity: "보안",
+      navDevelopers: "개발자",
       navFaq: "자주 묻는 질문",
       heroKicker: "Arc에서 운영 중 · 지갑은 Circle이 보호",
       heroTitleLead: "하나의 계정. 하나의 ID.",

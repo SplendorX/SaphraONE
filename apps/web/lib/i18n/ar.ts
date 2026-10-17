@@ -271,6 +271,7 @@ export const ar: Messages = {
       navAllie: "ALLIE",
       navBusiness: "الأعمال",
       navSecurity: "الأمان",
+      navDevelopers: "المطورون",
       navFaq: "الأسئلة",
       heroKicker: "متاح على Arc · محافظ مؤمّنة من Circle",
       heroTitleLead: "حساب واحد. هوية واحدة.",

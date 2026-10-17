@@ -255,6 +255,7 @@ export const zh: Messages = {
       navAllie: "ALLIE",
       navBusiness: "企业",
       navSecurity: "安全",
+      navDevelopers: "开发者",
       navFaq: "常见问题",
       heroKicker: "已在 Arc 上线 · 钱包由 Circle 保护",
       heroTitleLead: "一个账户。一个身份。",
