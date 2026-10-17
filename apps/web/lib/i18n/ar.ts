@@ -84,6 +84,8 @@ export const ar: Messages = {
     invoicesSubtitle: "أنشئ وأرسل وتابع طلبات الدفع المهنية",
     checkoutTitle: "الدفع السريع",
     checkoutSubtitle: "استقبل المدفوعات الحضورية برمز QR",
+    developersTitle: "المطورون",
+    developersSubtitle: "اقبل المدفوعات على موقعك عبر واجهة الدفع البرمجية",
     payrollTitle: "الرواتب",
     payrollSubtitle: "إدارة فريقك وتنفيذ المدفوعات من مكان واحد.",
     requestTitle: "طلب",

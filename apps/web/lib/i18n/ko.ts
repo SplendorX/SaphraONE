@@ -84,6 +84,8 @@ export const ko: Messages = {
     invoicesSubtitle: "전문 결제 요청을 만들고 보내고 추적하세요",
     checkoutTitle: "결제 받기",
     checkoutSubtitle: "QR 코드로 대면 결제를 받으세요",
+    developersTitle: "개발자",
+    developersSubtitle: "Checkout API로 웹사이트에서 결제 받기",
     payrollTitle: "급여 관리",
     payrollSubtitle: "팀을 관리하고 한 곳에서 결제를 실행하세요.",
     requestTitle: "요청",

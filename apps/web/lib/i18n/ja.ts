@@ -84,6 +84,8 @@ export const ja: Messages = {
     invoicesSubtitle: "プロ向け支払いリクエストの作成、送信、追跡",
     checkoutTitle: "レジ",
     checkoutSubtitle: "QRコードで対面決済を受け付ける",
+    developersTitle: "開発者",
+    developersSubtitle: "Checkout API でウェブサイトの決済を受け付ける",
     payrollTitle: "給与支払い",
     payrollSubtitle: "チームを管理し、1か所から支払いを行います。",
     requestTitle: "リクエスト",

@@ -82,6 +82,8 @@ export const en = {
     invoicesSubtitle: "Create, send and track professional payment requests",
     checkoutTitle: "Checkout",
     checkoutSubtitle: "Take in-person payments with a QR code",
+    developersTitle: "Developers",
+    developersSubtitle: "Accept payments on your website with the Checkout API",
     payrollTitle: "Payroll",
     payrollSubtitle: "Manage your team and run payments from one place.",
     requestTitle: "Request",

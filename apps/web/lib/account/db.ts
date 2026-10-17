@@ -11,6 +11,12 @@ export const accountTables = {
   charges: "business_charges",
   chargePayments: "business_charge_payments",
   checkoutCursors: "business_checkout_scan_cursors",
+  chargeRefunds: "business_charge_refunds",
+  checkoutSessions: "checkout_sessions",
+  merchantApiKeys: "merchant_api_keys",
+  webhookEndpoints: "merchant_webhook_endpoints",
+  webhookEvents: "merchant_webhook_events",
+  webhookDeliveries: "merchant_webhook_deliveries",
 } as const;
 
 export function accountDb() {
@@ -23,6 +29,14 @@ export function readAccountDbError(
 ) {
   const message = error?.message ?? "";
   if (message.toLowerCase().includes("does not exist")) {
+    if (
+      message.includes("merchant_") ||
+      message.includes("checkout_sessions") ||
+      message.includes("business_charge_refunds") ||
+      message.includes("amount_refunded")
+    ) {
+      return "Run packages/database/supabase/merchant-api.sql in the Supabase SQL editor.";
+    }
     if (message.includes("business_charge") || message.includes("business_checkout")) {
       return "Run packages/database/supabase/business-checkout.sql in the Supabase SQL editor.";
     }

@@ -6,11 +6,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PlatformBrand } from "@/components/brand/platform-brand";
 import { PayerBackButton } from "@/components/checkout/payer-back-button";
 import { ChargeReceiptCard } from "@/components/checkout/charge-receipt-card";
+import {
+  OnlineCancelLink,
+  OnlineOrderSummary,
+  OnlineReturnToStore,
+  storeHomeUrl,
+} from "@/components/checkout/online-checkout-parts";
 import { PayWithBridge } from "@/components/checkout/pay-with-bridge";
 import { PayWithOnramp } from "@/components/checkout/pay-with-onramp";
 import { PayWithSaphra } from "@/components/checkout/pay-with-saphra";
 import { PayWithWallet } from "@/components/checkout/pay-with-wallet";
 import { TipPicker } from "@/components/checkout/tip-picker";
+import { Button } from "@/components/ui/button";
 import { formatMoney, moneyNumber, roundMoney } from "@/lib/account/money";
 import { fetchOnrampEnabled, fetchPublicCharge, updateChargeTip } from "@/lib/checkout/client";
 import type { PublicChargePayload } from "@/lib/checkout/types";
@@ -109,7 +116,9 @@ export function PayChargePage({ code }: { code: string }) {
           <PayerBackButton />
           <PlatformBrand />
         </div>
-        <h1 className="mt-6 font-heading text-3xl">Charge not found</h1>
+        <h1 className="mt-6 font-heading text-3xl">
+          {code.startsWith("cs_") ? "Checkout not found" : "Charge not found"}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">{loadError}</p>
       </main>
     );
@@ -125,6 +134,8 @@ export function PayChargePage({ code }: { code: string }) {
   }
 
   const { business, charge } = payload;
+  // A checkout a website started (kind ONLINE): no tip, back to the store after.
+  const online = charge.online;
   const received = moneyNumber(charge.amountReceived);
   const remainingBase = Math.max(0, moneyNumber(charge.amount) - received);
   // A partly-paid charge asks only for the rest; the tip rides on top.
@@ -177,21 +188,36 @@ export function PayChargePage({ code }: { code: string }) {
             <div className="min-w-0">
               <p className="truncate font-semibold">{business.name}</p>
               {business.username ? (
-                <p className="truncate text-sm text-muted-foreground">{business.username}.one</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {business.username}.one
+                  {online?.siteHost ? ` · ${online.siteHost}` : ""}
+                </p>
+              ) : online?.siteHost ? (
+                <p className="truncate text-sm text-muted-foreground">{online.siteHost}</p>
               ) : null}
             </div>
           </div>
 
           {charge.status === "PAID" ? (
-            <ChargeReceiptCard payload={payload} />
+            <>
+              <ChargeReceiptCard payload={payload} />
+              {online ? <OnlineReturnToStore online={online} /> : null}
+            </>
           ) : charge.status === "CANCELLED" || charge.status === "EXPIRED" ? (
             <div className="space-y-2">
               <p className="font-heading text-2xl">
                 {charge.status === "CANCELLED" ? "Cancelled" : "Expired"}
               </p>
               <p className="text-sm text-muted-foreground">
-                This charge can&rsquo;t be paid any more. Ask {business.name} for a new one.
+                {online
+                  ? `This checkout can\u2019t be paid any more. Go back to ${online.siteHost || business.name} to start again.`
+                  : `This charge can\u2019t be paid any more. Ask ${business.name} for a new one.`}
               </p>
+              {online && storeHomeUrl(online) ? (
+                <Button asChild className="mt-2 w-full" variant="outline">
+                  <a href={storeHomeUrl(online) ?? undefined}>Back to {online.siteHost || business.name}</a>
+                </Button>
+              ) : null}
             </div>
           ) : (
             <>
@@ -216,16 +242,22 @@ export function PayChargePage({ code }: { code: string }) {
                 {charge.note ? <p className="mt-2 text-sm">{charge.note}</p> : null}
               </div>
 
-              <TipPicker
-                amount={charge.amount}
-                currency={charge.currency}
-                onChange={(next) => {
-                  tipTouched.current = true;
-                  setTip(next);
-                }}
-                value={tip}
-              />
-              {tipError ? <p className="text-sm text-destructive">{tipError}</p> : null}
+              {online ? (
+                <OnlineOrderSummary currency={charge.currency} expiresAt={charge.expiresAt} online={online} />
+              ) : (
+                <>
+                  <TipPicker
+                    amount={charge.amount}
+                    currency={charge.currency}
+                    onChange={(next) => {
+                      tipTouched.current = true;
+                      setTip(next);
+                    }}
+                    value={tip}
+                  />
+                  {tipError ? <p className="text-sm text-destructive">{tipError}</p> : null}
+                </>
+              )}
 
               {slowPaymentPending && method !== "card" ? (
                 <p className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
@@ -268,6 +300,12 @@ export function PayChargePage({ code }: { code: string }) {
               ) : (
                 <PayWithSaphra payload={payload} total={total} />
               )}
+
+              {online ? (
+                <div className="text-center">
+                  <OnlineCancelLink online={online} />
+                </div>
+              ) : null}
             </>
           )}
         </section>

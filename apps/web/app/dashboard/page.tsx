@@ -678,6 +678,9 @@ export function DashboardContent({
     business: string;
     code: string;
     status: string;
+    /** An online checkout: where the buyer goes back to the store from. */
+    checkoutPath: string | null;
+    siteHost: string | null;
   } | null>(null);
   const [chargeRecording, setChargeRecording] = useState<
     "idle" | "recording" | "recorded" | "failed"
@@ -1355,9 +1358,12 @@ export function DashboardContent({
     void fetchPublicCharge(chargeCode)
       .then((payload) => {
         if (cancelled) return;
+        const online = payload.charge.online;
         setLinkedCharge({
           business: payload.business.name,
+          checkoutPath: online ? `/checkout/${encodeURIComponent(online.sessionId)}` : null,
           code: payload.charge.code,
+          siteHost: online?.siteHost || null,
           status: payload.charge.status,
         });
       })
@@ -2952,9 +2958,11 @@ export function DashboardContent({
                 {linkedCharge.status === "PAID" ? "has your payment" : "received part of the payment"} ·{" "}
                 <a
                   className="font-medium text-primary hover:underline"
-                  href={`/c/${encodeURIComponent(chargeCode)}`}
+                  href={linkedCharge.checkoutPath ?? `/c/${encodeURIComponent(chargeCode)}`}
                 >
-                  View receipt
+                  {linkedCharge.checkoutPath
+                    ? `Return to ${linkedCharge.siteHost || linkedCharge.business}`
+                    : "View receipt"}
                 </a>
               </p>
             ) : chargeRecording === "recording" ? (

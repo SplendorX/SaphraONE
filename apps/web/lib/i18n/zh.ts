@@ -84,6 +84,8 @@ export const zh: Messages = {
     invoicesSubtitle: "创建、发送并跟踪专业付款请求",
     checkoutTitle: "收款",
     checkoutSubtitle: "用二维码收取当面付款",
+    developersTitle: "开发者",
+    developersSubtitle: "通过 Checkout API 在您的网站上收款",
     payrollTitle: "薪酬管理",
     payrollSubtitle: "一站式管理团队并执行发薪付款。",
     requestTitle: "收款",

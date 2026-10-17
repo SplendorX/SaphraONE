@@ -83,6 +83,9 @@ export function pageCopyForPath(pathname: string): PageCopy | null {
   if (pathname.startsWith("/business/checkout")) {
     return { title: "pages.checkoutTitle", subtitle: "pages.checkoutSubtitle" };
   }
+  if (pathname.startsWith("/business/developers")) {
+    return { title: "pages.developersTitle", subtitle: "pages.developersSubtitle" };
+  }
   if (pathname.startsWith("/business/invoices")) {
     return { title: "pages.invoicesTitle", subtitle: "pages.invoicesSubtitle" };
   }

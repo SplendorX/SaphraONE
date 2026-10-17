@@ -84,6 +84,8 @@ export const de: Messages = {
     invoicesSubtitle: "Erstelle, sende und verfolge professionelle Zahlungsanfragen",
     checkoutTitle: "Kasse",
     checkoutSubtitle: "Zahlungen vor Ort per QR-Code annehmen",
+    developersTitle: "Entwickler",
+    developersSubtitle: "Zahlungen auf Ihrer Website mit der Checkout-API annehmen",
     payrollTitle: "Gehaltsabrechnung",
     payrollSubtitle: "Verwalte dein Team und führe Zahlungen an einem Ort aus.",
     requestTitle: "Anfordern",

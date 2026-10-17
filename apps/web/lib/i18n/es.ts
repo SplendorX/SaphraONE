@@ -84,6 +84,8 @@ export const es: Messages = {
     invoicesSubtitle: "Crea, envía y sigue solicitudes de pago profesionales",
     checkoutTitle: "Cobro",
     checkoutSubtitle: "Cobra en persona con un código QR",
+    developersTitle: "Desarrolladores",
+    developersSubtitle: "Acepta pagos en tu sitio web con la API de Checkout",
     payrollTitle: "Nómina",
     payrollSubtitle: "Gestiona tu equipo y realiza pagos desde un solo lugar.",
     requestTitle: "Solicitar",
