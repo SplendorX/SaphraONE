@@ -57,6 +57,7 @@ const ORDER = [
   "traction-events",
   "business-checkout",
   "ramp",
+  "creator-partners",
   "wallet-transfer-history",
 ];
 
