@@ -1,5 +1,5 @@
 /* Home's announcement cards (components/dashboard/announcements.tsx).
- * Campaigns warm gold, quests mint, each with flat art on the right and a
+ * Campaigns warm gold, quests mint, a creator's welcome lavender, each with flat art on the right and a
  * close button. Several scroll sideways, the next one peeking in.
  * Its own file, not globals.css. */
 .ann {
@@ -40,6 +40,12 @@
   color: #0d2a1e;
 }
 
+/* A creator partner's welcome package: lavender. */
+.ann-card[data-kind="welcome"] {
+  background: linear-gradient(180deg, #f6f3ff 0%, #ddd6fe 100%);
+  color: #1e1240;
+}
+
 .dark .ann-card {
   border-color: rgb(244 235 221 / 0.08);
 }
@@ -52,6 +58,11 @@
 .dark .ann-card[data-kind="quest"] {
   background: linear-gradient(160deg, #0f2b20 0%, #17111c 100%);
   color: #d8f5e8;
+}
+
+.dark .ann-card[data-kind="welcome"] {
+  background: linear-gradient(160deg, #241a4a 0%, #17111c 100%);
+  color: #e7e1ff;
 }
 
 .ann-link {

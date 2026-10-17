@@ -1,6 +1,9 @@
 // Server-only. What Home announces: USDC campaigns once they're published
 // (status "live") and ONE Points quests once they're active, each until it
 // ends. New ones show up by themselves; people dismiss them one by one.
+import { ENDING_NOTICE_DAYS } from "@/lib/partners/config";
+import { loadMember, loadOfferById } from "@/lib/partners/db";
+import { daysLeft, windowOpen } from "@/lib/partners/rules";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 
 export type Announcement = {
@@ -8,9 +11,9 @@ export type Announcement = {
   badge: string;
   body: string;
   href: string;
-  /** "campaign:<id>" or "quest:<id>", so a dismissal sticks to one item. */
+  /** "campaign:<id>", "quest:<id>" or "welcome:<offer>", so a dismissal sticks to one item. */
   id: string;
-  kind: "campaign" | "quest";
+  kind: "campaign" | "quest" | "welcome";
   publishedAt: string;
   title: string;
 };
@@ -98,7 +101,35 @@ export async function listAnnouncements(
       };
     });
 
-  return [...fromCampaigns, ...fromQuests]
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, limit);
+  // A creator partner's welcome package comes first: it's the member's own.
+  const welcome = wallet ? await welcomeAnnouncement(wallet, now).catch(() => null) : null;
+  return [
+    ...(welcome ? [welcome] : []),
+    ...[...fromCampaigns, ...fromQuests].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
+  ].slice(0, limit);
+}
+
+/**
+ * For an account that joined through a creator's link: its welcome package,
+ * then (a new card, so a dismissed one comes back) when it's about to end.
+ */
+async function welcomeAnnouncement(wallet: string, now: Date): Promise<Announcement | null> {
+  const member = await loadMember(wallet);
+  if (!member || member.perks_status !== "ACTIVE" || !windowOpen(member, now)) return null;
+  const loaded = await loadOfferById(member.offer_id);
+  if (!loaded) return null;
+  const who = loaded.partner.handle ? `@${loaded.partner.handle}` : loaded.partner.display_name;
+  const left = daysLeft(member.perks_end_at, now);
+  const ending = left <= ENDING_NOTICE_DAYS;
+  return {
+    badge: ending ? `${left} day${left === 1 ? "" : "s"} left` : "Welcome perks",
+    body: ending
+      ? "Your welcome perks end soon. Claim any USDC back on the Rewards page."
+      : "Fee rebates, bonus points and more while your welcome period lasts.",
+    href: "/rewards",
+    id: `${ending ? "welcome-ending" : "welcome"}:${member.offer_id}`,
+    kind: "welcome",
+    publishedAt: member.perks_start_at,
+    title: `Welcome from ${who}`,
+  };
 }

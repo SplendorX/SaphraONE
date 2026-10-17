@@ -1,0 +1,139 @@
+/* "Welcome from @creator" on the Rewards page (welcome-perks-card.tsx). */
+.wp-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.2rem 1.25rem 1.25rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 30%, var(--border));
+  border-radius: 1.6rem;
+  background: color-mix(in oklch, var(--primary) 6%, var(--card));
+}
+
+.wp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.wp-chip {
+  flex-shrink: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: color-mix(in oklch, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+
+.wp-chip.is-ending {
+  background: color-mix(in oklch, #f59e0b 20%, transparent);
+  color: #b45309;
+}
+
+.wp-sub {
+  font-size: 0.84rem;
+  color: var(--muted-foreground);
+}
+
+.wp-note {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.8rem;
+  font-size: 0.84rem;
+  background: var(--muted);
+}
+
+.wp-perks {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.wp-perks li {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.wp-perk-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.wp-perk-summary,
+.wp-perk-usage {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+}
+
+.wp-perk-usage {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.wp-rebates {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+}
+
+.wp-amount {
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.wp-claim {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.5rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.wp-claim:disabled {
+  opacity: 0.45;
+}
+
+.wp-message {
+  font-size: 0.84rem;
+  color: #15803d;
+}
+
+.wp-message.is-error {
+  color: var(--destructive);
+}
+
+.wp-terms {
+  justify-self: start;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.dark .wp-chip.is-ending {
+  color: #fbbf24;
+}
+
+.dark .wp-message {
+  color: #4ade80;
+}

@@ -10,6 +10,7 @@ import { OnePointsMark } from "@/components/brand/one-points-mark";
 import { GiftPointsModal } from "@/components/referral/gift-points-modal";
 import { CampaignsBoard } from "@/components/rewards/campaigns-board";
 import { ClaimDiscountSheet } from "@/components/rewards/claim-discount-sheet";
+import { WelcomePerksCard } from "@/components/rewards/welcome-perks-card";
 import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
 import { readActivatedExternalProfile } from "@/lib/platform-access";
 import {
@@ -246,6 +247,9 @@ export function RewardsPage() {
           userWallet={wallet}
         />
       </section>
+
+      {/* A creator partner's welcome package, for accounts that joined through one */}
+      <WelcomePerksCard circleSocialUuid={circleSocialUuid} wallet={wallet} />
 
       {/* USDC campaigns, when any are running */}
       <CampaignsBoard wallet={wallet} />

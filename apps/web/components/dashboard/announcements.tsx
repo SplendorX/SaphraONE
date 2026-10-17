@@ -21,7 +21,8 @@ function readDismissed(): string[] {
 
 /**
  * Home's announcement cards: a USDC campaign once it's published, a ONE
- * Points quest once it's live (app/api/announcements). They scroll sideways
+ * Points quest once it's live, and a creator partner's welcome package for
+ * the member it belongs to (app/api/announcements). They scroll sideways
  * when there are several, and each one closes for good with its ×.
  */
 export function Announcements() {
@@ -64,7 +65,7 @@ export function Announcements() {
               <span className="ann-body">{item.body}</span>
               <span className="ann-badge">{item.badge}</span>
             </span>
-            {item.kind === "campaign" ? <TrophyArt /> : <MedalArt />}
+            {item.kind === "campaign" ? <TrophyArt /> : item.kind === "welcome" ? <GiftArt /> : <MedalArt />}
           </Link>
           <button
             aria-label={`Dismiss ${item.title}`}
@@ -117,6 +118,19 @@ function MedalArt() {
         d="m48 46 3 6.2 6.8 1-4.9 4.8 1.2 6.8-6.1-3.2-6.1 3.2 1.2-6.8-4.9-4.8 6.8-1Z"
         fill="#ffffff"
       />
+    </svg>
+  );
+}
+
+/** A flat gift box: a creator partner's welcome package. */
+function GiftArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#ede9fe" r="44" />
+      <rect fill="#7c3aed" height="30" rx="4" width="44" x="26" y="44" />
+      <rect fill="#8b5cf6" height="12" rx="3" width="52" x="22" y="34" />
+      <rect fill="#f5c842" height="40" width="8" x="44" y="34" />
+      <path d="M48 34c-4-9-15-12-17-5s9 6 17 5Zm0 0c4-9 15-12 17-5s-9 6-17 5Z" fill="#f5c842" />
     </svg>
   );
 }

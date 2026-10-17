@@ -9,7 +9,7 @@ import {
   MIN_DISCOUNT_USDC,
   type DiscountPercent,
 } from "@/lib/rewards/config";
-import { premiumProductLabels, type PremiumPurchase } from "@/lib/rewards/premium";
+import { paidUsdc, premiumProductLabels, type PremiumPurchase } from "@/lib/rewards/premium";
 
 export type ClaimablePurchase = {
   amountUsdc: number;
@@ -56,7 +56,8 @@ export async function listClaimablePurchases(walletAddress: string): Promise<Cla
   return ((purchases.data ?? []) as PremiumPurchase[])
     .filter((purchase) => !claimed.has(purchase.id))
     .map((purchase) => {
-      const amountUsdc = Number(purchase.amount_usdc);
+      // Only what was really paid: a partner discount already gave some back.
+      const amountUsdc = paidUsdc(purchase);
       const options = DISCOUNT_OPTIONS.map((option) => {
         const cost = discountCost(amountUsdc, option.percent);
         return {
@@ -105,7 +106,7 @@ export async function claimDiscount(input: {
   if (row.status !== "CONFIRMED") throw new DiscountError("This purchase was refunded.");
   if (!row.points_eligible) throw new DiscountError("This purchase can't be claimed against.");
 
-  const cost = discountCost(Number(row.amount_usdc), option.percent);
+  const cost = discountCost(paidUsdc(row), option.percent);
   if (cost.refundUsdc < MIN_DISCOUNT_USDC) {
     throw new DiscountError(`A discount has to be at least ${MIN_DISCOUNT_USDC.toFixed(2)} USDC.`);
   }

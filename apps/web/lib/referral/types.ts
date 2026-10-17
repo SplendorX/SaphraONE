@@ -48,7 +48,9 @@ export type OnePointsEntryType =
   | "GIFT_RECEIVED"
   | "ENTITLEMENT_UNLOCK"
   | "ADMIN_ADJUSTMENT"
-  | "REVERSAL";
+  | "REVERSAL"
+  | "PARTNER_WELCOME_POINTS"
+  | "PARTNER_CASHBACK_BOOST";
 
 /** Features that can be unlocked by spending OnePoints. */
 export type OnePointsFeature =

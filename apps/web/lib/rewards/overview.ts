@@ -34,6 +34,8 @@ const activityLabels: Record<string, string> = {
   ENTITLEMENT_UNLOCK: "Feature unlock",
   GIFT_RECEIVED: "Gift received",
   GIFT_SENT: "Gift sent",
+  PARTNER_CASHBACK_BOOST: "Cashback boost",
+  PARTNER_WELCOME_POINTS: "Welcome points",
   PURCHASE: "Points bought",
   QUEST_REWARD: "Quest reward",
   REDEMPTION: "Redeemed",

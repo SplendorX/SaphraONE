@@ -14,6 +14,7 @@ import { stablecoinUsdValue } from "@/lib/referral/fx";
 import { verifyWalletOutflow } from "@/lib/referral/verify-activity";
 import type { ReferralActivityType } from "@/lib/referral/types";
 import { accrueReferralCommission } from "@/lib/referral/usdc-commission";
+import { applyPartnerPerks } from "@/lib/partners/perks";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
 
 export const runtime = "nodejs";
@@ -114,6 +115,19 @@ export async function POST(request: NextRequest) {
       transactionId,
       txHash,
     }).catch(() => null);
+
+    // A creator partner's welcome perks (CREATOR-PARTNERS-PLAN.md), after the response.
+    after(async () =>
+      applyPartnerPerks({
+        cashbackPoints: userGeneralCashback?.pointsAwarded ?? 0,
+        feeUsd: await stablecoinUsdValue(verified.feePaid, token),
+        payees: Object.keys(verified.payees),
+        source: activityType.toLowerCase(),
+        txHash,
+        volumeUsd: referralAmountUsd,
+        wallet,
+      }),
+    );
 
     // 1. Check if user was referred
     const referral = await getReferralForUser(wallet);
