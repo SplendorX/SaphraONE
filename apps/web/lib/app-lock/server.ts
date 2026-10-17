@@ -1,16 +1,6 @@
 import crypto from "node:crypto";
 import { promisify } from "node:util";
 
-import type { NextResponse } from "next/server";
-
-import {
-  appLockTimeouts,
-  appUnlockCookieName,
-  appUnlockGraceMs,
-  createUnlockToken,
-  type AppLockTimeout,
-} from "@/lib/app-lock/cookie";
-import { secureCookieFor } from "@/lib/secure-cookie";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 
 const scrypt = promisify(crypto.scrypt) as (
@@ -45,12 +35,6 @@ export type AppLockPasskey = {
 
 export function isValidPin(value: unknown): value is string {
   return typeof value === "string" && /^\d{6}$/.test(value);
-}
-
-export function normalizeTimeout(value: unknown): AppLockTimeout {
-  return appLockTimeouts.includes(value as AppLockTimeout)
-    ? (value as AppLockTimeout)
-    : 1;
 }
 
 export async function hashPin(pin: string) {
@@ -93,7 +77,7 @@ export async function findAppLock(wallets: string[]) {
 
 
 
-export async function saveAppLock(wallet: string, pin: string, timeoutMinutes: AppLockTimeout) {
+export async function saveAppLock(wallet: string, pin: string, timeoutMinutes: number) {
   const { error } = await createSupabaseAdminClient()
     .from("app_locks")
     .upsert(
@@ -107,14 +91,6 @@ export async function saveAppLock(wallet: string, pin: string, timeoutMinutes: A
       },
       { onConflict: "owner_wallet" },
     );
-  if (error) throw error;
-}
-
-export async function setAppLockTimeout(wallet: string, timeoutMinutes: AppLockTimeout) {
-  const { error } = await createSupabaseAdminClient()
-    .from("app_locks")
-    .update({ timeout_minutes: timeoutMinutes, updated_at: new Date().toISOString() })
-    .eq("owner_wallet", wallet);
   if (error) throw error;
 }
 
@@ -209,32 +185,4 @@ export async function deletePasskeys(wallet: string) {
     .delete()
     .eq("owner_wallet", wallet);
   if (error) throw error;
-}
-
-/** Issue the unlock pass for `timeoutMinutes`. */
-export async function setUnlockCookie(
-  response: NextResponse,
-  wallet: string,
-  timeoutMinutes: number,
-) {
-  response.cookies.set(appUnlockCookieName, createUnlockToken(wallet, timeoutMinutes), {
-    httpOnly: true,
-    maxAge: timeoutMinutes * 60 + appUnlockGraceMs / 1000,
-    path: "/",
-    sameSite: "lax",
-    secure: await secureCookieFor(),
-  });
-}
-
-/**
- * The lock state to write into a session being issued. The database decides;
- * only when it can't be read does the previous session's flag carry over, so
- * turning the lock off on one device frees the others at their next renewal.
- */
-export async function appLockForSession(wallets: string[]) {
-  try {
-    return { known: true as const, lock: await findAppLock(wallets) };
-  } catch {
-    return { known: false as const, lock: null };
-  }
 }

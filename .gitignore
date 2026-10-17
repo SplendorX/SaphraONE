@@ -53,6 +53,9 @@ apps/web/terminals/
 
 # Local working docs (kept on disk, not published)
 docs/
+# …but the developer portal's docs pages are code.
+!apps/web/app/developers/docs/
+!apps/web/components/developers/docs/
 
 # Local generated artifacts
 output/

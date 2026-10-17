@@ -66,9 +66,9 @@ export async function resolveDestination(input: {
   walletAddress?: string | null;
 }): Promise<{ saphraUsername: string | null; walletAddress: string }> {
   if (input.paymentDestinationType === "SWIFTPAY_USER") {
-    const raw = (input.saphraUsername ?? "").trim().replace(/^@+/, "");
+    const raw = (input.saphraUsername ?? "").trim().replace(/^@+/, "").replace(/\.one$/i, "");
     if (!raw) {
-      throw payrollErrors.invalidDestination("Enter a SaphraONE username.");
+      throw payrollErrors.invalidDestination("Enter a ONE ID.");
     }
     const profile = await findProfileByUsernameServer(raw);
     if (!profile || !isAddress(profile.wallet_address)) {

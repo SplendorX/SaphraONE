@@ -71,10 +71,14 @@ export function createChargeClient(
   );
 }
 
-export function fetchCharges(auth: MerchantAuth, options?: { status?: ChargeStatus; page?: number }) {
+export function fetchCharges(
+  auth: MerchantAuth,
+  options?: { status?: ChargeStatus; page?: number; kind?: "IN_PERSON" | "ONLINE" },
+) {
   return requestJson<{ charges: ChargeWithPayments[]; page: number; summary: ChargeSummary }>(
     withWallet("/api/business/checkout/charges", auth.ownerWallet, {
       circleSocialUuid: auth.circleSocialUuid,
+      kind: options?.kind,
       page: options?.page ? String(options.page) : undefined,
       status: options?.status,
     }),

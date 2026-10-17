@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Check, CheckCircle2, Coins, Loader2, ShieldCheck, UserRound, XCircle } from "lucide-react";
+import { Briefcase, Check, Coins, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
@@ -13,7 +13,8 @@ import { useOptionalWorkspace } from "@/components/business/workspace-provider";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Input } from "@/components/ui/input";
-import { AppLockSettings } from "@/components/settings/app-lock-settings";
+import { OneIdClaimBox } from "@/components/onboarding/one-id-claim-box";
+import { PaymentSecuritySettings } from "@/components/settings/payment-security-settings";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { useLocale, useT } from "@/components/locale-provider";
 import { completeAccountOnboardingClient, fetchAccountState } from "@/lib/account/client";
@@ -37,7 +38,7 @@ type UsernameCheck =
   | { state: "taken"; message: string; username: string }
   | { state: "unknown"; username: string };
 
-/** "Use @ada_lovelace": the sign-in name, one tap away but never pre-filled. */
+/** "Use ada_lovelace.one": the sign-in name, one tap away but never pre-filled. */
 function UsernameSuggestion({
   current,
   onPick,
@@ -54,45 +55,8 @@ function UsernameSuggestion({
       onClick={() => onPick(suggestion)}
       type="button"
     >
-      Use @{suggestion}
+      Use {suggestion}.one
     </button>
-  );
-}
-
-function UsernameStatus({ check, formatError }: { check: UsernameCheck; formatError: string | null }) {
-  const t = useT();
-  let content: React.ReactNode = null;
-  let tone = "text-muted-foreground";
-  if (formatError) {
-    content = formatError;
-  } else if (check.state === "checking") {
-    content = (
-      <>
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        {t("onboarding.usernameChecking")}
-      </>
-    );
-  } else if (check.state === "available") {
-    tone = "text-emerald-600 dark:text-emerald-400";
-    content = (
-      <>
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        {t("onboarding.usernameAvailable", { name: check.username })}
-      </>
-    );
-  } else if (check.state === "taken") {
-    tone = "text-destructive";
-    content = (
-      <>
-        <XCircle className="h-3.5 w-3.5" />
-        {t("onboarding.usernameTaken")}
-      </>
-    );
-  }
-  return (
-    <p aria-live="polite" className={cn("mt-2 flex min-h-4 items-center gap-1.5 text-xs", tone)} id="onboarding-username-status">
-      {content}
-    </p>
   );
 }
 
@@ -109,6 +73,8 @@ export function OnboardingFlow() {
   const workspaceContext = useOptionalWorkspace();
   const [step, setStep] = useState<Step>("language");
   const [username, setUsername] = useState("");
+  // The ONE ID the person tapped Claim on; locked for good when they continue.
+  const [claimedUsername, setClaimedUsername] = useState<string | null>(null);
   // The name made at sign-in (from the Google name, or the wallet). Offered,
   // never filled in: the person picks their own @username here.
   const [suggestedUsername, setSuggestedUsername] = useState<string | null>(null);
@@ -117,6 +83,8 @@ export function OnboardingFlow() {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [businessName, setBusinessName] = useState("");
+  // Starts from the Google / email sign-in address; becomes the account email.
+  const [contactEmail, setContactEmail] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
@@ -175,6 +143,7 @@ export function OnboardingFlow() {
           validateUsername(state.account.username) ? null : normalizeUsername(state.account.username),
         );
         setCountry((state.account as { country?: string | null }).country ?? "");
+        setContactEmail((current) => current || readSignInEmail() || "");
         setFullName(state.account.display_name ?? "");
         setBio(state.account.bio ?? "");
       } catch (err) {
@@ -231,7 +200,42 @@ export function OnboardingFlow() {
   // Continue waits for the check, and never goes ahead with a taken name.
   const usernameBlocked =
     Boolean(usernameError) || usernameCheck.state === "checking" || usernameCheck.state === "taken";
+  const oneIdClaimed =
+    Boolean(claimedUsername) && claimedUsername === normalizeUsername(username) && !usernameBlocked;
+
+  function renderOneIdField(label: string, className: string) {
+    return (
+      <div className={className}>
+        <span className="block text-sm font-medium">{label}</span>
+        <OneIdClaimBox
+          availability={usernameCheck.state}
+          claimed={oneIdClaimed}
+          disabled={busy}
+          formatError={usernameError}
+          id="onboarding-one-id"
+          onChange={setUsername}
+          onClaim={() => setClaimedUsername(normalizeUsername(username))}
+          onUnclaim={() => setClaimedUsername(null)}
+          value={username}
+        />
+        {!oneIdClaimed ? (
+          <UsernameSuggestion current={username} onPick={setUsername} suggestion={suggestedUsername} />
+        ) : null}
+        {!oneIdClaimed && username && usernameError ? (
+          <p className="mt-2 text-xs text-muted-foreground">{usernameError}</p>
+        ) : null}
+        {!oneIdClaimed && usernameCheck.state === "taken" ? (
+          <p className="mt-2 text-xs text-destructive">{t("onboarding.usernameTaken")}</p>
+        ) : null}
+        <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+          Choose carefully: you can&apos;t change your ONE ID after you continue.
+        </p>
+      </div>
+    );
+  }
   const countryMissing = !findCountry(country);
+  const contactEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
+  const contactEmailInvalid = Boolean(contactEmail.trim()) && !contactEmailValid;
 
   async function finish(accountKind: "personal" | "business") {
     if (!ownerWallet) return;
@@ -247,8 +251,8 @@ export function OnboardingFlow() {
           businessCategory: category,
           businessDescription: description,
           businessName,
-          // A Google / email sign-in starts the business's contact email.
-          contactEmail: readSignInEmail(),
+          // Asked of a business (pre-filled from the sign-in address).
+          contactEmail: accountKind === "business" ? contactEmail.trim() : readSignInEmail(),
           country,
           locale,
           logoUrl: logoUrl || null,
@@ -283,7 +287,7 @@ export function OnboardingFlow() {
       setDestination(
         result.account.account_type === "BUSINESS" ? "/business" : "/dashboard",
       );
-      // Last, optional: offer the app lock before entering the app.
+      // Last, optional: set the PIN that confirms payments before entering the app.
       setStep("security");
     } catch (err) {
       setError(errorMessage(err, t("common.somethingWentWrong")));
@@ -326,8 +330,8 @@ export function OnboardingFlow() {
     {
       body:
         kind === "business"
-          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your @name."
-          : "People pay you by your @name instead of a long address. This is how you'll appear to them.",
+          ? "Your storefront, invoices and receipts carry this name and logo. Customers pay you by your ONE ID."
+          : "Your ONE ID is how people pay you instead of a long address. Choose it carefully: it's yours for good.",
       label: "Profile",
       scene: (
         <ProfileScene
@@ -338,7 +342,7 @@ export function OnboardingFlow() {
           username={username}
         />
       ),
-      title: kind === "business" ? "Put your business on the map." : "Claim your @name.",
+      title: kind === "business" ? "Put your business on the map." : "Claim your ONE ID.",
     },
     {
       body: "A PIN, plus Face ID or fingerprint where your phone has it. Even with your phone in hand, no one else gets in.",
@@ -486,22 +490,7 @@ export function OnboardingFlow() {
               value={fullName}
             />
           </label>
-          <label className="mt-5 block text-sm font-medium">
-            {t("onboarding.username")}
-            <Input
-              aria-describedby="onboarding-username-status"
-              className="mt-2 h-11"
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="yourname"
-              value={username}
-            />
-          </label>
-          <UsernameSuggestion
-            current={username}
-            onPick={setUsername}
-            suggestion={suggestedUsername}
-          />
-          <UsernameStatus check={usernameCheck} formatError={usernameError} />
+          {renderOneIdField(t("onboarding.username"), "mt-5")}
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -529,12 +518,15 @@ export function OnboardingFlow() {
               {t("common.back")}
             </Button>
             <Button
-              disabled={busy || usernameBlocked || countryMissing}
+              disabled={busy || usernameBlocked || !oneIdClaimed || countryMissing}
               onClick={() => void finish("personal")}
             >
               {t("onboarding.continuePersonal")}
             </Button>
           </div>
+          {!oneIdClaimed ? (
+            <p className="mt-3 text-xs text-muted-foreground">{t("onboarding.oneIdClaimFirst")}</p>
+          ) : null}
         </section>
       ) : null}
 
@@ -544,22 +536,7 @@ export function OnboardingFlow() {
           <p className="mt-3 text-sm text-muted-foreground">
             {t("onboarding.createBusinessProfileBody")}
           </p>
-          <label className="mt-8 block text-sm font-medium">
-            {t("common.username")}
-            <Input
-              aria-describedby="onboarding-username-status"
-              className="mt-2 h-11"
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="acme"
-              value={username}
-            />
-          </label>
-          <UsernameSuggestion
-            current={username}
-            onPick={setUsername}
-            suggestion={suggestedUsername}
-          />
-          <UsernameStatus check={usernameCheck} formatError={usernameError} />
+          {renderOneIdField(t("common.username"), "mt-8")}
           <div className="mt-5 block text-sm font-medium">
             {t("common.country")}
             <CountrySelect
@@ -580,6 +557,23 @@ export function OnboardingFlow() {
               placeholder="Acme Studio"
               value={businessName}
             />
+          </label>
+          <label className="mt-5 block text-sm font-medium">
+            {t("common.contactEmail")}
+            <Input
+              autoComplete="email"
+              className="mt-2 h-11"
+              inputMode="email"
+              onChange={(event) => setContactEmail(event.target.value)}
+              placeholder="hello@acme.com"
+              type="email"
+              value={contactEmail}
+            />
+            <span className="mt-2 block text-xs font-normal text-muted-foreground">
+              {contactEmailInvalid
+                ? "Enter a valid email address."
+                : "Where customers and SaphraONE reach your business. It's locked once saved; the team can change it on request."}
+            </span>
           </label>
           <div className="mt-5 block text-sm font-medium">
             {t("common.category")}
@@ -642,12 +636,22 @@ export function OnboardingFlow() {
               {t("common.back")}
             </Button>
             <Button
-              disabled={busy || usernameBlocked || countryMissing || !businessName.trim()}
+              disabled={
+                busy ||
+                usernameBlocked ||
+                !oneIdClaimed ||
+                countryMissing ||
+                !businessName.trim() ||
+                !contactEmailValid
+              }
               onClick={() => void finish("business")}
             >
               {t("onboarding.createBusinessCta")}
             </Button>
           </div>
+          {!oneIdClaimed ? (
+            <p className="mt-3 text-xs text-muted-foreground">{t("onboarding.oneIdClaimFirst")}</p>
+          ) : null}
         </section>
       ) : null}
 
@@ -656,13 +660,13 @@ export function OnboardingFlow() {
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
             <ShieldCheck className="h-5 w-5" />
           </span>
-          <h1 className="mt-4 font-heading text-3xl">Protect your account</h1>
+          <h1 className="mt-4 font-heading text-3xl">Protect your payments</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            Set a PIN, and Face ID or fingerprint where your device has it, so SaphraONE asks for
-            it whenever you come back. You can set this up later in Settings → App lock.
+            Set a PIN, and Face ID or fingerprint where your device has it. Every payment asks for
+            it before money moves. You can also do this later in Settings → Payment security.
           </p>
           <div className="mt-8">
-            <AppLockSettings compact onEnabledChange={onAppLockChange} />
+            <PaymentSecuritySettings compact onEnabledChange={onAppLockChange} />
           </div>
           <div className="mt-8 flex gap-3">
             <Button onClick={() => router.replace(destination)} variant={appLockOn ? "default" : "outline"}>

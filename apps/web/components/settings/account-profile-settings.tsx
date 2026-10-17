@@ -6,10 +6,12 @@ import {
   Copy,
   ImageIcon,
   Loader2,
+  Lock,
   Save,
   Upload,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import { useOptionalAccount } from "@/components/account/account-provider";
@@ -19,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { BusinessVerificationPanel } from "@/components/settings/business-verification-panel";
 import { Input } from "@/components/ui/input";
+import { OneIdInput } from "@/components/one-id-input";
 import { StyledSelect } from "@/components/ui/styled-select";
 import { updateBusinessAccountProfileClient } from "@/lib/account/client";
 import { missingVerificationFields } from "@/lib/business/verification";
@@ -41,6 +44,19 @@ import {
   type ProfileRecord,
 } from "@/lib/profile";
 
+/** Under a locked field: why, and where to ask. */
+function LockedNote() {
+  return (
+    <span className="mt-1.5 block text-xs font-normal normal-case tracking-normal text-muted-foreground">
+      Locked to keep payments safe.{" "}
+      <Link className="font-semibold text-primary underline-offset-4 hover:underline" href="/support">
+        Contact support
+      </Link>{" "}
+      to change it.
+    </span>
+  );
+}
+
 export function AccountProfileSettings() {
   const t = useT();
   const accountContext = useOptionalAccount();
@@ -57,6 +73,8 @@ export function AccountProfileSettings() {
   const [category, setCategory] = useState("");
   const [website, setWebsite] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  // The email already saved on the account: locked, only the team changes it.
+  const [savedEmail, setSavedEmail] = useState<string | null>(null);
   const [country, setCountry] = useState("");
   const [phone, setPhone] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
@@ -83,6 +101,7 @@ export function AccountProfileSettings() {
       // No contact email yet: start from the Google / email sign-in address.
       // It is only stored when the profile is saved.
       setContactEmail(business.contact_email || readSignInEmail() || "");
+      setSavedEmail(business.contact_email || null);
       setCountry(business.country ?? "");
       // The phone field shows the country's dialling code apart; keep the rest.
       setPhone(splitPhone(business.phone, findCountry(business.country)));
@@ -102,6 +121,7 @@ export function AccountProfileSettings() {
       if (cancelled) return;
       setContactReady(contact?.ready ?? true);
       setContactEmail(contact?.contactEmail || readSignInEmail() || "");
+      setSavedEmail(contact?.contactEmail || null);
       setCountry(contact?.country ?? "");
       setPhone(splitPhone(contact?.phone, findCountry(contact?.country)));
     });
@@ -199,6 +219,7 @@ export function AccountProfileSettings() {
       });
       setProfile(updated);
       setFullName(updated.display_name ?? "");
+      if (contactEmail.trim()) setSavedEmail(contactEmail.trim().toLowerCase());
       if (isBusiness) {
         await updateBusinessAccountProfileClient(
           ownerWallet,
@@ -248,6 +269,8 @@ export function AccountProfileSettings() {
   }
 
   const image = isBusiness ? logoUrl : avatarUrl;
+  // Chosen at onboarding, then only the team changes it.
+  const oneIdLocked = Boolean(profile?.username) && accountContext?.account?.account_type_selected !== false;
 
   // Contact email, country and phone: public on a business profile; for a
   // person only the country is shown, email and phone stay private.
@@ -255,11 +278,18 @@ export function AccountProfileSettings() {
     <>
       <label className="block text-sm font-medium">
         {t("common.contactEmail")}
-        <Input
-          className="mt-2 h-11"
-          onChange={(event) => setContactEmail(event.target.value)}
-          value={contactEmail}
-        />
+        <div className="relative mt-2">
+          <Input
+            className={savedEmail ? "h-11 cursor-not-allowed pr-9 opacity-80" : "h-11"}
+            onChange={(event) => setContactEmail(event.target.value)}
+            readOnly={Boolean(savedEmail)}
+            value={contactEmail}
+          />
+          {savedEmail ? (
+            <Lock className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          ) : null}
+        </div>
+        {savedEmail ? <LockedNote /> : null}
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="block min-w-0 text-sm font-medium">
@@ -378,16 +408,14 @@ export function AccountProfileSettings() {
 
       <label className="block text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         {t("common.username")}
-        <div className="relative mt-2">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-            @
-          </span>
-          <Input
-            className="h-11 pl-7"
-            onChange={(event) => setUsername(event.target.value.toLowerCase().replace(/\s/g, ""))}
-            value={username}
-          />
-        </div>
+        <OneIdInput
+          className="mt-2 normal-case tracking-normal"
+          onValueChange={setUsername}
+          readOnly={oneIdLocked}
+          trailing={oneIdLocked ? <Lock className="h-4 w-4" /> : undefined}
+          value={username}
+        />
+        {oneIdLocked ? <LockedNote /> : null}
       </label>
 
       {profile?.username ? (

@@ -1,0 +1,324 @@
+/* Naira deposit and withdraw flows. Their own file (not globals.css), so the build cache can't serve a stale copy. */
+
+.ramp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.ramp-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  background: var(--card);
+}
+
+.ramp-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.ramp-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--background);
+}
+
+.ramp-amount:focus-within {
+  border-color: var(--primary);
+}
+
+.ramp-amount > span {
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+
+.ramp-amount input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.ramp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ramp-chip {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: background-color 150ms ease;
+}
+
+.ramp-chip:hover,
+.ramp-chip.is-active {
+  background: color-mix(in oklch, var(--primary) 14%, var(--muted));
+}
+
+.ramp-quote {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.ramp-quote-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.ramp-quote-row > b {
+  color: var(--foreground);
+  text-align: right;
+}
+
+.ramp-quote-row.is-main {
+  font-size: 0.95rem;
+}
+
+.ramp-powered {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
+.ramp-error {
+  font-size: 0.84rem;
+  color: var(--destructive);
+}
+
+.ramp-note {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.ramp-detail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.8rem;
+  background: var(--muted);
+}
+
+.ramp-detail-main {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.ramp-detail-main > small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.ramp-detail-main > strong {
+  overflow-wrap: anywhere;
+  font-size: 0.98rem;
+}
+
+.ramp-copy {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--card);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ramp-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.ramp-status {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.4rem 1rem;
+  text-align: center;
+}
+
+.ramp-status-icon {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--primary) 14%, var(--muted));
+  color: var(--primary);
+}
+
+.ramp-status-icon.is-bad {
+  background: color-mix(in oklch, var(--destructive) 14%, var(--muted));
+  color: var(--destructive);
+}
+
+.ramp-status h3 {
+  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.ramp-status p {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.ramp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--link, var(--primary));
+}
+
+/* Bank accounts */
+.ramp-accounts {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ramp-account {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--background);
+  text-align: left;
+}
+
+.ramp-account.is-active {
+  border-color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 8%, var(--background));
+}
+
+.ramp-account-main {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.1rem;
+}
+
+.ramp-account-main > strong {
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ramp-account-main > small {
+  font-size: 0.76rem;
+  color: var(--muted-foreground);
+}
+
+.ramp-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ramp-field input,
+.ramp-field select {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--background);
+  font-size: 0.95rem;
+}
+
+.ramp-banks {
+  display: grid;
+  max-height: 14rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.ramp-bank {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.ramp-bank + .ramp-bank {
+  border-top: 1px solid var(--border);
+}
+
+.ramp-bank:hover,
+.ramp-bank.is-active {
+  background: var(--muted);
+}
+
+.ramp-resolved {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.8rem;
+  background: color-mix(in oklch, var(--primary) 10%, var(--muted));
+}
+
+.ramp-resolved > small {
+  font-size: 0.74rem;
+  color: var(--muted-foreground);
+}
+
+.ramp-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ramp-history {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.ramp-history li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  font-size: 0.84rem;
+}
+
+.ramp-history li + li {
+  border-top: 1px solid var(--border);
+}
+
+.ramp-history small {
+  color: var(--muted-foreground);
+}

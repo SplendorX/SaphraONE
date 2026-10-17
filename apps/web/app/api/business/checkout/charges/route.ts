@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const page = Number(request.nextUrl.searchParams.get("page") ?? "1");
     const payload = await listCharges({
       circleSocialUuid,
+      kind: request.nextUrl.searchParams.get("kind") ?? undefined,
       ownerWallet: actorWallet,
       page,
       status: request.nextUrl.searchParams.get("status") ?? undefined,

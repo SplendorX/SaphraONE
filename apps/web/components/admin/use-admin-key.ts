@@ -39,7 +39,8 @@ export function useAdminKey() {
 /** The message for a failed admin load: a missing or wrong key says so plainly. */
 export function adminLoadError(status: number, hasKey: boolean, fallback: string) {
   if (status === 401) {
-    return hasKey ? "That admin key isn't right." : "Enter the admin key (ADMIN_SECRET), then press Refresh.";
+    return hasKey ? "The owner key wasn't accepted. Sign out and sign in again." : "Sign in to the admin platform again.";
   }
+  if (status === 403) return "You don't have access to this tool.";
   return fallback;
 }

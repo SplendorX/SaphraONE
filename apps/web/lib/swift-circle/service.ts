@@ -560,7 +560,7 @@ export async function inviteMember(input: {
 
   const username = parseInviteUsername(input.username);
   if (!username) {
-    throw circleErrors.invalid("Invite using a valid SaphraONE username, like @alice.");
+    throw circleErrors.invalid("Invite using a valid ONE ID, like @alice.");
   }
   const profile = await resolveProfileByUsername(username);
   if (profile.wallet_address === input.actorWallet) {
@@ -625,7 +625,7 @@ export async function inviteMember(input: {
     activityType: "member.invited",
     entityType: "invitation",
     entityId: invitation.id,
-    summary: `@${profile.username} was invited`,
+    summary: `${profile.username}.one was invited`,
   });
   await emitCircleNotification({
     eventId: `circle-invite:${invitation.id}`,
@@ -779,7 +779,7 @@ export async function respondToInvitation(input: {
       ownerWallet: invitation.inviter_user_wallet,
       kind: "circle_invitation_accepted",
       title: "Invitation accepted",
-      body: `@${invitation.invitee_username ?? "member"} joined ${circle.name}.`,
+      body: `${invitation.invitee_username ? `${invitation.invitee_username}.one` : "A new member"} joined ${circle.name}.`,
     });
   } else {
     await writeCircleAudit({
@@ -797,7 +797,7 @@ export async function respondToInvitation(input: {
       ownerWallet: invitation.inviter_user_wallet,
       kind: "circle_invitation_declined",
       title: "Invitation declined",
-      body: `@${invitation.invitee_username ?? "member"} declined to join ${circle.name}.`,
+      body: `${invitation.invitee_username ? `${invitation.invitee_username}.one` : "An invited member"} declined to join ${circle.name}.`,
     });
   }
 

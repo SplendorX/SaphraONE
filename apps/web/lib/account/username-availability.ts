@@ -37,8 +37,8 @@ export async function checkUsernameAvailability(
       .maybeSingle(),
     isUsernameHeld(username, own),
   ]);
-  if (profile.error) throw new Error(readAccountDbError(profile.error, "Could not check that username."));
-  if (identity.error) throw new Error(readAccountDbError(identity.error, "Could not check that username."));
+  if (profile.error) throw new Error(readAccountDbError(profile.error, "Could not check that ONE ID."));
+  if (identity.error) throw new Error(readAccountDbError(identity.error, "Could not check that ONE ID."));
 
   const profileWallet = (profile.data as { wallet_address: string } | null)?.wallet_address?.toLowerCase();
   const identityRow = identity.data as { destination_wallet: string | null; profile_wallet: string | null } | null;
@@ -50,7 +50,7 @@ export async function checkUsernameAvailability(
   const takenByIdentity = Boolean(identityRow) && !(own && identityWallets.includes(own));
   // A deleted account's name, still on hold (lib/account-deletion).
   if (takenByProfile || takenByIdentity || held) {
-    return { available: false, message: "That username is taken. Try another.", reason: "taken", username };
+    return { available: false, message: "That ONE ID is taken. Try another.", reason: "taken", username };
   }
   return { available: true, username };
 }

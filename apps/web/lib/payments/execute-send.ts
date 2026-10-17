@@ -1,7 +1,6 @@
 import {
   createPublicClient,
   encodeFunctionData,
-  http,
   erc20Abi as viemErc20Abi,
   formatUnits,
   maxUint256,
@@ -17,7 +16,7 @@ import {
   getSaphraSendAddress,
   swiftPaySendAbi,
 } from "@/lib/contracts";
-import { arcChain } from "@/lib/chains";
+import { arcChain, arcTransport } from "@/lib/chains";
 import { callCircleWalletApi } from "@/lib/circle-session";
 import { arcTokens } from "@/lib/tokens";
 import { withTxApproval } from "@/lib/tx-approval/client";
@@ -141,12 +140,19 @@ function isTxHash(value: unknown): value is Hash {
   return typeof value === "string" && /^0x[0-9a-fA-F]{64}$/.test(value);
 }
 
-/** Arc client for confirming wallet transactions. */
+/**
+ * Arc client for confirming wallet transactions. Arc makes a block in under
+ * a second, so check often: viem's default 4s poll added seconds to each send.
+ */
 let arcClient: ReturnType<typeof createPublicClient> | null = null;
 
 function arcReceiptClient(chainId: number) {
   if (chainId !== arcChain.id) return null;
-  arcClient ??= createPublicClient({ chain: arcChain, transport: http() });
+  arcClient ??= createPublicClient({
+    chain: arcChain,
+    pollingInterval: 400,
+    transport: arcTransport(),
+  });
   return arcClient;
 }
 

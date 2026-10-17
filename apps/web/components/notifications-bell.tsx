@@ -2,6 +2,7 @@
 
 import {
   ArrowDownLeft,
+  ArrowLeft,
   Ban,
   Bell,
   CheckCheck,
@@ -11,6 +12,7 @@ import {
   ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAccount } from "wagmi";
@@ -174,7 +176,21 @@ function paymentRequestHref(item: SavingsNotificationRecord) {
   return requestId ? withPaymentRequestId(href, requestId) : href;
 }
 
-export function NotificationsBell({ className }: { className?: string }) {
+/**
+ * The bell. On desktop it opens the notifications popover. With `href`, a
+ * phone goes to that page instead, like a native app. `variant="page"`
+ * draws the full Notifications page (app/notifications).
+ */
+export function NotificationsBell({
+  className,
+  href,
+  variant = "button",
+}: {
+  className?: string;
+  href?: string;
+  variant?: "button" | "page";
+}) {
+  const router = useRouter();
   const { address: wagmiAddress, isConnected } = useAccount();
   const [circleLogin, setCircleLogin] = useState<CircleLoginResult | null>(null);
   const [circleWalletAddress, setCircleWalletAddress] = useState("");
@@ -594,6 +610,10 @@ export function NotificationsBell({ className }: { className?: string }) {
   }
 
   function toggle() {
+    if (href && window.matchMedia("(max-width: 767px)").matches) {
+      router.push(href);
+      return;
+    }
     setOpen((value) => {
       const next = !value;
       if (next) void load();
@@ -604,6 +624,258 @@ export function NotificationsBell({ className }: { className?: string }) {
   const badge =
     unreadCount > 0 ? (unreadCount > 9 ? "9+" : String(unreadCount)) : null;
   const hasIdentity = Boolean(ownerWallet);
+
+  const list = (
+  <div className="notifications-popover-list">
+    {!hasIdentity ? (
+      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+        Connect a wallet or sign in with Google to see notifications.
+      </div>
+    ) : authHint && !walletAuthorized && items.length === 0 ? (
+      <div className="px-4 py-8 text-center">
+        <Bell className="mx-auto h-8 w-8 text-muted-foreground/60" />
+        <p className="mt-3 text-sm font-medium">Authorize wallet</p>
+        <p className="mt-1 text-xs text-muted-foreground">{authHint}</p>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          After connecting, approve the sign-in message in your wallet.
+        </p>
+      </div>
+    ) : loading && items.length === 0 ? (
+      <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading…
+      </div>
+    ) : items.length === 0 ? (
+      <div className="px-4 py-8 text-center">
+        <Bell className="mx-auto h-8 w-8 text-muted-foreground/60" />
+        <p className="mt-3 text-sm font-medium">You’re all caught up</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Incoming payments, requests, and savings updates show up
+          here.
+        </p>
+      </div>
+    ) : (
+      <ul className="divide-y divide-border/70">
+        {items.map((item) => {
+          const unread = !item.read_at;
+          const isCircleInvite = isCircleInvitationNotification(item);
+          const isDeclinedNotice =
+            isPaymentRequestDeclinedNotification(item);
+          const isReceive =
+            item.kind === "payment_received" &&
+            !isPaymentRequestNotification(item) &&
+            !isDeclinedNotice &&
+            !isCircleInvite;
+          const isRequest =
+            !isCircleInvite &&
+            isPaymentRequestNotification(item);
+          const requestDeclined =
+            isRequest && isPaymentRequestMarkedDeclined(item);
+          const requestPaid =
+            isRequest && isPaymentRequestMarkedPaid(item);
+          const requestClosed = requestDeclined || requestPaid;
+          const requestHref = isRequest ? paymentRequestHref(item) : null;
+          const txHash = getDepositTxHash(item);
+
+          return (
+            <li key={item.id}>
+              <div
+                className={cn(
+                  "px-3 py-3 transition",
+                  unread ? "bg-primary/5" : "bg-transparent",
+                )}
+              >
+                <div className="flex items-start gap-2">
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                      isReceive
+                        ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        : isRequest
+                          ? "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
+                          : isDeclinedNotice
+                            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                            : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {isReceive ? (
+                      <ArrowDownLeft className="h-3.5 w-3.5" />
+                    ) : isRequest || isDeclinedNotice ? (
+                      <ReceiptText className="h-3.5 w-3.5" />
+                    ) : (
+                      <PiggyBank className="h-3.5 w-3.5" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium leading-snug">
+                        {displayTitle(item)}
+                        {unread ? (
+                          <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />
+                        ) : null}
+                      </p>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {relativeTime(item.created_at)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {displayBody(item)}
+                    </p>
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                      {item.pocket_id ? (
+                        <Link
+                          className="text-[11px] font-medium text-primary hover:underline"
+                          href={`/save/${item.pocket_id}`}
+                          onClick={() => setOpen(false)}
+                        >
+                          View pocket
+                        </Link>
+                      ) : null}
+                      {isCircleInvite ? (
+                        <>
+                          <button
+                            className="text-[11px] font-medium text-primary hover:underline"
+                            disabled={inviteActionId === `${item.id}:accept`}
+                            onClick={() =>
+                              void respondToCircleInvite(item, "accept")
+                            }
+                            type="button"
+                          >
+                            {inviteActionId === `${item.id}:accept`
+                              ? "Joining…"
+                              : "Accept"}
+                          </button>
+                          <button
+                            className="text-[11px] font-medium text-rose-600 hover:underline dark:text-rose-400"
+                            disabled={inviteActionId === `${item.id}:decline`}
+                            onClick={() =>
+                              void respondToCircleInvite(item, "decline")
+                            }
+                            type="button"
+                          >
+                            {inviteActionId === `${item.id}:decline`
+                              ? "Declining…"
+                              : "Decline"}
+                          </button>
+                          <Link
+                            className="text-[11px] font-medium text-primary hover:underline"
+                            href={circleNotificationHref(item)}
+                            onClick={() => setOpen(false)}
+                          >
+                            Open invitations
+                          </Link>
+                        </>
+                      ) : isCircleNotification(item) ? (
+                        <Link
+                          className="text-[11px] font-medium text-primary hover:underline"
+                          href={circleNotificationHref(item)}
+                          onClick={() => setOpen(false)}
+                        >
+                          Open Circle
+                        </Link>
+                      ) : null}
+                      {isReceive ? (
+                        <Link
+                          className="text-[11px] font-medium text-primary hover:underline"
+                          href="/dashboard"
+                          onClick={() => setOpen(false)}
+                        >
+                          Open dashboard
+                        </Link>
+                      ) : null}
+                      {isRequest && requestHref && !requestClosed ? (
+                        <Link
+                          className="text-[11px] font-medium text-primary hover:underline"
+                          href={requestHref}
+                          onClick={() => setOpen(false)}
+                        >
+                          Open request
+                        </Link>
+                      ) : null}
+                      {isRequest && !requestClosed ? (
+                        <button
+                          className="inline-flex items-center gap-0.5 text-[11px] font-medium text-rose-600 hover:underline dark:text-rose-400"
+                          disabled={decliningId === item.id}
+                          onClick={() => void declineRequest(item)}
+                          type="button"
+                        >
+                          {decliningId === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Ban className="h-3 w-3" />
+                          )}
+                          {decliningId === item.id
+                            ? "Declining"
+                            : "Decline"}
+                        </button>
+                      ) : null}
+                      {isRequest && requestDeclined ? (
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          Declined
+                        </span>
+                      ) : null}
+                      {isRequest && requestPaid ? (
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          Paid
+                        </span>
+                      ) : null}
+                      {txHash ? (
+                        <a
+                          className="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary hover:underline"
+                          href={explorerTxUrl(txHash)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          View tx
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </div>
+  );
+
+  if (variant === "page") {
+    return (
+      <div className="ntf-page">
+        <header className="ntf-bar">
+          <Link aria-label="Back to the dashboard" className="ntf-round" href="/dashboard">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="ntf-title">Notifications</h1>
+          {unreadCount > 0 ? (
+            <button
+              className="ntf-mark"
+              disabled={marking}
+              onClick={() => void markAllRead()}
+              type="button"
+            >
+              {marking ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCheck className="h-4 w-4" />
+              )}
+              Mark all read
+            </button>
+          ) : (
+            <span />
+          )}
+        </header>
+        <p className="ntf-sub">Payments, requests, and savings</p>
+        <div className="ntf-card">{list}</div>
+        <Link className="ntf-manage" href="/settings#alerts">
+          Manage alerts
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("relative", className)} ref={rootRef}>
@@ -658,220 +930,7 @@ export function NotificationsBell({ className }: { className?: string }) {
             </div>
           </div>
 
-          <div className="notifications-popover-list">
-            {!hasIdentity ? (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Connect a wallet or sign in with Google to see notifications.
-              </div>
-            ) : authHint && !walletAuthorized && items.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Bell className="mx-auto h-8 w-8 text-muted-foreground/60" />
-                <p className="mt-3 text-sm font-medium">Authorize wallet</p>
-                <p className="mt-1 text-xs text-muted-foreground">{authHint}</p>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  After connecting, approve the sign-in message in your wallet.
-                </p>
-              </div>
-            ) : loading && items.length === 0 ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading…
-              </div>
-            ) : items.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Bell className="mx-auto h-8 w-8 text-muted-foreground/60" />
-                <p className="mt-3 text-sm font-medium">You’re all caught up</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Incoming payments, requests, and savings updates show up
-                  here.
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-border/70">
-                {items.map((item) => {
-                  const unread = !item.read_at;
-                  const isCircleInvite = isCircleInvitationNotification(item);
-                  const isDeclinedNotice =
-                    isPaymentRequestDeclinedNotification(item);
-                  const isReceive =
-                    item.kind === "payment_received" &&
-                    !isPaymentRequestNotification(item) &&
-                    !isDeclinedNotice &&
-                    !isCircleInvite;
-                  const isRequest =
-                    !isCircleInvite &&
-                    isPaymentRequestNotification(item);
-                  const requestDeclined =
-                    isRequest && isPaymentRequestMarkedDeclined(item);
-                  const requestPaid =
-                    isRequest && isPaymentRequestMarkedPaid(item);
-                  const requestClosed = requestDeclined || requestPaid;
-                  const requestHref = isRequest ? paymentRequestHref(item) : null;
-                  const txHash = getDepositTxHash(item);
-
-                  return (
-                    <li key={item.id}>
-                      <div
-                        className={cn(
-                          "px-3 py-3 transition",
-                          unread ? "bg-primary/5" : "bg-transparent",
-                        )}
-                      >
-                        <div className="flex items-start gap-2">
-                          <span
-                            className={cn(
-                              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                              isReceive
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                : isRequest
-                                  ? "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
-                                  : isDeclinedNotice
-                                    ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                                    : "bg-muted text-muted-foreground",
-                            )}
-                          >
-                            {isReceive ? (
-                              <ArrowDownLeft className="h-3.5 w-3.5" />
-                            ) : isRequest || isDeclinedNotice ? (
-                              <ReceiptText className="h-3.5 w-3.5" />
-                            ) : (
-                              <PiggyBank className="h-3.5 w-3.5" />
-                            )}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-medium leading-snug">
-                                {displayTitle(item)}
-                                {unread ? (
-                                  <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-primary align-middle" />
-                                ) : null}
-                              </p>
-                              <span className="shrink-0 text-[10px] text-muted-foreground">
-                                {relativeTime(item.created_at)}
-                              </span>
-                            </div>
-                            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                              {displayBody(item)}
-                            </p>
-                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                              {item.pocket_id ? (
-                                <Link
-                                  className="text-[11px] font-medium text-primary hover:underline"
-                                  href={`/save/${item.pocket_id}`}
-                                  onClick={() => setOpen(false)}
-                                >
-                                  View pocket
-                                </Link>
-                              ) : null}
-                              {isCircleInvite ? (
-                                <>
-                                  <button
-                                    className="text-[11px] font-medium text-primary hover:underline"
-                                    disabled={inviteActionId === `${item.id}:accept`}
-                                    onClick={() =>
-                                      void respondToCircleInvite(item, "accept")
-                                    }
-                                    type="button"
-                                  >
-                                    {inviteActionId === `${item.id}:accept`
-                                      ? "Joining…"
-                                      : "Accept"}
-                                  </button>
-                                  <button
-                                    className="text-[11px] font-medium text-rose-600 hover:underline dark:text-rose-400"
-                                    disabled={inviteActionId === `${item.id}:decline`}
-                                    onClick={() =>
-                                      void respondToCircleInvite(item, "decline")
-                                    }
-                                    type="button"
-                                  >
-                                    {inviteActionId === `${item.id}:decline`
-                                      ? "Declining…"
-                                      : "Decline"}
-                                  </button>
-                                  <Link
-                                    className="text-[11px] font-medium text-primary hover:underline"
-                                    href={circleNotificationHref(item)}
-                                    onClick={() => setOpen(false)}
-                                  >
-                                    Open invitations
-                                  </Link>
-                                </>
-                              ) : isCircleNotification(item) ? (
-                                <Link
-                                  className="text-[11px] font-medium text-primary hover:underline"
-                                  href={circleNotificationHref(item)}
-                                  onClick={() => setOpen(false)}
-                                >
-                                  Open Circle
-                                </Link>
-                              ) : null}
-                              {isReceive ? (
-                                <Link
-                                  className="text-[11px] font-medium text-primary hover:underline"
-                                  href="/dashboard"
-                                  onClick={() => setOpen(false)}
-                                >
-                                  Open dashboard
-                                </Link>
-                              ) : null}
-                              {isRequest && requestHref && !requestClosed ? (
-                                <Link
-                                  className="text-[11px] font-medium text-primary hover:underline"
-                                  href={requestHref}
-                                  onClick={() => setOpen(false)}
-                                >
-                                  Open request
-                                </Link>
-                              ) : null}
-                              {isRequest && !requestClosed ? (
-                                <button
-                                  className="inline-flex items-center gap-0.5 text-[11px] font-medium text-rose-600 hover:underline dark:text-rose-400"
-                                  disabled={decliningId === item.id}
-                                  onClick={() => void declineRequest(item)}
-                                  type="button"
-                                >
-                                  {decliningId === item.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Ban className="h-3 w-3" />
-                                  )}
-                                  {decliningId === item.id
-                                    ? "Declining"
-                                    : "Decline"}
-                                </button>
-                              ) : null}
-                              {isRequest && requestDeclined ? (
-                                <span className="text-[11px] font-medium text-muted-foreground">
-                                  Declined
-                                </span>
-                              ) : null}
-                              {isRequest && requestPaid ? (
-                                <span className="text-[11px] font-medium text-muted-foreground">
-                                  Paid
-                                </span>
-                              ) : null}
-                              {txHash ? (
-                                <a
-                                  className="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary hover:underline"
-                                  href={explorerTxUrl(txHash)}
-                                  rel="noreferrer"
-                                  target="_blank"
-                                >
-                                  View tx
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          {list}
 
           <div className="border-t border-border/80 px-3 py-2">
             <Link

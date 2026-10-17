@@ -1,0 +1,676 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SaphraONE Checkout API",
+    "version": "1.0.0",
+    "summary": "Accept USDC and EURC on Arc from any website.",
+    "description": "Create checkout sessions on your server, redirect buyers to the hosted payment page, and confirm payment by retrieving the session. Docs: https://developers.saphra.one/docs",
+    "contact": {
+      "name": "SaphraONE",
+      "url": "https://developers.saphra.one"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.saphra.one/v1",
+      "description": "Live (Arc mainnet, sk_live_ keys)"
+    },
+    {
+      "url": "https://sandbox.api.saphra.one/v1",
+      "description": "Sandbox (Arc testnet, sk_test_ keys)"
+    }
+  ],
+  "security": [
+    {
+      "secretKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Checkout Sessions",
+      "description": "One payment for one order on the hosted page."
+    }
+  ],
+  "paths": {
+    "/checkout/sessions": {
+      "post": {
+        "tags": [
+          "Checkout Sessions"
+        ],
+        "operationId": "createCheckoutSession",
+        "summary": "Create a checkout session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new session (or, for a repeated Idempotency-Key, the original one).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Checkout Sessions"
+        ],
+        "operationId": "listCheckoutSessions",
+        "summary": "List checkout sessions, newest first",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "A session id; returns the sessions after it.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SessionStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of sessions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more"
+                  ],
+                  "properties": {
+                    "object": {
+                      "const": "list"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CheckoutSession"
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/checkout/sessions/{id}": {
+      "get": {
+        "tags": [
+          "Checkout Sessions"
+        ],
+        "operationId": "retrieveCheckoutSession",
+        "summary": "Retrieve a checkout session",
+        "description": "Confirm payment here: fulfil when status is complete. Also checks card and cross-chain payments in progress.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/checkout/sessions/{id}/expire": {
+      "post": {
+        "tags": [
+          "Checkout Sessions"
+        ],
+        "operationId": "expireCheckoutSession",
+        "summary": "Expire an unpaid session",
+        "description": "Refused (409) once a payment has arrived or the session is complete. Already expired or cancelled sessions are returned unchanged.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SessionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "secretKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Your secret key: sk_live_... or sk_test_.... Server-side only."
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "description": "8 to 128 characters, unique per order. A repeat returns the original session.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        }
+      },
+      "SessionId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^cs_(live|test)_[0-9a-z]{24}$"
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "An error.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "SessionStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "complete",
+          "expired",
+          "cancelled"
+        ]
+      },
+      "LineItem": {
+        "type": "object",
+        "required": [
+          "name",
+          "unit_amount"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Shown to the buyer.",
+            "maxLength": 120
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 1
+          },
+          "unit_amount": {
+            "type": "string",
+            "description": "Price of one unit, as a decimal string.",
+            "pattern": "^\\d+(\\.\\d{1,6})?$",
+            "example": "25.00"
+          }
+        }
+      },
+      "CreateCheckoutSession": {
+        "type": "object",
+        "required": [
+          "amount",
+          "success_url"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "0.50 to 10,000, up to 6 decimals.",
+            "pattern": "^\\d+(\\.\\d{1,6})?$",
+            "example": "25.00"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "USDC",
+              "EURC"
+            ],
+            "default": "USDC"
+          },
+          "success_url": {
+            "type": "string",
+            "description": "https URL for after payment; {CHECKOUT_SESSION_ID} is replaced. http://localhost is allowed with test keys.",
+            "maxLength": 2048
+          },
+          "cancel_url": {
+            "type": "string",
+            "description": "https URL for Cancel and return.",
+            "maxLength": 2048
+          },
+          "description": {
+            "type": "string",
+            "description": "Shown to the buyer.",
+            "maxLength": 140
+          },
+          "line_items": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/LineItem"
+            },
+            "description": "Display only; must add up to amount."
+          },
+          "client_reference_id": {
+            "type": "string",
+            "description": "Your order id.",
+            "maxLength": 200
+          },
+          "customer_email": {
+            "type": "string",
+            "description": "Kept for your records.",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "metadata": {
+            "type": "object",
+            "maxProperties": 20,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          "expires_in_minutes": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 1440,
+            "default": 60
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "required": [
+          "tx_hash",
+          "amount",
+          "method",
+          "paid_at",
+          "explorer_url"
+        ],
+        "properties": {
+          "tx_hash": {
+            "type": "string",
+            "description": "Arc transaction hash."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount of this transfer."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "wallet",
+              "saphraone",
+              "card_or_bank",
+              "cross_chain",
+              "manual"
+            ]
+          },
+          "paid_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "explorer_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Refund": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "re_live_... or re_test_..."
+          },
+          "object": {
+            "const": "refund"
+          },
+          "session": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "requested",
+              "succeeded",
+              "cancelled"
+            ]
+          },
+          "destination_wallet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tx_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "succeeded_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CheckoutSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "object",
+          "status",
+          "payment_status",
+          "amount",
+          "currency",
+          "url",
+          "livemode"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "cs_live_... or cs_test_..."
+          },
+          "object": {
+            "const": "checkout.session"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatus"
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": [
+              "unpaid",
+              "partially_paid",
+              "paid"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "description": "Normalised decimal string, e.g. \"25\"."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "USDC",
+              "EURC"
+            ]
+          },
+          "amount_received": {
+            "type": "string",
+            "description": "Verified on chain so far."
+          },
+          "overpayment": {
+            "type": "string",
+            "description": "Received above amount."
+          },
+          "amount_refunded": {
+            "type": "string",
+            "description": "Refunded so far."
+          },
+          "url": {
+            "type": "string",
+            "description": "Hosted payment page.",
+            "format": "uri"
+          },
+          "success_url": {
+            "type": "string"
+          },
+          "cancel_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "client_reference_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customer_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "line_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineItem"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Refund"
+            }
+          },
+          "livemode": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the full amount arrived.",
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "type",
+              "code",
+              "message"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "invalid_request_error",
+                  "authentication_error",
+                  "permission_error",
+                  "not_found_error",
+                  "rate_limit_error",
+                  "api_error"
+                ]
+              },
+              "code": {
+                "type": "string",
+                "description": "Stable machine-readable code, e.g. parameter_invalid."
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable; do not parse."
+              },
+              "param": {
+                "type": "string",
+                "description": "The parameter at fault."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

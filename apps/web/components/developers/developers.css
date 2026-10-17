@@ -1,0 +1,121 @@
+/* Developers page: API keys and the Checkout API quick start. Builds on the
+   Checkout hub's ck-* classes (checkout.css). */
+
+.dv-steps {
+  display: grid;
+  gap: 0.45rem;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  list-style: decimal;
+}
+
+.dv-steps code,
+.ck-card code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.35rem;
+  background: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82em;
+}
+
+.dv-mode {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid color-mix(in oklch, #f59e0b 45%, var(--border));
+  border-radius: 1rem;
+  background: color-mix(in oklch, #f59e0b 10%, var(--card));
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.dv-mode[data-mode="live"] {
+  border-color: color-mix(in oklch, #10b981 45%, var(--border));
+  background: color-mix(in oklch, #10b981 10%, var(--card));
+}
+
+.dv-create {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.dv-create > button {
+  height: 3rem;
+}
+
+@media (max-width: 420px) {
+  .dv-create {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dv-reveal {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--border));
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--primary) 6%, var(--card));
+}
+
+.dv-key {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  background: var(--background);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.dv-note {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--muted);
+  font-size: 0.875rem;
+}
+
+.dv-confirm {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.dv-code {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.9rem;
+  background: #0f0c1a;
+  color: #e9e6f5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.dv-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+  transition: background-color 150ms ease;
+}
+
+.dv-next:hover {
+  background: var(--muted);
+}
+
+/* The Checkout hub's Online tab: a session's store order id. */
+.ck-online-ref {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

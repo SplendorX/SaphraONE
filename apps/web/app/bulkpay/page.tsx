@@ -148,10 +148,12 @@ type CircleChallengeResult = {
 };
 
 const zeroAmount = BigInt(0);
-const allowancePollAttempts = 30;
-const allowancePollDelayMs = 2_000;
+// Arc makes a block in under a second: check often (still ~60s in total).
+const allowancePollAttempts = 120;
+const allowancePollDelayMs = 500;
 const arcPublicClient = createPublicClient({
  chain: arcChain,
+ pollingInterval: 400,
  transport: arcTransport(),
 });
 const configuredSwiftBatchAddress =
@@ -714,7 +716,7 @@ export default function BulkPayPage() {
  address: recipient.address,
  amount: recipient.amount,
  label: recipient.username
- ? `@${recipient.username}${recipient.label ? ` · ${recipient.label}` : ""}`
+ ? `${recipient.username}.one${recipient.label ? ` · ${recipient.label}` : ""}`
  : recipient.label,
  line: recipient.line,
  })),
@@ -737,7 +739,7 @@ export default function BulkPayPage() {
 
  try {
  if (composer.resolving) {
- throw new Error("Wait for usernames to resolve before sending.");
+ throw new Error("Wait for ONE IDs to resolve before sending.");
  }
 
  if (composer.errors.length > 0) {
@@ -946,7 +948,7 @@ export default function BulkPayPage() {
   address: recipient.address,
   amount: recipient.amount,
   line: recipient.line,
-  name: recipient.username ? `@${recipient.username}` : shortenAddress(recipient.address),
+  name: recipient.username ? `${recipient.username}.one` : shortenAddress(recipient.address),
   note: recipient.label,
  }));
  const insufficient = !hasEnoughBalance && requiredAmountUnits > zeroAmount;
@@ -1061,7 +1063,7 @@ export default function BulkPayPage() {
      {usesLegacyBulkFee() ? `${swiftBatchFeeBasisPoints / 100}%` : "at least 0.10"}).{" "}
      <Link
       href={`/send?to=${encodeURIComponent(
-       recipients[0].username ? `@${recipients[0].username}` : recipients[0].address,
+       recipients[0].username ? `${recipients[0].username}.one` : recipients[0].address,
       )}&amount=${encodeURIComponent(recipients[0].amount)}&token=${selectedToken}`}
      >
       Send instead

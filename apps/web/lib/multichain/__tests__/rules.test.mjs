@@ -24,6 +24,7 @@ import {
   readFeeMode,
   recoverSweepWithoutResult,
   sweepFeeUnits,
+  sweepRetryDelayMs,
   unitsToUsdc,
   usdcToUnits,
 } from "@/lib/multichain/rules";
@@ -133,19 +134,31 @@ describe("depositStateFromCircle", () => {
 
 describe("recoverSweepWithoutResult", () => {
   it("never burns twice: a burn on record wins", () => {
-    assert.equal(recoverSweepWithoutResult({ attempts: 1, burnTxHash: "0xabc", pendingOutbound: true }), "burned");
+    assert.equal(recoverSweepWithoutResult({ burnTxHash: "0xabc", pendingOutbound: true }), "burned");
   });
 
   it("waits while a source transaction is still moving", () => {
-    assert.equal(recoverSweepWithoutResult({ attempts: 1, burnTxHash: null, pendingOutbound: true }), "wait");
+    assert.equal(recoverSweepWithoutResult({ burnTxHash: null, pendingOutbound: true }), "wait");
   });
 
-  it("restarts only from a clean source, and gives up after the limit", () => {
-    assert.equal(recoverSweepWithoutResult({ attempts: 1, burnTxHash: null, pendingOutbound: false }), "restart");
-    assert.equal(
-      recoverSweepWithoutResult({ attempts: MAX_SWEEP_ATTEMPTS, burnTxHash: null, pendingOutbound: false }),
-      "review",
-    );
+  it("restarts from a clean source, however many tries it took", () => {
+    assert.equal(recoverSweepWithoutResult({ burnTxHash: null, pendingOutbound: false }), "restart");
+  });
+});
+
+describe("sweepRetryDelayMs", () => {
+  it("backs off from a minute to at most an hour", () => {
+    assert.equal(sweepRetryDelayMs(1), 60_000);
+    assert.equal(sweepRetryDelayMs(2), 120_000);
+    assert.equal(sweepRetryDelayMs(3), 240_000);
+    assert.equal(sweepRetryDelayMs(MAX_SWEEP_ATTEMPTS), 960_000);
+    assert.equal(sweepRetryDelayMs(20), 3_600_000);
+  });
+
+  it("spreads five tries over half an hour, not one minute", () => {
+    let total = 0;
+    for (let attempt = 1; attempt < MAX_SWEEP_ATTEMPTS; attempt += 1) total += sweepRetryDelayMs(attempt);
+    assert.ok(total >= 15 * 60_000);
   });
 });
 

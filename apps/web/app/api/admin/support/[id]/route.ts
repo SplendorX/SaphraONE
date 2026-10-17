@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { jsonError, jsonOk, readJsonRecord } from "@/lib/http";
 import { agentUpdate, readThreadForAgent, SupportError } from "@/lib/support/tickets";
 
@@ -16,7 +16,7 @@ function fail(error: unknown) {
 }
 
 export async function GET(request: NextRequest, context: Context) {
-  if (!isAdminAuthorized(request)) return jsonError("Unauthorized.", 401);
+  if (!(await adminCan(request, "support"))) return jsonError("Unauthorized.", 401);
   try {
     return jsonOk(await readThreadForAgent((await context.params).id));
   } catch (error) {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, context: Context) {
 
 /** Reply and/or change status or priority: { body?, status?, priority? }. */
 export async function POST(request: NextRequest, context: Context) {
-  if (!isAdminAuthorized(request)) return jsonError("Unauthorized.", 401);
+  if (!(await adminCan(request, "support"))) return jsonError("Unauthorized.", 401);
   const body = await readJsonRecord(request);
   if (!body) return jsonError("A valid JSON body is required.", 400);
   try {

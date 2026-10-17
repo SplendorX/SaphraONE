@@ -25,6 +25,7 @@ import { claimTransferForCharge } from "@/lib/checkout/settlement";
 import type {
   ChargeCurrency,
   ChargeIntentMethod,
+  CheckoutLineItem,
   ChargeKind,
   ChargePaymentRecord,
   ChargePaymentSource,
@@ -34,9 +35,12 @@ import type {
   CheckoutBusiness,
   PublicCharge,
   PublicChargePayload,
+  PublicOnlineSession,
   PublicStorefrontPayload,
 } from "@/lib/checkout/types";
 import { verifyChargeTransfer } from "@/lib/checkout/verify";
+import { readSessionId } from "@/lib/merchant-api/ids";
+import { fillSessionTemplate, siteHostOf } from "@/lib/merchant-api/validate";
 
 const PAGE_SIZE = 20;
 const TX_HASH_PATTERN = /^0x[a-f0-9]{64}$/;
@@ -82,7 +86,7 @@ async function currentBlock() {
 
 // ── Loading ─────────────────────────────────────────────────────────────────
 
-async function loadChargeById(id: string) {
+export async function loadChargeById(id: string) {
   const { data, error } = await accountDb()
     .from(accountTables.charges)
     .select("*")
@@ -92,8 +96,28 @@ async function loadChargeById(id: string) {
   return (data as ChargeRecord | null) ?? null;
 }
 
+/** The charge behind an online checkout session id (cs_live_…). */
+async function loadChargeBySessionId(sessionId: string) {
+  const { data, error } = await accountDb()
+    .from(accountTables.checkoutSessions)
+    .select("charge_id")
+    .eq("public_id", sessionId)
+    .maybeSingle();
+  if (error) throw new Error(readAccountDbError(error, "Could not load the checkout."));
+  const charge = data ? await loadChargeById((data as { charge_id: string }).charge_id) : null;
+  if (!charge) throw checkoutErrors.chargeNotFound();
+  return expireIfStale(charge);
+}
+
+/**
+ * A charge by its code, or by an online session id: the hosted checkout page
+ * addresses the same public payer routes with the session id.
+ */
 async function loadChargeByCode(value: string) {
-  const code = normalizeChargeCode(decodeURIComponent(value));
+  const decoded = decodeURIComponent(value);
+  const sessionId = readSessionId(decoded);
+  if (sessionId) return loadChargeBySessionId(sessionId);
+  const code = normalizeChargeCode(decoded);
   if (!code) throw checkoutErrors.chargeNotFound();
   const { data, error } = await accountDb()
     .from(accountTables.charges)
@@ -106,7 +130,7 @@ async function loadChargeByCode(value: string) {
 }
 
 /** Lazy expiry on read; the sweep catches the ones nobody looks at. */
-async function expireIfStale(charge: ChargeRecord) {
+export async function expireIfStale(charge: ChargeRecord) {
   if (!isExpired(charge)) return charge;
   const { error } = await accountDb()
     .from(accountTables.charges)
@@ -117,7 +141,7 @@ async function expireIfStale(charge: ChargeRecord) {
   return { ...charge, status: "EXPIRED" as const };
 }
 
-async function loadPayments(chargeIds: string[]) {
+export async function loadPayments(chargeIds: string[]) {
   if (chargeIds.length === 0) return new Map<string, ChargePaymentRecord[]>();
   const { data, error } = await accountDb()
     .from(accountTables.chargePayments)
@@ -150,7 +174,11 @@ async function loadCheckoutBusiness(wallet: string): Promise<CheckoutBusiness> {
   };
 }
 
-function toPublicCharge(charge: ChargeRecord, payments: ChargePaymentRecord[]): PublicCharge {
+function toPublicCharge(
+  charge: ChargeRecord,
+  payments: ChargePaymentRecord[],
+  online: PublicOnlineSession | null = null,
+): PublicCharge {
   return {
     amount: charge.amount,
     amountReceived: charge.amount_received,
@@ -160,6 +188,7 @@ function toPublicCharge(charge: ChargeRecord, payments: ChargePaymentRecord[]): 
     expiresAt: charge.expires_at,
     kind: charge.kind,
     note: charge.note,
+    online,
     paidAt: charge.paid_at,
     pendingMethod: charge.pending_method,
     status: charge.status,
@@ -178,10 +207,12 @@ async function insertCharge(input: {
   currency: ChargeCurrency;
   note: string | null;
   idempotencyKey?: string | null;
+  expiresAt?: string;
 }) {
   const supabase = accountDb();
   const createdBlock = await currentBlock();
-  const expiresAt = new Date(Date.now() + CHARGE_TTL_MS[input.kind]).toISOString();
+  const expiresAt =
+    input.expiresAt ?? new Date(Date.now() + CHARGE_TTL_MS[input.kind]).toISOString();
 
   // A code collision (23505 on public_id) just draws another code.
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -258,7 +289,55 @@ export async function createCharge(
   return withPayments(charge);
 }
 
-export async function listCharges(input: MerchantInput & { status?: unknown; page?: number }) {
+/**
+ * The charge behind a new online checkout session (lib/merchant-api). The
+ * caller is already authenticated by API key; the idempotency key makes a
+ * retried create land on the same charge.
+ */
+export async function createOnlineCharge(input: {
+  wallet: string;
+  amount: unknown;
+  currency: ChargeCurrency;
+  description: string | null;
+  expiresAt: string;
+  idempotencyKey: string | null;
+}) {
+  const amount = validateChargeAmount(input.amount, "ONLINE");
+  if (!amount.ok) throw checkoutErrors.invalidCharge(amount.message);
+  return insertCharge({
+    amount: amount.amount,
+    currency: input.currency,
+    expiresAt: input.expiresAt,
+    idempotencyKey: input.idempotencyKey ? `api:${input.idempotencyKey}` : null,
+    kind: "ONLINE",
+    note: input.description,
+    wallet: input.wallet.toLowerCase(),
+  });
+}
+
+/** Session id and order id of online charges, for the merchant's list. */
+async function loadSessionRefs(chargeIds: string[]) {
+  const refs = new Map<string, { public_id: string; client_reference_id: string | null }>();
+  if (chargeIds.length === 0) return refs;
+  const { data, error } = await accountDb()
+    .from(accountTables.checkoutSessions)
+    .select("charge_id,public_id,client_reference_id")
+    .in("charge_id", chargeIds);
+  if (error) throw new Error(readAccountDbError(error, "Could not load checkout sessions."));
+  for (const row of (data ?? []) as Array<{
+    charge_id: string;
+    public_id: string;
+    client_reference_id: string | null;
+  }>) {
+    refs.set(row.charge_id, { client_reference_id: row.client_reference_id, public_id: row.public_id });
+  }
+  return refs;
+}
+
+/** `kind`: IN_PERSON (counter and storefront) or ONLINE (checkout sessions); omitted = all. */
+export async function listCharges(
+  input: MerchantInput & { status?: unknown; page?: number; kind?: unknown },
+) {
   const wallet = await merchantWallet(input);
   const page = Number.isFinite(input.page) && (input.page ?? 1) > 0 ? Math.floor(input.page ?? 1) : 1;
   let query = accountDb()
@@ -270,15 +349,22 @@ export async function listCharges(input: MerchantInput & { status?: unknown; pag
   if (typeof input.status === "string" && chargeStatuses.includes(input.status as ChargeStatus)) {
     query = query.eq("status", input.status);
   }
+  if (input.kind === "ONLINE") query = query.eq("kind", "ONLINE");
+  if (input.kind === "IN_PERSON") query = query.in("kind", ["MERCHANT", "STOREFRONT"]);
   const { data, error } = await query;
   if (error) throw new Error(readAccountDbError(error, "Could not load charges."));
   const rows = await Promise.all(((data ?? []) as ChargeRecord[]).map(expireIfStale));
-  const [payments, summary] = await Promise.all([
+  const [payments, summary, sessions] = await Promise.all([
     loadPayments(rows.map((row) => row.id)),
     chargeSummary(wallet),
+    loadSessionRefs(rows.filter((row) => row.kind === "ONLINE").map((row) => row.id)),
   ]);
   return {
-    charges: rows.map((row) => ({ ...row, payments: payments.get(row.id) ?? [] })),
+    charges: rows.map((row) => ({
+      ...row,
+      payments: payments.get(row.id) ?? [],
+      ...(row.kind === "ONLINE" ? { session: sessions.get(row.id) ?? null } : {}),
+    })),
     page,
     summary,
   };
@@ -320,14 +406,41 @@ export async function cancelCharge(input: MerchantInput & { chargeId: string }) 
 
 // ── Public payer ────────────────────────────────────────────────────────────
 
+/** What the hosted page may show of a session: never metadata, email or order id. */
+async function loadPublicOnlineSession(charge: ChargeRecord): Promise<PublicOnlineSession | null> {
+  if (charge.kind !== "ONLINE") return null;
+  const { data, error } = await accountDb()
+    .from(accountTables.checkoutSessions)
+    .select("public_id,line_items,success_url,cancel_url")
+    .eq("charge_id", charge.id)
+    .maybeSingle();
+  if (error) throw new Error(readAccountDbError(error, "Could not load the checkout."));
+  if (!data) return null;
+  const row = data as {
+    public_id: string;
+    line_items: CheckoutLineItem[] | null;
+    success_url: string;
+    cancel_url: string | null;
+  };
+  return {
+    cancelUrl: row.cancel_url,
+    description: charge.note,
+    lineItems: Array.isArray(row.line_items) ? row.line_items : [],
+    sessionId: row.public_id,
+    siteHost: siteHostOf(row.success_url),
+    successUrl: fillSessionTemplate(row.success_url, row.public_id),
+  };
+}
+
 async function publicPayload(charge: ChargeRecord): Promise<PublicChargePayload> {
-  const [business, payments] = await Promise.all([
+  const [business, payments, online] = await Promise.all([
     loadCheckoutBusiness(charge.wallet_address),
     loadPayments([charge.id]),
+    loadPublicOnlineSession(charge),
   ]);
   return {
     business,
-    charge: toPublicCharge(charge, payments.get(charge.id) ?? []),
+    charge: toPublicCharge(charge, payments.get(charge.id) ?? [], online),
     destinationWallet: charge.wallet_address,
   };
 }
@@ -350,6 +463,7 @@ function requireOpen(charge: ChargeRecord) {
 export async function setChargeTip(input: { code: string; tip: unknown }) {
   const charge = await loadChargeByCode(input.code);
   requireOpen(charge);
+  if (charge.kind === "ONLINE") throw checkoutErrors.invalidCharge("Online checkouts don't take tips.");
   const tip = validateTip(input.tip, charge.amount);
   if (!tip.ok) throw checkoutErrors.invalidCharge(tip.message);
   const { data, error } = await accountDb()
@@ -547,7 +661,7 @@ export async function startChargeOnramp(code: string) {
 // ── Storefront ──────────────────────────────────────────────────────────────
 
 async function resolveStorefront(username: string) {
-  const handle = decodeURIComponent(username).trim().replace(/^@+/, "");
+  const handle = decodeURIComponent(username).trim().replace(/^@+/, "").replace(/\.one$/i, "");
   if (!/^[a-z0-9_.-]{1,40}$/i.test(handle)) throw checkoutErrors.storefrontNotFound();
   const identity = await resolvePaymentIdentity(handle);
   const wallet = identity?.profile_wallet ?? identity?.destination_wallet;

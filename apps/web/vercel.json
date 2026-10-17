@@ -43,6 +43,14 @@
     {
       "path": "/api/cron/account-deletion",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/ramp",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/partner-perks",
+      "schedule": "0 18 * * *"
     }
   ]
 }

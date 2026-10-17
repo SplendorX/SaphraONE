@@ -264,7 +264,7 @@ export async function updateProfileUsername(input: {
     const payload = (await response.json().catch(() => null)) as {
       message?: string;
     } | null;
-    throw new Error(payload?.message ?? "Username could not be updated.");
+    throw new Error(payload?.message ?? "Profile could not be updated.");
   }
 
   const payload = (await response.json()) as { profile: ProfileRecord };

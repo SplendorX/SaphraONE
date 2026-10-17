@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { useAdmin } from "@/components/admin/admin-shell";
 
 type TractionSummary = {
   actuals: {
@@ -79,7 +81,7 @@ function shortWallet(value: string) {
 }
 
 export default function TractionAdminPage() {
-  const [secret, setSecret] = useState("");
+  const { adminFetch } = useAdmin();
   const [rangeDays, setRangeDays] = useState(30);
   const [summary, setSummary] = useState<TractionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,17 +101,18 @@ export default function TractionAdminPage() {
     [summary?.eventCounts],
   );
 
+  // Opens on the metrics for the chosen range.
+  useEffect(() => {
+    void loadTraction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeDays]);
+
   async function loadTraction() {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/admin/traction?rangeDays=${rangeDays}`, {
-        cache: "no-store",
-        headers: {
-          authorization: `Bearer ${secret}`,
-        },
-      });
+      const response = await adminFetch(`/api/admin/traction?rangeDays=${rangeDays}`);
       const payload = (await response.json()) as
         | TractionSummary
         | { message?: string };
@@ -136,8 +139,8 @@ export default function TractionAdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-5 py-8 text-foreground sm:px-8">
-      <div className="mx-auto grid w-full max-w-7xl gap-6">
+    <main className="text-foreground">
+      <div className="grid w-full max-w-7xl gap-6">
         <header className="grid gap-4 border-b border-border pb-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.18em] text-muted-foreground">
@@ -152,7 +155,7 @@ export default function TractionAdminPage() {
             </p>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,18rem)_auto]">
+          <div className="grid gap-2 sm:grid-cols-[10rem_auto]">
             <label className="grid gap-1">
               <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Range
@@ -168,21 +171,9 @@ export default function TractionAdminPage() {
                 <option value={365}>365 days</option>
               </select>
             </label>
-            <label className="grid gap-1">
-              <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                Admin secret
-              </span>
-              <input
-                className="h-11 rounded-lg border border-border bg-background px-3 text-sm font-semibold"
-                onChange={(event) => setSecret(event.target.value)}
-                placeholder="Bearer secret"
-                type="password"
-                value={secret}
-              />
-            </label>
             <button
               className="sp-bubble self-end rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!secret || isLoading}
+              disabled={isLoading}
               onClick={() => void loadTraction()}
               type="button"
             >

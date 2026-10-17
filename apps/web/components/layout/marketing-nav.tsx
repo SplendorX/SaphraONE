@@ -20,6 +20,7 @@ export function MarketingNav() {
     { href: anchor("products"), label: t("landing.home.navPlatform") },
     { href: anchor("allie"), label: t("landing.home.navAllie") },
     { href: anchor("business"), label: t("landing.home.navBusiness") },
+    { href: anchor("developers"), label: t("landing.home.navDevelopers") },
     { href: anchor("security"), label: t("landing.home.navSecurity") },
     { href: anchor("faq"), label: t("landing.home.navFaq") },
   ];

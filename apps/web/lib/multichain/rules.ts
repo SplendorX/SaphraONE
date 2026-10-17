@@ -163,8 +163,22 @@ export function isCircleTxPending(state: string | null | undefined) {
 
 /** A sweep that started this long ago and never recorded a result is checked by hand. */
 export const STALE_SWEEP_MS = 10 * 60 * 1000;
-/** Give up resuming after this many tries; a person looks at it instead. */
+/**
+ * After this many tries the logs raise an alert. Retries go on: until the
+ * burn, the USDC is still on its own network and trying again is safe.
+ */
 export const MAX_SWEEP_ATTEMPTS = 5;
+
+const FIRST_RETRY_MS = 60 * 1000;
+const LAST_RETRY_MS = 60 * 60 * 1000;
+
+/**
+ * How long a failed sweep waits before its next try: 1, 2, 4… minutes, at
+ * most an hour. Retrying at once only spends every try on the same outage.
+ */
+export function sweepRetryDelayMs(attempts: number) {
+  return Math.min(LAST_RETRY_MS, FIRST_RETRY_MS * 2 ** Math.max(0, attempts - 1));
+}
 
 /**
  * What to do with a sweep that has no recorded bridge result (the process
@@ -173,13 +187,11 @@ export const MAX_SWEEP_ATTEMPTS = 5;
  * means wait, and only a clean source lets the sweep start over.
  */
 export function recoverSweepWithoutResult(input: {
-  attempts: number;
   burnTxHash: string | null;
   pendingOutbound: boolean;
-}): "burned" | "wait" | "restart" | "review" {
+}): "burned" | "wait" | "restart" {
   if (input.burnTxHash) return "burned";
   if (input.pendingOutbound) return "wait";
-  if (input.attempts >= MAX_SWEEP_ATTEMPTS) return "review";
   return "restart";
 }
 

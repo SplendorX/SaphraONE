@@ -25,12 +25,19 @@ export type PremiumPurchase = {
   created_at: string;
   description: string;
   id: string;
+  /** USDC given back by a creator partner's discount (CREATOR-PARTNERS-PLAN.md). */
+  partner_rebate_usdc?: number;
   points_eligible: boolean;
   product: PremiumProduct;
   status: "CONFIRMED" | "REFUNDED";
   tx_hash: string;
   wallet_address: string;
 };
+
+/** What the buyer really paid: the price less any partner discount given back. */
+export function paidUsdc(purchase: Pick<PremiumPurchase, "amount_usdc" | "partner_rebate_usdc">) {
+  return Math.max(0, Number(purchase.amount_usdc) - Number(purchase.partner_rebate_usdc ?? 0));
+}
 
 export type PremiumPaymentResult =
   | { ok: true; purchase: PremiumPurchase }
@@ -82,7 +89,16 @@ export async function recordPremiumPayment(input: {
     }
     throw new Error(`The purchase could not be recorded: ${error.message}`);
   }
-  return { ok: true, purchase: data as PremiumPurchase };
+  const purchase = data as PremiumPurchase;
+  // A creator partner's welcome discount comes back as USDC to claim.
+  const { applyPremiumDiscount } = await import("@/lib/partners/perks");
+  const rebate = await applyPremiumDiscount({
+    amountUsdc: input.amountUsdc,
+    product: input.product,
+    purchaseId: purchase.id,
+    wallet: input.ownerWallet,
+  });
+  return { ok: true, purchase: { ...purchase, partner_rebate_usdc: rebate } };
 }
 
 /** Undo a recorded purchase when granting what it paid for failed, so it can be retried. */

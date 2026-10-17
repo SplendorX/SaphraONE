@@ -34,7 +34,6 @@ import {
   sessionWallets,
   walletSessionCookieName,
 } from "@/lib/wallet-session";
-import { appLockForSession, setUnlockCookie } from "@/lib/app-lock/server";
 import { mfaPendingForSignIn } from "@/lib/two-factor/server";
 import { notifySignIn, saveVerifiedContactEmail } from "@/lib/security/sign-in-alert";
 
@@ -224,15 +223,10 @@ export async function POST(request: NextRequest) {
         }),
       );
     }
-    const appLock = await appLockForSession([
-      ownerWallet,
-      ...(previous ? sessionWallets(previous) : []),
-    ]);
     const walletSession = createWalletSession(
       ownerWallet,
       { connectorName: "Email" },
       {
-        ...(appLock.known ? { appLock: Boolean(appLock.lock) } : {}),
         mfaPending: await mfaPendingForSignIn(previous, [ownerWallet]),
         previous,
       },
@@ -256,9 +250,6 @@ export async function POST(request: NextRequest) {
       secure: await secureCookieFor(),
     });
     response.cookies.delete(emailSessionCookieName);
-    if (appLock.lock) {
-      await setUnlockCookie(response, appLock.lock.owner_wallet, appLock.lock.timeout_minutes);
-    }
     return response;
   }
 

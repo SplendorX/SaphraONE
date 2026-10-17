@@ -93,7 +93,7 @@ export async function resolveReferrer(
   profile: ReferralProfileRecord;
   username: string | null;
 } | null> {
-  const clean = identifier.trim().toLowerCase().replace(/^@/, "");
+  const clean = identifier.trim().toLowerCase().replace(/^@/, "").replace(/\.one$/i, "");
   if (!clean) return null;
   const supabase = referralDb();
 

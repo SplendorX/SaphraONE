@@ -10,6 +10,7 @@ import { OnePointsMark } from "@/components/brand/one-points-mark";
 import { GiftPointsModal } from "@/components/referral/gift-points-modal";
 import { CampaignsBoard } from "@/components/rewards/campaigns-board";
 import { ClaimDiscountSheet } from "@/components/rewards/claim-discount-sheet";
+import { WelcomePerksCard } from "@/components/rewards/welcome-perks-card";
 import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
 import { readActivatedExternalProfile } from "@/lib/platform-access";
 import {
@@ -63,6 +64,87 @@ function RewardsSheet({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Claim unlocks this long after the follow link was opened. */
+const SOCIAL_CLAIM_DELAY_MS = 5_000;
+
+/**
+ * "Follow us" quests: open the account, then claim. A follow can't be checked
+ * from here, so claiming waits until the link has been opened.
+ */
+function SocialQuestActions({
+  circleSocialUuid,
+  onClaimed,
+  questId,
+  social,
+  wallet,
+}: {
+  circleSocialUuid?: string | null;
+  onClaimed: () => void;
+  questId: string;
+  social: NonNullable<RewardsOverview["quests"][number]["social"]>;
+  wallet: string;
+}) {
+  const [openedAt, setOpenedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [claiming, setClaiming] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openedAt) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, [openedAt]);
+
+  const ready = openedAt !== null && now - openedAt >= SOCIAL_CLAIM_DELAY_MS;
+
+  async function claim() {
+    setClaiming(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/rewards/quests/claim", {
+        body: JSON.stringify({ circleSocialUuid, ownerWallet: wallet, questId }),
+        cache: "no-store",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      });
+      const json = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok) throw new Error(json?.message || "The quest couldn't be claimed.");
+      onClaimed();
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "The quest couldn't be claimed.");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
+  return (
+    <div className="rw-quest-actions">
+      <a
+        className="rw-quest-btn"
+        href={social.url}
+        onClick={() => {
+          setOpenedAt(Date.now());
+          setNow(Date.now());
+        }}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Follow on {social.platformLabel}
+      </a>
+      <button
+        className="rw-quest-btn is-primary"
+        disabled={!ready || claiming}
+        onClick={() => void claim()}
+        type="button"
+      >
+        {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+        {openedAt && !ready ? "Checking…" : "Claim"}
+      </button>
+      {message ? <p className="rw-quest-error">{message}</p> : null}
+    </div>
   );
 }
 
@@ -166,6 +248,9 @@ export function RewardsPage() {
         />
       </section>
 
+      {/* A creator partner's welcome package, for accounts that joined through one */}
+      <WelcomePerksCard circleSocialUuid={circleSocialUuid} wallet={wallet} />
+
       {/* USDC campaigns, when any are running */}
       <CampaignsBoard wallet={wallet} />
 
@@ -201,7 +286,12 @@ export function RewardsPage() {
         {data.activity.length === 0 ? (
           <p className="rw-empty">Make a payment to earn your first points.</p>
         ) : (
-          <ul className="rw-activity">
+          // Scrolls inside the card once it is longer than about six entries.
+          <ul
+            aria-label="Rewards activity"
+            className={cn("rw-activity", data.activity.length > 6 && "is-long")}
+            tabIndex={data.activity.length > 6 ? 0 : undefined}
+          >
             {data.activity.map((entry) => (
               <li key={entry.id}>
                 <div className="min-w-0">
@@ -251,7 +341,12 @@ export function RewardsPage() {
       {/* Quests, when any are live */}
       {data.quests.length > 0 ? (
         <section className="rw-card">
-          <h2 className="rw-card-title">Quests</h2>
+          <div className="rw-card-row">
+            <h2 className="rw-card-title">Quests</h2>
+            <span className="rw-muted rw-small">
+              {data.quests.filter((quest) => quest.completed).length} / {data.quests.length}
+            </span>
+          </div>
           <ul className="rw-quests">
             {data.quests.map((quest) => (
               <li className={cn(quest.completed && "is-done")} key={quest.id}>
@@ -261,6 +356,11 @@ export function RewardsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="rw-activity-label">{quest.title}</p>
                   {quest.description ? <p className="rw-activity-sub">{quest.description}</p> : null}
+                  {quest.reward.kind === "percent" && !quest.completed ? (
+                    <p className="rw-activity-sub">
+                      {quest.reward.percent}% back in points, up to {points(quest.points)}
+                    </p>
+                  ) : null}
                   {quest.progress && !quest.completed ? (
                     <div className="rw-quest-progress">
                       <span
@@ -274,9 +374,36 @@ export function RewardsPage() {
                       : null}
                     {quest.progress && !quest.completed && quest.endsAt ? " · " : null}
                     {quest.endsAt ? `Ends ${new Date(quest.endsAt).toLocaleDateString()}` : null}
+                    {quest.placesLeft !== null && !quest.completed
+                      ? `${quest.progress || quest.endsAt ? " · " : ""}${points(quest.placesLeft)} place${quest.placesLeft === 1 ? "" : "s"} left`
+                      : null}
                   </p>
+                  {!quest.completed ? (
+                    <p className="rw-quest-how">
+                      {quest.automatic
+                        ? "Completes automatically once you do it."
+                        : quest.social
+                          ? "Follow, then claim your points."
+                          : "SaphraONE awards this one."}
+                    </p>
+                  ) : null}
                 </div>
-                <span className="rw-chip">{quest.completed ? "Done" : `+${points(quest.points)}`}</span>
+                <span className="rw-chip">
+                  {quest.completed
+                    ? "Done"
+                    : quest.reward.kind === "percent"
+                      ? `up to ${points(quest.points)}`
+                      : `+${points(quest.points)}`}
+                </span>
+                {quest.social && !quest.completed ? (
+                  <SocialQuestActions
+                    circleSocialUuid={circleSocialUuid}
+                    onClaimed={() => void load()}
+                    questId={quest.id}
+                    social={quest.social}
+                    wallet={wallet}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>

@@ -4,26 +4,23 @@ import {
   ArrowDownLeft,
   ArrowDownToLine,
   ArrowLeftRight,
+  ArrowUpFromLine,
   ArrowUpRight,
-  Banknote,
-  Briefcase,
-  ChartPie,
+  ChevronRight,
   Eye,
   EyeOff,
-  FileText,
-  Gift,
-  PiggyBank,
   QrCode,
   Send,
-  Store,
-  TrendingUp,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { checkoutEnabled } from "@/lib/checkout/flag";
+import { OnePointsMark } from "@/components/brand/one-points-mark";
+import { Announcements } from "@/components/dashboard/announcements";
+import { rampEntryEnabled } from "@/lib/ramp/flag";
+import { useOnePoints } from "@/lib/referral/use-one-points";
+import { rewardsV2Enabled } from "@/lib/rewards/config";
 import type { ArcTokenSymbol } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
@@ -42,22 +39,12 @@ function splitAmount(label: string) {
   return match ? [match[1], match[2]] : [label, ""];
 }
 
-const services: Array<{ business?: boolean; href: string; icon: LucideIcon; label: string }> = [
-  { href: "/save", icon: PiggyBank, label: "Save" },
-  { href: "/earn", icon: TrendingUp, label: "Invest" },
-  { href: "/circle", icon: UsersRound, label: "Circle" },
-  { href: "/insights", icon: ChartPie, label: "Insights" },
-  { href: "/referral", icon: Gift, label: "Invite" },
-  { business: true, href: "/business", icon: Briefcase, label: "Overview" },
-  { business: true, href: "/business/invoices", icon: FileText, label: "Invoices" },
-  { business: true, href: "/business/payroll", icon: Banknote, label: "Payroll" },
-  ...(checkoutEnabled ? [{ business: true, href: "/business/checkout", icon: Store, label: "Checkout" }] : []),
-];
 
 /**
- * The dashboard, quiet and premium: a greeting, one dark balance card that
- * carries the four everyday actions, this week in two numbers, the services
- * as a grid, then transactions and the rest.
+ * The dashboard, quiet and premium, in the shape of the iPhone app: a
+ * greeting, one balance card, the four everyday actions as
+ * tiles under it, ONE Points, this week in two numbers, then transactions
+ * and the rest. Every other place is in the tab bar and its More sheet.
  */
 export function DashboardHome({
   avatarUrl,
@@ -100,38 +87,35 @@ export function DashboardHome({
   transactions: ReactNode;
   trend: "up" | "down" | "flat";
 }) {
-  const shown = services.filter((service) => !service.business || isBusiness);
   const name = useRememberedName(greetingName);
 
   return (
     <div className="dh">
       <header className="dh-hello">
-        <p className="dh-hello-small">{greeting()},</p>
-        {name ? (
-          <p className="dh-hello-name">{name}</p>
-        ) : isConnected ? (
-          <span aria-hidden className="dh-hello-skeleton" />
-        ) : (
-          <p className="dh-hello-name">Welcome to SaphraONE</p>
-        )}
+        <span className="dh-hello-text">
+          <p className="dh-hello-small">{greeting()},</p>
+          {name ? (
+            <p className="dh-hello-name">{name}</p>
+          ) : isConnected ? (
+            <span aria-hidden className="dh-hello-skeleton" />
+          ) : (
+            <p className="dh-hello-name">Welcome to SaphraONE</p>
+          )}
+        </span>
       </header>
 
       {/* The one card that matters */}
       <section aria-label="Balance" className="dh-card">
         <span aria-hidden className="dh-card-glow" />
         <span aria-hidden className="dh-card-sheen" />
-        {/* SaphraONE, ONE Points, USDC and EURC coins in 3D (public/brand/dashboard-coins.webp). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          aria-hidden
-          className="dh-card-art"
-          decoding="async"
-          draggable={false}
-          height={780}
-          src="/brand/dashboard-coins.webp"
-          width={900}
-        />
+        {/* The ONE ribbon from the logo, drawn flat into the card. */}
+        <svg aria-hidden className="dh-card-art" fill="none" viewBox="170 365 685 295">
+          <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="44">
+            <path d="M317 632a120 120 0 0 0 120-120 120 120 0 0 0-120-120 120 120 0 0 0-120 120 120 120 0 0 0 120 120" />
+            <path d="M317 632h145q55 0 55-55V392l150 240V392h160" />
+            <path d="M667 512h130M667 632h160" />
+          </g>
+        </svg>
         <div className="dh-card-top">
           <span className="dh-card-label">
             {isBusiness ? "Business balance" : "Total balance"} · {currency}
@@ -190,13 +174,27 @@ export function DashboardHome({
           </div>
         ) : null}
 
-        <nav aria-label="Money actions" className="dh-actions">
-          <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
-          <Action href="/send" icon={Send} label="Send" />
-          <Action href="/pay" icon={QrCode} label="Request" />
-          <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
-        </nav>
       </section>
+
+      {/* The four everyday actions, as tiles under the card. */}
+      <nav aria-label="Money actions" className="dh-actions">
+        <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
+        <Action href="/send" icon={Send} label="Send" />
+        <Action href="/pay" icon={QrCode} label="Request" />
+        {/* With the Naira ramp on, Withdraw takes Swap's place (Swap moves
+            to the More sheet). */}
+        {rampEntryEnabled ? (
+          <Action href="/withdraw" icon={ArrowUpFromLine} label="Withdraw" />
+        ) : (
+          <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
+        )}
+      </nav>
+
+      {/* Phones: ONE Points live here (the top bar's points pill is desktop's). */}
+      <PointsStrip />
+
+      {/* Live campaigns and quests, each dismissible. */}
+      <Announcements />
 
       {banners}
 
@@ -222,22 +220,6 @@ export function DashboardHome({
           </span>
         </span>
       </Link>
-
-      <section aria-labelledby="dh-services" className="dh-section">
-        <h2 className="dh-section-title" id="dh-services">
-          Services
-        </h2>
-        <nav className="dh-services">
-          {shown.map((service) => (
-            <Link className="dh-service" href={service.href} key={service.href}>
-              <span className="dh-service-icon">
-                <service.icon className="h-5 w-5" />
-              </span>
-              {service.label}
-            </Link>
-          ))}
-        </nav>
-      </section>
 
       {earn}
 
@@ -360,6 +342,20 @@ function BalanceWheel({ hidden, rows }: { hidden: boolean; rows: WheelRow[] }) {
         );
       })}
     </div>
+  );
+}
+
+function PointsStrip() {
+  const { points, usdcValue } = useOnePoints();
+  return (
+    <Link className="dh-points" href={rewardsV2Enabled() ? "/rewards" : "/referral"}>
+      <OnePointsMark className="dh-points-mark" />
+      <span className="dh-points-text">
+        <span className="dh-points-value">{points.toLocaleString()} ONE Points</span>
+        <span className="dh-points-sub">Worth ${usdcValue.toFixed(2)} · collect them on every payment</span>
+      </span>
+      <ChevronRight aria-hidden className="h-5 w-5 shrink-0 opacity-70" />
+    </Link>
   );
 }
 

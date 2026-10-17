@@ -116,6 +116,12 @@ export async function recordLedgerTransaction(input: {
       }
       return "failed";
     }
+    // A verified payment can finish a quest (payments, swaps, BulkPay…).
+    // Backfilled rows are history, not something the person just did.
+    if (!input.occurredAt) {
+      const { checkQuestsSoon } = await import("@/lib/rewards/quests");
+      await checkQuestsSoon(wallet);
+    }
     return "recorded";
   } catch (error) {
     console.warn("[ledger]", error instanceof Error ? error.message : error);

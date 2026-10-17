@@ -100,44 +100,29 @@
   mask-image: linear-gradient(180deg, black, transparent 75%);
 }
 
-/* The 3D coins: an overlay inside the card, on the right, over the
-   background and clear of the eye button above and the actions below.
-   Clicks pass through to whatever is underneath. */
+/* The ONE ribbon: flat, faint, set into the card's lower right. Clicks
+   pass through to whatever is underneath. */
 .dh-card-art {
   position: absolute;
-  z-index: 1;
-  top: 3.5rem;
-  right: 0.6rem;
-  width: clamp(9.5rem, 46%, 17rem);
+  z-index: 0;
+  right: -1.25rem;
+  bottom: -1rem;
+  width: min(64%, 19rem);
   height: auto;
-  /* Never down into the actions row, however short the card. */
-  max-height: calc(100% - 9.75rem);
-  object-fit: contain;
-  object-position: right top;
+  color: rgb(255 255 255 / 0.14);
   pointer-events: none;
-  user-select: none;
-  filter: drop-shadow(0 18px 28px rgb(10 4 30 / 0.55));
 }
 
-/* Room for the coins beside the balance, once there's width for both. */
-@media (min-width: 520px) {
-  .dh-card .dh-wheel,
-  .dh-card .dh-amount {
-    padding-right: min(44%, 16rem);
-  }
-}
-
-/* On narrow phones a long balance can reach the coins: keep it legible. */
+/* Keep the balance crisp where it crosses the ribbon. */
 .dh-card .dh-wheel,
 .dh-card .dh-amount {
   position: relative;
   z-index: 2;
-  text-shadow: 0 2px 14px rgb(13 6 28 / 0.85);
+  text-shadow: 0 1px 10px rgb(13 6 28 / 0.3);
 }
 
 .dh-card .dh-card-top,
-.dh-card .dh-change,
-.dh-card .dh-actions {
+.dh-card .dh-change {
   position: relative;
   z-index: 2;
 }
@@ -281,51 +266,61 @@
   color: rgb(255 255 255 / 0.55);
 }
 
-/* The four everyday actions, as frosted glass */
+/* The four everyday actions: tiles under the card, Add money filled */
 .dh-actions {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1.15rem;
-  padding-top: 1.05rem;
-  border-top: 1px solid rgb(255 255 255 / 0.1);
+  margin-top: -0.25rem;
 }
 
 .dh-action {
   display: grid;
   justify-items: center;
-  gap: 0.45rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgb(255 255 255 / 0.85);
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--foreground);
 }
 
 .dh-action-icon {
   display: grid;
   place-items: center;
-  width: 3.1rem;
-  height: 3.1rem;
-  border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 1.05rem;
-  background: rgb(255 255 255 / 0.08);
-  color: #ffffff;
-  backdrop-filter: blur(8px);
+  width: 3.75rem;
+  height: 3.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.35rem;
+  background: var(--card);
+  color: var(--primary);
   transition: background-color 160ms ease, transform 160ms ease;
 }
 
-.dh-action:first-child .dh-action-icon {
+.dark .dh-action-icon {
+  color: #c4b5fd;
+}
+
+html[data-light-surface="glass"]:not(.dark) .dh-action-icon {
+  border-color: rgb(18 20 26 / 0.07);
+  background: rgb(255 255 255 / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 10px 26px -16px rgb(91 33 182 / 0.35);
+}
+
+/* :root lifts it over the glass surface rule above. */
+:root .dh-actions .dh-action:first-child .dh-action-icon {
   border-color: transparent;
-  background: #ffffff;
-  color: #1a0b38;
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 12px 22px -12px rgb(91 33 182 / 0.85);
 }
 
 .dh-action:hover .dh-action-icon {
   transform: translateY(-2px);
-  background: rgb(255 255 255 / 0.16);
 }
 
-.dh-action:first-child:hover .dh-action-icon {
-  background: #ffffff;
+.dh-action:active .dh-action-icon {
+  transform: scale(0.94);
 }
 
 /* This week */
@@ -403,63 +398,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Services */
-.dh-section {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.dh-section-title {
-  padding-left: 0.15rem;
-  font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.02rem;
-  font-weight: 700;
-}
-
-.dh-services {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 1rem 0.5rem;
-  padding: 1.1rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 1.25rem;
-  background: var(--card);
-}
-
-
-.dh-service {
-  display: grid;
-  justify-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.dh-service-icon {
-  display: grid;
-  place-items: center;
-  width: 2.9rem;
-  height: 2.9rem;
-  border-radius: 1rem;
-  background: color-mix(in oklch, var(--primary) 9%, var(--muted));
-  color: var(--primary);
-  transition: transform 160ms ease, background-color 160ms ease;
-}
-
-.dark .dh-service-icon {
-  color: var(--link);
-}
-
-.dh-service:hover .dh-service-icon {
-  transform: translateY(-2px);
-  background: color-mix(in oklch, var(--primary) 16%, var(--muted));
-}
-
 /* ── Greeting: the name in a colour of its own for each theme ───────────── */
 .dh-hello {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.dh-hello-text {
   display: grid;
+  min-width: 0;
   gap: 0.1rem;
 }
 
@@ -496,10 +444,6 @@
 
 :root .dh-card-glow {
   background: radial-gradient(circle, rgb(255 255 255 / 0.22), transparent 65%);
-}
-
-:root .dh-action:first-child .dh-action-icon {
-  color: #2638e8;
 }
 
 :root .dh-split span {
@@ -633,5 +577,60 @@
 @media (prefers-reduced-motion: reduce) {
   .dh-hello-skeleton {
     animation: none;
+  }
+}
+
+/* ONE Points on Home, phones only: the ink strip of the iPhone app. Desktop
+   keeps the points pill in the top bar. */
+.dh-points {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .dh-points {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border-radius: 1.4rem;
+    background: #17111c;
+    color: #f4ebdd;
+    transition: transform 140ms ease;
+  }
+
+  .dark .dh-points {
+    border: 1px solid rgb(139 92 246 / 0.25);
+    background: linear-gradient(120deg, #241433, #17111c);
+  }
+
+  .dh-points:active {
+    transform: scale(0.98);
+  }
+
+  .dh-points-mark {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .dh-points-text {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 0.1rem;
+  }
+
+  .dh-points-value {
+    font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dh-points-sub {
+    overflow: hidden;
+    color: #c8bfb5;
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

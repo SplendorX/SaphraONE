@@ -19,6 +19,7 @@ export const activitySources = [
   "points",
   "checkout",
   "deposit",
+  "ramp",
 ] as const;
 
 export type ActivitySource = (typeof activitySources)[number];
@@ -117,5 +118,7 @@ export const activityFeatureMeta: Record<
   checkout: { label: "Checkout", href: null },
   // USDC received on another network and moved to Arc.
   deposit: { label: "Deposit", href: "/deposit" },
+  // Naira bank deposits and withdrawals through Centiiv.
+  ramp: { label: "Bank", href: "/withdraw" },
   wallet: { label: "Wallet", href: null },
 };

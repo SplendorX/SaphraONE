@@ -4,7 +4,6 @@ import { BeneficiaryPickerSheet } from "@/components/beneficiary-picker-sheet";
 import { RecipientStatus } from "@/components/recipient-status";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AtSign,
   CheckCircle2,
   Loader2,
   Plus,
@@ -222,7 +221,7 @@ export const BatchPeopleComposer = forwardRef<
 
   useEffect(() => {
     const active = rows.find((row) => row.id === activeSuggestId);
-    const query = active?.query.trim().replace(/^@+/, "") ?? "";
+    const query = active?.query.trim().replace(/^@+/, "").replace(/\.one$/i, "") ?? "";
     if (!active || query.length < 1 || isAddress(active.query.trim())) {
       setSuggestions([]);
       setSuggestLoading(false);
@@ -248,7 +247,7 @@ export const BatchPeopleComposer = forwardRef<
       const query = row.query.trim();
       if (!query && !row.amount.trim()) return;
       if (!query) {
-        errors.push(`Person ${line}: add a username or wallet.`);
+        errors.push(`Person ${line}: add a ONE ID or wallet.`);
         return;
       }
       if (row.resolving) return;
@@ -389,7 +388,7 @@ export const BatchPeopleComposer = forwardRef<
                     </button>
                   </div>
                   <label className="bp-field">
-                    <AtSign className="h-4 w-4 text-primary" />
+                    <UserRound className="h-4 w-4 text-primary" />
                     <input
                       autoCapitalize="off"
                       autoComplete="off"
@@ -415,7 +414,7 @@ export const BatchPeopleComposer = forwardRef<
                           amountRefs.current[row.id]?.focus();
                         }
                       }}
-                      placeholder="username or 0x…"
+                      placeholder="ONE ID or 0x…"
                       spellCheck={false}
                       value={row.query}
                     />
@@ -441,7 +440,7 @@ export const BatchPeopleComposer = forwardRef<
                             updateRow(row.id, {
                               avatarUrl: hit.avatarUrl,
                               displayName: hit.displayName,
-                              query: hit.username,
+                              query: formatUsernameLabel(hit.username),
                               resolvedAddress: null,
                               username: hit.username,
                             });
@@ -487,7 +486,7 @@ export const BatchPeopleComposer = forwardRef<
                     />
                   ) : (
                     <p className="mt-1.5 truncate text-xs text-muted-foreground">
-                      Enter a username or wallet address
+                      Enter a ONE ID or wallet address
                     </p>
                   )}
                 </div>
@@ -585,7 +584,7 @@ export const BatchPeopleComposer = forwardRef<
       ) : (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Search className="h-4 w-4" />
-          Type @username or paste a 0x… wallet address to get started.
+          Type a ONE ID like amara.one, or paste a 0x… wallet address, to get started.
         </div>
       )}
 

@@ -360,7 +360,7 @@ export default function NewPayrollRunPage() {
                           <span className="pr-run-sub">
                             {item.role ? `${item.role} · ` : ""}
                             {item.paymentDestinationType === "SWIFTPAY_USER"
-                              ? `@${item.saphraUsername}`
+                              ? `${item.saphraUsername}.one`
                               : `${item.walletAddress.slice(0, 6)}…${item.walletAddress.slice(-4)}`}
                           </span>
                         </span>

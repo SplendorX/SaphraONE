@@ -1,14 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AllieMark } from "@/components/allie/AllieMark";
-import { ChatWindow } from "@/components/allie/ChatWindow";
+import { isAllieHiddenPath } from "@/components/allie/allie-visibility";
 import { useAllieStatus } from "@/lib/allie/use-allie-status";
 import { openAllieEventName } from "@/lib/allie/open";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { cn } from "@/lib/utils";
+
+/** The chat itself (~1,100 lines) loads the first time the panel opens. */
+const ChatWindow = dynamic(() => import("@/components/allie/ChatWindow").then((m) => m.ChatWindow), {
+  loading: () => (
+    <div className="flex h-full items-center justify-center">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+    </div>
+  ),
+  ssr: false,
+});
 
 const openStateKey = "saphra.allie.launcherOpen";
 const expandedStateKey = "saphra.allie.launcherExpanded";
@@ -19,32 +30,18 @@ const phraseIntervalMs = 3_200;
  * fixed width, and the longest phrase sets how wide the bubble has to be.
  */
 const capabilities = [
-  "Send $20 to @alex",
+  "Send $20 to alex.one",
   "Split $60 three ways",
   "What's my balance?",
   "Pay two people at once",
   "Swap 25 USDC to EURC",
   "My savings balance",
-  "Request $40 from @sam",
-  "Pay @rent $500 monthly",
+  "Request $40 from sam.one",
+  "Pay rent.one $500 monthly",
   "Recent payments",
   "Pause ALLIE",
 ];
 
-/**
- * Routes that render their own ALLIE surface, or that a signed-out visitor
- * can reach. The launcher stays out of both.
- */
-const hiddenExactPaths = new Set(["/", "/onboarding", "/roadmap"]);
-const hiddenPathPrefixes = ["/invoice/", "/u/", "/r/", "/admin"];
-
-function isHiddenPath(pathname: string) {
-  if (hiddenExactPaths.has(pathname)) {
-    return true;
-  }
-
-  return hiddenPathPrefixes.some((prefix) => pathname.startsWith(prefix));
-}
 
 export function AllieLauncher() {
   const pathname = usePathname() ?? "/";
@@ -146,7 +143,7 @@ export function AllieLauncher() {
     }
   }, [open]);
 
-  if (!mounted || !address || isHiddenPath(pathname)) {
+  if (!mounted || !address || isAllieHiddenPath(pathname)) {
     return null;
   }
 

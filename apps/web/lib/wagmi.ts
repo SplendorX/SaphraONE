@@ -1,4 +1,4 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets, type WalletList } from "@rainbow-me/rainbowkit";
 import {
   coinbaseWallet,
   injectedWallet,
@@ -24,7 +24,14 @@ import {
   sepolia,
 } from "viem/chains";
 import type { Chain } from "viem";
-import { cookieStorage, createStorage, http, type Config } from "wagmi";
+import {
+  cookieStorage,
+  createConfig,
+  createStorage,
+  http,
+  type Config,
+  type CreateConnectorFn,
+} from "wagmi";
 
 import { arcChain, arcMainnet, arcTestnet, arcTransport } from "@/lib/chains";
 
@@ -104,13 +111,58 @@ export const networks = (
  * listed first on their own; on a phone, picking a wallet deep-links straight
  * into its app to approve the connection and signatures.
  */
-export const config = getDefaultConfig({
-  appDescription: metadata.description,
-  appIcon: metadata.icons[0],
-  appName: metadata.name,
-  appUrl: metadata.url,
+const wallets: WalletList = [
+  {
+    groupName: "Recommended",
+    wallets: [
+      metaMaskWallet,
+      rabbyWallet,
+      coinbaseWallet,
+      walletConnectWallet,
+    ],
+  },
+  {
+    groupName: "More",
+    wallets: [rainbowWallet, trustWallet, okxWalletMobileLink, injectedWallet],
+  },
+];
+
+/**
+ * A wallet connector that starts an SDK (WalletConnect, which several mobile
+ * wallets use underneath, and Coinbase Wallet) does so in its setup, the
+ * moment the app loads: ~250 KB downloaded and run, and calls to
+ * WalletConnect's servers, on every page for everyone. Its setup now waits
+ * unless it is the wallet this browser used last. Connecting still starts
+ * the SDK as before (connect() asks for the provider itself), and someone who
+ * used it comes back connected (components/wallet-reconnect.tsx).
+ */
+function startWhenUsed(create: CreateConnectorFn): CreateConnectorFn {
+  return (parameters) => {
+    const connector = create(parameters);
+    const setup = connector.setup;
+    if (!setup || connector.type === "injected") return connector;
+    return {
+      ...connector,
+      async setup() {
+        const recent = await Promise.resolve(parameters.storage?.getItem("recentConnectorId")).catch(() => null);
+        if (recent !== connector.id) return;
+        return setup.call(this);
+      },
+    };
+  };
+}
+
+/** The same as RainbowKit's getDefaultConfig, with startWhenUsed around each connector. */
+export const config = createConfig({
   chains: networks,
-  projectId,
+  connectors: connectorsForWallets(wallets, {
+    appDescription: metadata.description,
+    appIcon: metadata.icons[0],
+    appName: metadata.name,
+    appUrl: metadata.url,
+    projectId,
+    walletConnectParameters: { metadata },
+  }).map(startWhenUsed),
   ssr: true,
   storage: createStorage({ storage: cookieStorage }),
   // Every chain in `networks` needs a transport: WalletConnect reads one per
@@ -124,19 +176,4 @@ export const config = getDefaultConfig({
     ),
     [arcChain.id]: arcTransport(),
   },
-  wallets: [
-    {
-      groupName: "Recommended",
-      wallets: [
-        metaMaskWallet,
-        rabbyWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-      ],
-    },
-    {
-      groupName: "More",
-      wallets: [rainbowWallet, trustWallet, okxWalletMobileLink, injectedWallet],
-    },
-  ],
 }) as Config;

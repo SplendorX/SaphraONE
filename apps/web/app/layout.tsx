@@ -2,6 +2,7 @@ import { arcChain } from "@/lib/chains";
 import "./globals.css";
 import "./bubble.css";
 import "./app-chrome.css";
+import "@/components/layout/page-title.css";
 
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
@@ -9,7 +10,7 @@ import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import { Providers } from "@/app/providers";
-import { AppLockGate } from "@/components/app-lock/app-lock-gate";
+import { TwoFactorGate } from "@/components/two-factor/two-factor-gate";
 import { TxApprovalSheet } from "@/components/tx-approval/tx-approval-sheet";
 import { SplashScreen } from "@/components/splash-screen";
 import { Toaster } from "@/components/ui/sonner";
@@ -37,10 +38,17 @@ const instrumentSerif = localFont({
   variable: "--font-display",
 });
 
-const siteTitle = "SaphraONE | Powering possibilities with USDC";
+// The same line the share banner leads with, so a link preview that falls
+// back to the page title still reads right.
+const siteTitle = "SaphraONE | One account. One identity. Anywhere.";
 const siteDescription =
   `Money movement infrastructure for the internet. Send, batch, request, swap, and settle stablecoins on ${arcChain.name}.`;
 const brandMark = "/brand/saphra-mark.png";
+const shareTitle = "SaphraONE | One account. One identity. Anywhere.";
+const shareDescription =
+  "Send, save and get paid in USDC with your ONE ID: a name, not a number. Settles on Arc in under a second.";
+// Versioned so apps that cache link previews fetch the new banner.
+const shareImage = "/og/saphra-share.jpg?v=4";
 
 function getSiteUrl() {
   const explicit = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -75,29 +83,36 @@ export const metadata: Metadata = {
     icon: [{ url: brandMark, type: "image/png", sizes: "32x32" }],
     shortcut: brandMark,
   },
+  // What a shared link shows (WhatsApp, X, Telegram, iMessage, Slack…): the
+  // banner, made from the brand (public/og/saphra-share.jpg, 1200×630).
   openGraph: {
-    description: siteDescription,
+    description: shareDescription,
     images: [
       {
-        alt: "SaphraONE",
-        height: 1024,
-        url: brandMark,
-        width: 1024,
+        alt: shareTitle,
+        height: 630,
+        type: "image/jpeg",
+        url: shareImage,
+        width: 1200,
       },
     ],
-    title: siteTitle,
+    siteName: "SaphraONE",
+    title: shareTitle,
     type: "website",
   },
   twitter: {
-    card: "summary",
-    description: siteDescription,
-    images: [brandMark],
-    title: siteTitle,
+    card: "summary_large_image",
+    description: shareDescription,
+    images: [{ alt: shareTitle, url: shareImage }],
+    title: shareTitle,
   },
 };
 
 /** Browser and status-bar colour, matching the app's light and dark surfaces. */
 export const viewport: Viewport = {
+  // Fill the whole screen; the tab bar and sheets clear the home indicator
+  // with env(safe-area-inset-bottom).
+  viewportFit: "cover",
   themeColor: [
     { color: "#ffffff", media: "(prefers-color-scheme: light)" },
     { color: "#080609", media: "(prefers-color-scheme: dark)" },
@@ -130,7 +145,7 @@ export default async function RootLayout({
         <SplashScreen />
         <TooltipProvider>
           <Providers cookies={cookies}>
-            <AppLockGate>{children}</AppLockGate>
+            <TwoFactorGate>{children}</TwoFactorGate>
             <TxApprovalSheet />
           </Providers>
           <Toaster position="top-right" richColors />

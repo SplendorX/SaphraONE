@@ -26,18 +26,19 @@ const reservedUsernames = new Set([
 ]);
 
 export function normalizeHandle(value: string) {
-  return value.trim().toLowerCase().replace(/^@+/, "");
+  // `acme.one`, `@acme` and `acme` are the same ONE ID.
+  return value.trim().toLowerCase().replace(/^@+/, "").replace(/\.one$/, "");
 }
 
 export function validateBusinessUsername(value: string) {
   const username = normalizeHandle(value);
 
   if (!businessUsernamePattern.test(username)) {
-    return "Business usernames must be 3–30 characters, start with a letter, and use lowercase letters, numbers, underscores, or hyphens.";
+    return "A business ONE ID must be 3–30 characters, start with a letter, and use lowercase letters, numbers, underscores, or hyphens.";
   }
 
   if (reservedUsernames.has(username)) {
-    return "That username is reserved.";
+    return "That ONE ID is reserved.";
   }
 
   return null;

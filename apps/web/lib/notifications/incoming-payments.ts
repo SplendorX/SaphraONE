@@ -161,7 +161,7 @@ export async function syncIncomingPaymentNotifications(ownerWallet: string) {
       const agentOwner = agentOwners[transfer.counterparty.toLowerCase()];
       const senderWallet = agentOwner ?? transfer.counterparty.toLowerCase();
       const username = usernames[senderWallet];
-      const sender = username ? `@${username}` : shorten(senderWallet);
+      const sender = username ? `${username}.one` : shorten(senderWallet);
       const viaBatch = batchHashes.has(transfer.hash.toLowerCase());
       // USDC that came in on another network was minted here by CCTP.
       // Name the payer on that network, not the mint.

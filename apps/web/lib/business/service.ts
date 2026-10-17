@@ -262,12 +262,12 @@ async function claimPaymentIdentity(input: {
     .maybeSingle();
 
   if (existing.error) {
-    throw new Error(readError(existing.error, "Could not check username."));
+    throw new Error(readError(existing.error, "Could not check that ONE ID."));
   }
 
   const row = existing.data as PaymentIdentityRecord | null;
   if (row && row.workspace_id !== input.workspaceId) {
-    throw businessErrors.conflict("That username is already taken.");
+    throw businessErrors.conflict("That ONE ID is already taken.");
   }
 
   const payload = {
@@ -312,7 +312,7 @@ async function usernameTaken(username: string, exceptWorkspaceId?: string) {
     .maybeSingle();
 
   if (identity.error) {
-    throw new Error(readError(identity.error, "Could not check username."));
+    throw new Error(readError(identity.error, "Could not check that ONE ID."));
   }
 
   if (
@@ -330,7 +330,7 @@ async function usernameTaken(username: string, exceptWorkspaceId?: string) {
     .maybeSingle();
 
   if (profile.error) {
-    throw new Error(readError(profile.error, "Could not check username."));
+    throw new Error(readError(profile.error, "Could not check that ONE ID."));
   }
 
   return Boolean(profile.data);
@@ -431,7 +431,7 @@ export async function createBusinessWorkspace(input: {
 
   const username = normalizeHandle(input.username);
   if (await usernameTaken(username)) {
-    throw businessErrors.conflict("That username is already taken.");
+    throw businessErrors.conflict("That ONE ID is already taken.");
   }
 
   const wallet = input.ownerWallet.toLowerCase();
@@ -617,7 +617,7 @@ export async function completeOnboarding(input: {
     username !== profile.username.toLowerCase() &&
     (await usernameTaken(username))
   ) {
-    throw businessErrors.conflict("That username is already taken.");
+    throw businessErrors.conflict("That ONE ID is already taken.");
   }
 
   const individual = await ensureIndividualWorkspace({
@@ -709,7 +709,7 @@ export async function resolvePaymentIdentity(username: string) {
     .maybeSingle();
 
   if (identity.error) {
-    throw new Error(readError(identity.error, "Could not resolve username."));
+    throw new Error(readError(identity.error, "Could not find that ONE ID."));
   }
 
   if (identity.data) {
@@ -724,7 +724,7 @@ export async function resolvePaymentIdentity(username: string) {
     .maybeSingle();
 
   if (profile.error) {
-    throw new Error(readError(profile.error, "Could not resolve username."));
+    throw new Error(readError(profile.error, "Could not find that ONE ID."));
   }
 
   if (!profile.data) return null;
@@ -748,7 +748,7 @@ export async function resolvePaymentIdentity(username: string) {
 }
 
 export async function searchDirectory(query: string): Promise<DirectoryHit[]> {
-  const q = query.trim().replace(/^@+/, "");
+  const q = query.trim().replace(/^@+/, "").replace(/\.one$/i, "");
   if (q.length < 1) return [];
 
   const supabase = businessDb();
@@ -985,7 +985,7 @@ export async function usernamesForWallets(
   ]);
 
   if (profiles.error) {
-    throw new Error(readError(profiles.error, "Could not look up usernames."));
+    throw new Error(readError(profiles.error, "Could not look up ONE IDs."));
   }
 
   const out: Record<string, string> = {};

@@ -30,7 +30,7 @@ export async function loadContacts(ownerWallet: string): Promise<SavedContact[]>
   });
 }
 
-const fold = (value: string) => value.trim().replace(/^@/, "").replace(/\s+/g, " ").toLowerCase();
+const fold = (value: string) => value.trim().replace(/^@/, "").replace(/\.one$/i, "").replace(/\s+/g, " ").toLowerCase();
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

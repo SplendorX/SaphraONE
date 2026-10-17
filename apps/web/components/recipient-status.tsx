@@ -80,9 +80,9 @@ export function RecipientStatus({
         <CheckCircle2 aria-hidden className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 truncate" title={resolvedAddress}>
           {resolvedUsername
-            ? `@${resolvedUsername} · ${short}`
+            ? `${resolvedUsername}.one · ${short}`
             : pastedUsername
-              ? `Belongs to @${pastedUsername} · ${short}`
+              ? `Belongs to ${pastedUsername}.one · ${short}`
               : `Wallet ${short} (no SaphraONE account)`}
         </span>
       </span>

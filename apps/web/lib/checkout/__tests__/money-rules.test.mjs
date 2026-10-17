@@ -118,3 +118,25 @@ describe("isExpired", () => {
     assert.equal(isExpired({ expires_at: past, status: "PAID" }), false);
   });
 });
+
+describe("online checkout (kind ONLINE)", () => {
+  const online = { amount: "25", kind: "ONLINE", status: "OPEN" };
+
+  it("allows up to 10 000", () => {
+    assert.equal(validateChargeAmount("10000", "ONLINE").ok, true);
+    assert.equal(validateChargeAmount("10000.01", "ONLINE").ok, false);
+  });
+
+  it("takes no tip: anything above the amount is overpayment", () => {
+    const result = applyPaymentToCharge({ charge: online, received: 26.5 });
+    assert.equal(result.status, "PAID");
+    assert.equal(result.tipAmount, "0");
+    assert.equal(result.overpayment, "1.5");
+  });
+
+  it("stays open while short", () => {
+    const result = applyPaymentToCharge({ charge: online, received: 10 });
+    assert.equal(result.status, "OPEN");
+    assert.equal(result.amountReceived, "10");
+  });
+});

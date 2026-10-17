@@ -33,7 +33,13 @@ export function readSafeNextPath(value: unknown) {
 /** Saves `?next=` from the current URL, if it is safe. */
 export function rememberNextPath() {
   if (typeof window === "undefined") return;
-  const next = readSafeNextPath(new URLSearchParams(window.location.search).get("next"));
+  rememberNextPathValue(new URLSearchParams(window.location.search).get("next"));
+}
+
+/** Saves `path` as where to land after signing in, if it is safe. */
+export function rememberNextPathValue(path: unknown) {
+  if (typeof window === "undefined") return;
+  const next = readSafeNextPath(path);
   if (!next) return;
   try {
     window.sessionStorage.setItem(storageKey, next);

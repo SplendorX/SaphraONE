@@ -282,3 +282,12 @@ discounted purchase → partner claim). Then mainnet with one or two pilot
 creators and small budgets, compare their funnel and cost per activated member
 against plain referrals for a month, then open to more partners. The treasury
 needs enough USDC to cover the sum of live offer budgets.
+
+## Decisions made (2026-10-17)
+
+- Fee rebates are paid in **USDC**.
+- The welcome window starts at **signup**.
+- **Personal accounts only**: a business account that signs up through a link still counts as the partner's referral (the partner earns commission), but gets no welcome perks.
+- Commission mode (fixed or at-least-tier), bounty amounts and the package sizes are per-partner and per-offer settings in admin, defaulting to the numbers in section 1.
+- Live by default (the owner prefers features shipped on): nothing happens until an admin makes an offer live. `NEXT_PUBLIC_CREATOR_PARTNERS=false` is only an emergency off switch.
+- The premium discount is paid as **USDC back** after a full-price purchase (the same rebate path as fees), rather than a lower price at checkout, so the three premium payment flows and their on-chain checks stay unchanged. A points discount on that purchase is then only claimed on what was really paid (`premium_purchases.partner_rebate_usdc`).

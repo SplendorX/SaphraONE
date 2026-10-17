@@ -23,23 +23,25 @@ export function AppHeader({ actions, className }: AppHeaderProps) {
   return (
     <header className={cn("app-topbar w-full min-w-0", !onDashboard && "max-md:hidden", className)}>
       <div className="app-topbar-inner">
-        {/* Phones and tablets: the menu button leads, and the brand moves into
-            the drawer. Desktop keeps the logo here. */}
+        {/* Tablets and desktop: the brand leads. Phones and tablets navigate
+            with the tab bar; its More button opens this drawer as a sheet. */}
         <div className="flex items-center gap-2 sm:gap-3">
           <PlatformNavDrawer />
-          <div className="hidden lg:flex">
+          <div className="app-topbar-brand flex">
             <SidebarBrand />
           </div>
         </div>
 
-        <div className="ml-auto flex min-w-0 flex-nowrap items-center justify-end gap-1.5 sm:gap-2">
-          <CommandPaletteTrigger />
+        {/* Phones (components/layout/mobile-app.css): the avatar leads on the
+            left, search and the bell sit on the right, points move into Home. */}
+        <div className="app-topbar-tools ml-auto flex min-w-0 flex-nowrap items-center justify-end gap-1.5 sm:gap-2">
+          <CommandPaletteTrigger className="app-topbar-search" />
           {/* Support lives in Settings on small screens, where the bar is full. */}
           <SupportLauncher className="hidden shrink-0 lg:inline-flex" />
-          <NotificationsBell className="shrink-0" />
+          <NotificationsBell className="app-topbar-bell shrink-0" href="/notifications" />
           {/* The theme switch lives in the profile menu. */}
-          <TopBarPoints />
-          <div className="flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
+          <TopBarPoints className="app-topbar-points" />
+          <div className="app-topbar-profile flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
             {actions}
           </div>
         </div>

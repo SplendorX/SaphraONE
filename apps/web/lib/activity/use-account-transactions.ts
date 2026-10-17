@@ -115,7 +115,7 @@ export function useAccountTransactions(ownerWallet: string | null | undefined, d
       if (item.batch?.recipients.length && item.batch.kind !== "payroll") {
         const names = item.batch.recipients.map((recipient) => {
           const username = usernameFor(recipient.wallet);
-          return recipient.label ?? (username ? `@${username}` : shortAddress(recipient.wallet));
+          return recipient.label ?? (username ? `${username}.one` : shortAddress(recipient.wallet));
         });
         const shown = names.slice(0, 2).join(", ");
         return `Batch payment to ${shown}${names.length > 2 ? ` +${names.length - 2}` : ""}`;
@@ -126,7 +126,7 @@ export function useAccountTransactions(ownerWallet: string | null | undefined, d
       if (viaAllie) return `Received from ${viaAllie}`;
       const username = usernameFor(wallet);
       if (!wallet || !username || !item.title) return item.title;
-      return item.title.replace(shortAddress(wallet), `@${username}`);
+      return item.title.replace(shortAddress(wallet), `${username}.one`);
     },
     [usernameFor],
   );

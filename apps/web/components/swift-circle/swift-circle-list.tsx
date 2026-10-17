@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
+import { PageTagline } from "@/components/layout/page-tagline";
 import { useT } from "@/components/locale-provider";
 import { CircleInviteInbox } from "@/components/swift-circle/circle-invite-inbox";
 import { CircleIllustration } from "@/components/swift-circle/circle-illustration";
@@ -190,6 +191,7 @@ export function SwiftCircleList() {
   }
 
   const bar = (
+    <>
     <header className="cl-bar">
       <Link aria-label="Back to the dashboard" className="cl-round" href="/dashboard">
         <ArrowLeft className="h-5 w-5" />
@@ -209,6 +211,8 @@ export function SwiftCircleList() {
         <span />
       )}
     </header>
+    <PageTagline text={t("pages.circleSubtitle")} />
+    </>
   );
 
   if (!address) {
@@ -417,7 +421,7 @@ function CreateCircleSheet({
           </label>
           <label className="cl-field">
             <span>Invite people</span>
-            <Input onChange={(event) => onInvitesChange(event.target.value)} placeholder="@alice @bob" value={invites} />
+            <Input onChange={(event) => onInvitesChange(event.target.value)} placeholder="alice.one bob.one" value={invites} />
             <em>
               SaphraONE usernames, separated by spaces or commas.
               {limits?.max_members ? ` Up to ${limits.max_members} members.` : ""}

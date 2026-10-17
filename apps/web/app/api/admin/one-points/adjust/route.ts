@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminActorFor, logAdminAction } from "@/lib/admin/access";
 import { recordLedgerEntry } from "@/lib/referral/ledger-service";
 import { referralDb, referralTables } from "@/lib/referral/db";
 import { jsonError, jsonOk, readJsonRecord } from "@/lib/http";
@@ -15,7 +15,8 @@ type AdjustBody = {
 };
 
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) {
+  const actor = await adminActorFor(request, "rewards");
+  if (!actor) {
     return jsonError("Unauthorized admin request.", 401);
   }
 
@@ -38,7 +39,12 @@ export async function POST(request: NextRequest) {
       return jsonError("A documented adjustment reason is mandatory.", 400);
     }
 
-    const adminId = typeof body.adminId === "string" ? body.adminId.trim() : "admin";
+    // Who made it: the signed-in team member, not a name the request claims.
+    const adminId = actor.label;
+    await logAdminAction(actor, "rewards", "adjust-points", body.walletAddress.toLowerCase(), {
+      points,
+      reason: body.reason.trim(),
+    });
     const idempotencyKey = `admin_adj:${body.walletAddress}:${Date.now()}:${crypto.randomBytes(4).toString("hex")}`;
 
     const ledgerResult = await recordLedgerEntry({

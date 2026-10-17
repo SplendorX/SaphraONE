@@ -149,7 +149,7 @@ function shortWallet(wallet: string) {
 function memberLabel(member?: Pick<CircleMemberRecord, "username" | "display_name" | "user_wallet"> | null) {
   if (!member) return "Member";
   if (member.display_name) return member.display_name;
-  if (member.username) return `@${member.username}`;
+  if (member.username) return `${member.username}.one`;
   return shortWallet(member.user_wallet);
 }
 
@@ -1089,7 +1089,7 @@ export function SwiftCircleHub() {
                   const label =
                     message.sender_display_name ||
                     (message.sender_username
-                      ? `@${message.sender_username}`
+                      ? `${message.sender_username}.one`
                       : "Member");
                   const showDay =
                     !prev ||
@@ -1262,7 +1262,7 @@ export function SwiftCircleHub() {
                   <Input
                     className="pl-9"
                     onChange={(event) => setMemberQuery(event.target.value)}
-                    placeholder="Search username"
+                    placeholder="Search ONE ID"
                     value={memberQuery}
                   />
                 </div>
@@ -1383,7 +1383,7 @@ export function SwiftCircleHub() {
                   {((review.recipients as Array<{ username?: string; wallet: string; amount: string }>) ?? []).map(
                     (row) => (
                       <li key={row.wallet}>
-                        {row.username ? `@${row.username}` : shortWallet(row.wallet)} · {formatUsd(row.amount)}
+                        {row.username ? `${row.username}.one` : shortWallet(row.wallet)} · {formatUsd(row.amount)}
                       </li>
                     ),
                   )}
@@ -1589,7 +1589,7 @@ export function SwiftCircleHub() {
                   <Input
                     className="pl-9"
                     onChange={(event) => setMemberQuery(event.target.value)}
-                    placeholder="Search username"
+                    placeholder="Search ONE ID"
                     value={memberQuery}
                   />
                 </div>

@@ -43,7 +43,7 @@ export const defaultPolicyConfig = {
 };
 
 function normalizeRecipientKey(value: string) {
-  return value.trim().toLowerCase().replace(/^@/, "");
+  return value.trim().toLowerCase().replace(/^@/, "").replace(/\.one$/i, "");
 }
 
 /**

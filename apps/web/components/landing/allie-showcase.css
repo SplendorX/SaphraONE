@@ -1,0 +1,24 @@
+/* The ALLIE demo board keeps one size while its scenarios cycle: every
+ * scenario's finished state sits invisibly in the same grid cell as the live
+ * one, so the cell is always as tall as the tallest, whatever the width. */
+
+.allie-stage .allie-stage-body {
+  display: grid;
+  min-height: 0;
+}
+
+.allie-stage-layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.allie-stage-sizer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The copies are measured as finished: no entrance animation to wait on. */
+.allie-stage-sizer .allie-stage-card,
+.allie-stage-sizer .allie-stage-row {
+  animation: none;
+}

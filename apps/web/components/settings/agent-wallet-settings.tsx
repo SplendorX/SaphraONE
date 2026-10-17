@@ -61,6 +61,8 @@ import { rewardsV2Enabled } from "@/lib/rewards/config";
 import { markAgentWalletActive } from "@/lib/wallet-mode";
 import { cn } from "@/lib/utils";
 import { userFacingErrorMessage } from "@/lib/circle-session";
+import { OneIdSuggestions } from "@/components/one-id-suggestions";
+import { formatUsernameLabel } from "@/lib/profile-utils";
 
 type Feedback = { tone: "error" | "success"; text: string } | null;
 
@@ -464,7 +466,7 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
     if (!recipientResolution.isValid || !recipientResolution.resolvedAddress) {
       setFeedback({
         tone: "error",
-        text: recipientResolution.error ?? "Enter a wallet address or a @username that exists.",
+        text: recipientResolution.error ?? "Enter a wallet address or a ONE ID that exists.",
       });
       return;
     }
@@ -472,7 +474,7 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
     // Stored as @username or the wallet; the policy check matches either
     // case-insensitively, against the payee and its resolved wallet.
     const value = recipientResolution.resolvedUsername
-      ? `@${recipientResolution.resolvedUsername}`
+      ? `${recipientResolution.resolvedUsername}.one`
       : recipientResolution.resolvedAddress;
 
     setRecipients((current) =>
@@ -905,6 +907,7 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                   aria-describedby="allie-recipient-status"
                   autoComplete="off"
                   className="allie-field-input pr-8"
+                  id="allie-recipient"
                   onChange={(event) => setRecipientDraft(event.target.value)}
                   spellCheck={false}
                   onKeyDown={(event) => {
@@ -913,10 +916,16 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                       addRecipient();
                     }
                   }}
-                  placeholder="0x… or @username"
+                  placeholder="0x… or ONE ID"
                   value={recipientDraft}
                 />
                 <RecipientSpinner resolution={recipientResolution} />
+                <OneIdSuggestions
+                  actionLabel="Add"
+                  inputId="allie-recipient"
+                  onPick={(hit) => setRecipientDraft(formatUsernameLabel(hit.username))}
+                  query={recipientDraft}
+                />
               </span>
               <Button
                 aria-label="Add recipient"

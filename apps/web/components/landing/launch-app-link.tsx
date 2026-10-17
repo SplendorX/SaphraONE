@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import Link, { useLinkStatus } from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAccount } from "wagmi";
@@ -64,6 +65,18 @@ export function useHasSignedIn() {
   return signedIn;
 }
 
+/** A spinner on the button from the tap until the next page shows. */
+function LaunchPending() {
+  const { pending } = useLinkStatus();
+  return pending ? <Loader2 aria-hidden className="lal-spinner h-4 w-4 shrink-0 animate-spin" /> : null;
+}
+
+/**
+ * "Open SaphraONE", "Claim your ONE ID", "Start with ALLIE"…: to sign-in, or
+ * straight into the app for someone signed in. The destination is prefetched
+ * in full (page and code) as soon as the button is on screen, so the tap
+ * opens it at once, and the button shows it's working until it does.
+ */
 export function LaunchAppLink({
   children,
   className,
@@ -72,7 +85,6 @@ export function LaunchAppLink({
   className?: string;
 }) {
   const router = useRouter();
-  const { address, isConnected } = useAccount();
   const signedIn = useHasSignedIn();
   const accountContext = useOptionalAccount();
   const isBusiness = accountContext?.isBusiness ?? false;
@@ -85,25 +97,22 @@ export function LaunchAppLink({
         : "/dashboard"
     : "/sign-in";
 
-  return (
-    <Link
-      className={className}
-      href={targetHref}
-      onClick={(event) => {
-        event.preventDefault();
-        if (hasLiveSignedInAccount({ address, isConnected })) {
-          if (!hasSelectedAccountType) {
-            router.push("/onboarding");
-            return;
-          }
-          router.push(isBusiness ? "/business" : "/dashboard");
-          return;
-        }
+  // Warm the destination once the page is idle too, for buttons below the fold.
+  useEffect(() => {
+    const warm = () => router.prefetch(targetHref);
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (idle) {
+      idle(warm);
+      return;
+    }
+    const timer = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(timer);
+  }, [router, targetHref]);
 
-        router.push("/sign-in");
-      }}
-    >
+  return (
+    <Link className={className} href={targetHref} prefetch>
       {children ?? "Open SaphraONE"}
+      <LaunchPending />
     </Link>
   );
 }

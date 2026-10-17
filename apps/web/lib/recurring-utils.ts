@@ -432,7 +432,7 @@ export function formatFrequencyLabel(
 
 export function formatScheduleRecipient(schedule: RecurringScheduleRecord) {
   if (schedule.beneficiary_username) {
-    return `@${schedule.beneficiary_username}`;
+    return `${schedule.beneficiary_username}.one`;
   }
 
   if (schedule.beneficiary_label) {

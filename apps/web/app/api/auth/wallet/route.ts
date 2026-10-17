@@ -19,7 +19,6 @@ import {
 } from "@/lib/wallet-session";
 import { platformAccessCookieName } from "@/lib/platform-access";
 import { appUnlockCookieName } from "@/lib/app-lock/cookie";
-import { appLockForSession, setUnlockCookie } from "@/lib/app-lock/server";
 import { mfaPendingForSignIn } from "@/lib/two-factor/server";
 
 export const runtime = "nodejs";
@@ -185,15 +184,10 @@ export async function POST(request: NextRequest) {
     cookieStore.get(walletSessionCookieName)?.value,
     "session",
   );
-  const appLock = await appLockForSession([
-    challenge.ownerWallet,
-    ...(previous ? sessionWallets(previous) : []),
-  ]);
   const session = createWalletSession(
     challenge.ownerWallet,
     { connectorName: challenge.connectorName },
     {
-      ...(appLock.known ? { appLock: Boolean(appLock.lock) } : {}),
       mfaPending: await mfaPendingForSignIn(previous, [challenge.ownerWallet]),
       previous,
     },
@@ -225,9 +219,6 @@ export async function POST(request: NextRequest) {
     secure: await secureCookieFor(),
   });
   response.cookies.delete(walletChallengeCookieName);
-  if (appLock.lock) {
-    await setUnlockCookie(response, appLock.lock.owner_wallet, appLock.lock.timeout_minutes);
-  }
 
   return response;
 }

@@ -1,0 +1,64 @@
+/* Sending to another network, as a chat. Builds on the Arc send chat in send.css. Its own file, so the build cache can't serve a stale copy. */
+
+.xc-chat-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--border);
+}
+
+.xc-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* SaphraONE's messages in the thread: informational, on the left. */
+.sx-bubble.xc-note {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: 82%;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.xc-note-from {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--primary);
+}
+
+.dark .xc-note-from {
+  color: var(--link, var(--primary));
+}
+
+.xc-note-rows {
+  display: grid;
+  gap: 0.1rem;
+  margin-top: 0.15rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+}
+
+.sx-bubble.xc-note.is-error {
+  border-color: color-mix(in oklch, var(--destructive) 40%, var(--border));
+  background: color-mix(in oklch, var(--destructive) 7%, var(--card));
+  color: var(--destructive);
+}
+
+/* The composer's last row: what will leave the balance, then the send arrow. */
+.xc-send-row {
+  align-items: center;
+}
+
+.xc-send-total {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}

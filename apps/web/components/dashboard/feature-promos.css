@@ -173,7 +173,6 @@
   background: color-mix(in oklch, var(--card), transparent 8%);
   box-shadow: 0 6px 18px -10px rgb(17 12 46 / 0.35);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .promo-tile-pill strong {

@@ -9,6 +9,7 @@ export const CHARGE_MIN_AMOUNT = 0.5;
 export const CHARGE_MAX_AMOUNT: Record<ChargeKind, number> = {
   MERCHANT: 50_000,
   STOREFRONT: 10_000,
+  ONLINE: 10_000,
 };
 export const TIP_MAX_MULTIPLE = 3;
 export const TIP_MAX_AMOUNT = 5_000;
@@ -17,6 +18,8 @@ export const TIP_MAX_AMOUNT = 5_000;
 export const CHARGE_TTL_MS: Record<ChargeKind, number> = {
   MERCHANT: 24 * 60 * 60 * 1000,
   STOREFRONT: 6 * 60 * 60 * 1000,
+  // The default; a session sets its own between 30 minutes and a day.
+  ONLINE: 60 * 60 * 1000,
 };
 export const SLOW_INTENT_TTL_MS = 72 * 60 * 60 * 1000;
 
@@ -47,7 +50,9 @@ export function validateChargeAmount(value: unknown, kind: ChargeKind): AmountCh
   return { ok: true, amount: roundMoney(amount) };
 }
 
-export function maxTipFor(amount: string) {
+/** Online checkout takes no tips: anything above the amount is overpayment. */
+export function maxTipFor(amount: string, kind?: ChargeKind) {
+  if (kind === "ONLINE") return 0;
   return Math.min(moneyNumber(amount) * TIP_MAX_MULTIPLE, TIP_MAX_AMOUNT);
 }
 
@@ -73,14 +78,14 @@ export function chargeTotal(charge: { amount: string; tip_amount: string }) {
  * leave the status alone so "received X of Y" can accumulate.
  */
 export function applyPaymentToCharge(input: {
-  charge: { amount: string; status: ChargeStatus };
+  charge: { amount: string; status: ChargeStatus; kind?: ChargeKind };
   received: number;
 }) {
   const base = moneyNumber(input.charge.amount);
   const received = Math.max(0, input.received);
   const paid = received + EPSILON >= base;
   const excess = paid ? Math.max(0, received - base) : 0;
-  const tip = Math.min(excess, maxTipFor(input.charge.amount));
+  const tip = Math.min(excess, maxTipFor(input.charge.amount, input.charge.kind));
   return {
     amountReceived: roundMoney(received),
     overpayment: roundMoney(Math.max(0, excess - tip)),

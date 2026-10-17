@@ -120,7 +120,7 @@ export function CommandPalette({
   );
 
   useEffect(() => {
-    const handle = query.trim().replace(/^@+/, "");
+    const handle = query.trim().replace(/^@+/, "").replace(/\.one$/i, "");
     if (handle.length < 1) {
       setPeople([]);
       return;

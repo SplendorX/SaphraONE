@@ -56,6 +56,8 @@ import { useSheetSide } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
 import "./recurepay-fields.css";
+import { OneIdSuggestions } from "@/components/one-id-suggestions";
+import { formatUsernameLabel } from "@/lib/profile-utils";
 
 // ── Small helpers ───────────────────────────────────────────────────────────
 
@@ -784,12 +786,19 @@ export function RecurepayCompose({
               aria-describedby="recurepay-recipient-status"
               autoComplete="off"
               className="recurepay-input pr-10"
+              id="recurepay-recipient"
               onChange={(event) => onRecipient(event.target.value)}
-              placeholder="@username or 0x wallet address"
+              placeholder="ONE ID or 0x wallet address"
               spellCheck={false}
               value={recipient}
             />
             <RecipientSpinner resolution={resolution} />
+            <OneIdSuggestions
+              actionLabel="Choose"
+              inputId="recurepay-recipient"
+              onPick={(hit) => onRecipient(formatUsernameLabel(hit.username))}
+              query={recipient}
+            />
           </div>
           <RecipientStatus id="recurepay-recipient-status" resolution={resolution} />
         </Field>
@@ -911,7 +920,7 @@ export function RecurepayCompose({
         auth={beneficiaryAuth}
         onClose={() => setPicker(null)}
         onSelect={(contact) => {
-          onRecipient(contact.username ? `@${contact.username}` : contact.beneficiary_wallet);
+          onRecipient(contact.username ? `${contact.username}.one` : contact.beneficiary_wallet);
           if (!label) onLabel(contact.name);
         }}
         open={picker === "beneficiary"}

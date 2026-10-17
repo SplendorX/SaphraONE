@@ -1,0 +1,447 @@
+/* Phones and tablets: SaphraONE as an app. A floating Liquid Glass tab bar,
+ * the full navigation as a bottom sheet, and touch feedback. Desktop keeps
+ * the sidebar and is untouched. Its own file (not globals.css), so the build
+ * cache can't serve a stale copy. */
+
+/* ── Tab bar ──────────────────────────────────────────────────────────── */
+.mtb {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mtb {
+    position: fixed;
+    z-index: 30;
+    right: 0;
+    bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    width: min(30rem, calc(100% - 1.5rem));
+    height: 4.1rem;
+    margin-inline: auto;
+    padding: 0 0.3rem;
+    border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in oklch, var(--card) 80%, transparent);
+    backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: 0 16px 40px -14px rgb(18 20 26 / 0.35);
+  }
+
+  /* Liquid Glass: white, see-through, lit along the top edge. */
+  html[data-light-surface="glass"]:not(.dark) .mtb {
+    border-color: rgb(255 255 255 / 0.95);
+    background: rgb(255 255 255 / 0.7);
+    box-shadow:
+      0 14px 36px -12px rgb(18 20 26 / 0.28),
+      inset 0 1px 0 rgb(255 255 255 / 0.95);
+  }
+
+  html[data-light-surface="cream"]:not(.dark) .mtb {
+    border-color: rgb(23 17 28 / 0.08);
+    background: rgb(255 249 240 / 0.9);
+  }
+
+  .dark .mtb {
+    border-color: rgb(244 235 221 / 0.1);
+    background: rgb(29 21 35 / 0.8);
+    box-shadow:
+      0 16px 40px -12px rgb(0 0 0 / 0.75),
+      inset 0 1px 0 rgb(244 235 221 / 0.08);
+  }
+
+  .mtb-tab {
+    display: flex;
+    min-width: 0;
+    height: 3.35rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    margin: 0 0.1rem;
+    border-radius: 9999px;
+    color: var(--muted-foreground);
+    font-size: 0.68rem;
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 200ms ease,
+      background-color 250ms ease,
+      transform 150ms ease;
+  }
+
+  .mtb-tab.is-active {
+    background: color-mix(in oklch, var(--primary) 11%, transparent);
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .dark .mtb-tab.is-active {
+    background: rgb(139 92 246 / 0.22);
+    color: #ddd6fe;
+  }
+
+  .mtb-tab:active {
+    transform: scale(0.92);
+  }
+
+  .mtb-tab:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+
+  .mtb-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Room at the end of every page so the last row clears the bar. */
+  .platform-shell[data-tabbar] .app-main::after {
+    content: "";
+    display: block;
+    flex-shrink: 0;
+    height: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Save, Circle and Invest are tabs now: their first screen has no way
+     "back", as in a phone app. Screens deeper in still lead back. */
+  .platform-shell[data-tab-root] a[aria-label="Back to the dashboard"] {
+    display: none;
+  }
+
+  /* ALLIE's button and panel sit above the bar, not under it. */
+  html:has(.platform-shell[data-tabbar]) :is(.allie-dock, .allie-panel) {
+    bottom: calc(5.4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtb-tab {
+    transition: none;
+  }
+}
+
+/* ── Compact title bar (components/layout/mobile-title-bar.tsx) ───────── */
+.mtitle {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mtitle {
+    position: fixed;
+    z-index: 35;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    padding: calc(0.45rem + env(safe-area-inset-top, 0px)) 0.85rem 0.45rem;
+    border-bottom: 1px solid color-mix(in oklch, var(--foreground) 7%, transparent);
+    background: color-mix(in oklch, var(--background) 74%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-100%);
+    transition:
+      transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 200ms ease;
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .mtitle {
+    background: rgb(255 255 255 / 0.72);
+  }
+
+  .mtitle[data-shown] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .mtitle-back {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    place-items: center;
+    border-radius: 9999px;
+    color: var(--foreground);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms ease;
+  }
+
+  .mtitle-back:active {
+    transform: scale(0.9);
+  }
+
+  .mtitle-title {
+    overflow: hidden;
+    font-family: var(--font-heading), Sora, ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtitle {
+    transition: none;
+  }
+}
+
+/* ── More: the navigation as a bottom sheet of tiles ──────────────────── */
+@media (max-width: 1023px) {
+  html .nav-drawer-root .nav-drawer-panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: 34rem;
+    max-height: min(86dvh, 46rem);
+    margin-inline: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-bottom: 0;
+    border-radius: 2rem 2rem 0 0;
+    transform: translateY(105%);
+    transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  html .nav-drawer-root[data-open] .nav-drawer-panel {
+    transform: translateY(0);
+  }
+
+  /* The grab handle. */
+  html .nav-drawer-root .nav-drawer-panel::before {
+    content: "";
+    display: block;
+    flex-shrink: 0;
+    width: 2.6rem;
+    height: 0.3rem;
+    margin: 0.6rem auto 0;
+    border-radius: 9999px;
+    background: color-mix(in oklch, var(--muted-foreground) 40%, transparent);
+  }
+
+  html .nav-drawer-root .nav-drawer-head {
+    padding-top: 0.5rem;
+  }
+
+  html .nav-drawer-root .nav-drawer-rule {
+    display: none;
+  }
+
+  html .nav-drawer-root .nav-drawer-item {
+    transform: translateY(0.6rem) scale(0.96);
+  }
+
+  html .nav-drawer-root[data-open] .nav-drawer-item {
+    transform: none;
+  }
+
+  html .nav-drawer-root .nav-drawer-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  html .nav-drawer-root .nav-drawer-list > li {
+    padding: 0;
+    border-width: 0;
+  }
+
+  html .nav-drawer-root .nav-drawer-link {
+    min-height: 5.6rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    padding: 0.8rem 0.35rem;
+    border-radius: 1.25rem;
+    background: color-mix(in oklch, var(--muted) 75%, transparent);
+    box-shadow: none;
+    color: var(--foreground);
+    font-size: 0.78rem;
+    text-align: center;
+    transition: transform 150ms ease;
+  }
+
+  html .nav-drawer-root .nav-drawer-link:active {
+    transform: scale(0.95);
+  }
+
+  html .nav-drawer-root .nav-drawer-link-main {
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+
+  html .nav-drawer-root .nav-drawer-icon {
+    display: grid;
+    width: 2.6rem;
+    height: 2.6rem;
+    place-items: center;
+    border-radius: 0.9rem;
+    background: color-mix(in oklch, var(--primary) 12%, var(--card));
+    color: var(--primary);
+  }
+
+  html .nav-drawer-root .nav-drawer-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  html.dark .nav-drawer-root .nav-drawer-icon {
+    background: rgb(139 92 246 / 0.18);
+    color: #c4b5fd;
+  }
+
+  html .nav-drawer-root .nav-drawer-label {
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  html .nav-drawer-root .nav-drawer-chevron {
+    display: none;
+  }
+
+  html .nav-drawer-root .nav-drawer-link[aria-current="page"] {
+    background: var(--primary);
+    color: #ffffff;
+  }
+
+  html .nav-drawer-root .nav-drawer-link[aria-current="page"] .nav-drawer-icon {
+    background: rgb(255 255 255 / 0.18);
+    color: #ffffff;
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .nav-drawer-root .nav-drawer-link:not([aria-current="page"]) {
+    background: rgb(242 244 247 / 0.95);
+  }
+}
+
+/* ── Feel: touch feedback, frosted top bar, a lilac glow ─────────────── */
+@media (max-width: 1023px) {
+  .platform-shell {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* No link previews on long-press, as in a native app. */
+  .platform-shell a {
+    -webkit-touch-callout: none;
+  }
+
+  .platform-shell :is(a, button)[aria-label^="Back"] {
+    transition: transform 150ms ease;
+  }
+
+  .platform-shell :is(a, button)[aria-label^="Back"]:active {
+    transform: scale(0.9);
+  }
+
+  .platform-shell :is(.dh-action, .dh-week):active {
+    transform: scale(0.96);
+    transition: transform 120ms ease;
+  }
+
+  .platform-shell .app-topbar {
+    border-bottom-color: transparent;
+    background: color-mix(in oklch, var(--background) 72%, transparent);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .platform-shell .app-topbar-brand .platform-wordmark {
+    font-size: 1rem;
+  }
+
+  /* Liquid Glass: white, with the faint lilac glow at the top of the iOS app. */
+  html[data-light-surface="glass"]:not(.dark) .platform-shell .app-main {
+    background: radial-gradient(130% 38% at 50% 0%, #efe9ff 0%, #f6f7fb 55%, #ffffff 85%);
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .platform-shell :is(.dh-week) {
+    border-color: rgb(18 20 26 / 0.07);
+    background: rgb(255 255 255 / 0.8);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 10px 30px -18px rgb(91 33 182 / 0.28);
+  }
+}
+
+/* ── Phones: Home's top bar as an app header ──────────────────────────
+   Avatar (the account menu) on the left; search and the bell on the right.
+   The wordmark goes, and ONE Points move into Home itself. */
+@media (max-width: 767px) {
+  .platform-shell .app-topbar {
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .platform-shell .app-topbar-inner {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.2rem;
+  }
+
+  .platform-shell .app-topbar-brand,
+  .platform-shell .app-topbar-points {
+    display: none;
+  }
+
+  .platform-shell .app-topbar-tools {
+    display: contents;
+  }
+
+  .platform-shell .app-topbar-profile {
+    order: -1;
+    margin-right: auto;
+  }
+
+  /* The account chip becomes a round avatar, gold ring kept. */
+  .platform-shell .app-topbar-profile .profile-trigger {
+    width: 2.9rem;
+    height: 2.9rem;
+    gap: 0;
+    padding: 0;
+    border-radius: 9999px;
+  }
+
+  .platform-shell .app-topbar-profile .profile-trigger > svg,
+  .platform-shell .app-topbar-profile .profile-trigger-name {
+    display: none;
+  }
+
+  /* Search and the bell: glass circles. */
+  .platform-shell :is(.app-topbar-search, .app-topbar-bell > button) {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-color: var(--border);
+    border-radius: 9999px;
+    background: var(--card);
+    color: var(--foreground);
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .platform-shell :is(.app-topbar-search, .app-topbar-bell > button) {
+    border-color: rgb(18 20 26 / 0.07);
+    background: rgb(255 255 255 / 0.8);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 8px 22px -14px rgb(91 33 182 / 0.35);
+  }
+
+  .platform-shell :is(.app-topbar-search, .app-topbar-bell > button) svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+}
+
+@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+  html .nav-drawer-root .nav-drawer-panel,
+  html .nav-drawer-root .nav-drawer-link {
+    transition: none;
+  }
+}

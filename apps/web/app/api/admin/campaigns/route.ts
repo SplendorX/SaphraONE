@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { CampaignError } from "@/lib/campaigns/rules";
 import {
   adminLeaderboard,
@@ -29,7 +29,7 @@ function error(message: string, status: number) {
 
 /** Every campaign with its winners, and how complete the ledger is. */
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) return error("Unauthorized.", 401);
+  if (!(await adminCan(request, "campaigns"))) return error("Unauthorized.", 401);
   try {
     const [campaigns, ledger] = await Promise.all([loadAdminCampaigns(), ledgerStatus()]);
     return NextResponse.json({ campaigns, ledger }, { headers: noStore });
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
 /** One admin action: `{ action, id?, reason?, txHash?, ...campaign fields }`. */
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) return error("Unauthorized.", 401);
+  if (!(await adminCan(request, "campaigns"))) return error("Unauthorized.", 401);
   const body = await readJsonRecord(request);
   if (!body) return error("A valid JSON body is required.", 400);
   const id = typeof body.id === "string" ? body.id : "";

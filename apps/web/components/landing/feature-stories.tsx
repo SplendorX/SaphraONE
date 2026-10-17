@@ -1,6 +1,7 @@
 "use client";
 
 import { FadeUp } from "@/components/design/motion";
+import { LazyPhoto } from "@/components/landing/lazy-photo";
 import { useT } from "@/components/locale-provider";
 
 export function FeatureStories() {
@@ -9,6 +10,7 @@ export function FeatureStories() {
     {
       body: t("landing.storyPayBody"),
       image: "/landing/pay-laptop.jpg",
+      imageSize: [1600, 1067],
       imageAlt: t("landing.storyPayAlt"),
       kicker: t("landing.storyPayKicker"),
       title: t("landing.storyPayTitle"),
@@ -17,6 +19,7 @@ export function FeatureStories() {
       body: t("landing.storyCircleBody"),
       flip: true,
       image: "/landing/circle-group.jpg",
+      imageSize: [1600, 1095],
       imageAlt: t("landing.storyCircleAlt"),
       kicker: t("landing.storyCircleKicker"),
       title: t("landing.storyCircleTitle"),
@@ -24,6 +27,7 @@ export function FeatureStories() {
     {
       body: t("landing.storyRecureBody"),
       image: "/landing/recurepay-rest.jpg",
+      imageSize: [1600, 1067],
       imageAlt: t("landing.storyRecureAlt"),
       kicker: t("landing.storyRecureKicker"),
       title: t("landing.storyRecureTitle"),
@@ -44,7 +48,12 @@ export function FeatureStories() {
             key={story.title}
           >
             <div className="landing-story-media">
-              <img alt={story.imageAlt} src={story.image} />
+              <LazyPhoto
+                alt={story.imageAlt}
+                height={story.imageSize[1]}
+                src={story.image}
+                width={story.imageSize[0]}
+              />
             </div>
             <div className="landing-story-copy">
               <p className="section-eyebrow">{story.kicker}</p>

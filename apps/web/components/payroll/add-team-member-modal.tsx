@@ -2,7 +2,7 @@
 
 import { arcChain } from "@/lib/chains";
 import { useState } from "react";
-import { AtSign, Loader2, Wallet, X } from "lucide-react";
+import { Loader2, UserRound, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UsernameField } from "@/components/username-field";
@@ -226,10 +226,10 @@ export function AddTeamMemberModal({
                     : "border-border bg-card text-muted-foreground hover:border-primary/50"
                 }`}
               >
-                <AtSign className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
                   <p className="text-sm font-semibold">SaphraONE User</p>
-                  <p className="text-xs text-muted-foreground">Pay via @username</p>
+                  <p className="text-xs text-muted-foreground">Pay via ONE ID</p>
                 </div>
               </button>
               <button
@@ -378,7 +378,7 @@ export function AddTeamMemberModal({
             <div className="flex items-center justify-between border-b border-border pb-2">
               <span className="text-muted-foreground">Payment Destination</span>
               <span className="font-semibold text-foreground font-mono text-xs">
-                {destinationType === "SWIFTPAY_USER" ? `@${saphraUsername}` : walletAddress}
+                {destinationType === "SWIFTPAY_USER" ? `${saphraUsername}.one` : walletAddress}
               </span>
             </div>
             <div className="flex items-center justify-between border-b border-border pb-2">
@@ -421,7 +421,7 @@ export function AddTeamMemberModal({
                 }
                 if (step === 2) {
                   if (destinationType === "SWIFTPAY_USER" && !saphraUsername.trim()) {
-                    setError("Please enter the SaphraONE username.");
+                    setError("Please enter their ONE ID.");
                     return;
                   }
                   if (destinationType === "EXTERNAL_WALLET" && !walletAddress.trim()) {

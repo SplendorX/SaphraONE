@@ -57,7 +57,7 @@ async function withUsernames(items: AccountActivityItem[]) {
     const wallet = (item.transfer?.counterparty ?? item.counterparty ?? "").toLowerCase();
     const username = usernames[wallet];
     if (!username) return item;
-    const handle = `@${username}`;
+    const handle = `${username}.one`;
     const short = `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
     const title = item.title
       ? item.title

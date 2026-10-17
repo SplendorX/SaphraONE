@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowDownToLine,
   ArrowDownUp,
+  ArrowUpFromLine,
   Briefcase,
   FileText,
   PiggyBank,
@@ -19,6 +20,7 @@ import Link from "next/link";
 import { useOptionalAccount } from "@/components/account/account-provider";
 import { useT } from "@/components/locale-provider";
 import { checkoutEnabled } from "@/lib/checkout/flag";
+import { rampEntryEnabled } from "@/lib/ramp/flag";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,6 +34,7 @@ const actions: Array<{
   label: string;
 }> = [
   { href: "/deposit", icon: ArrowDownToLine, label: "Deposit" },
+  ...(rampEntryEnabled ? [{ href: "/withdraw", icon: ArrowUpFromLine, label: "Withdraw" }] : []),
   { href: "/send", icon: Send, label: "Send Payment" },
   { href: "/pay", icon: QrCode, label: "Request Payment" },
   { href: "/swap", icon: ArrowDownUp, label: "Swap" },
@@ -63,6 +66,7 @@ export function QuickActions({
   );
   const labels: Record<string, string> = {
     "/deposit": "Deposit",
+    "/withdraw": "Withdraw",
     "/send": t("dashboard.sendPayment"),
     "/business": t("nav.overview"),
     "/business/invoices": t("nav.invoices"),

@@ -51,7 +51,7 @@ function Detail({ icon: Icon, children }: { icon: LucideIcon; children: ReactNod
 export default function PublicProfilePage() {
   const router = useRouter();
   const params = useParams<{ username: string }>();
-  const username = decodeURIComponent(params.username ?? "").replace(/^@/, "");
+  const username = decodeURIComponent(params.username ?? "").replace(/^@/, "").replace(/\.one$/i, "");
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,7 +126,7 @@ export default function PublicProfilePage() {
           </div>
 
           <h1 className="public-profile-name">{profile.displayName}</h1>
-          <p className="public-profile-handle">@{profile.username}</p>
+          <p className="public-profile-handle">{profile.username}.one</p>
 
           {profile.bio ? <p className="public-profile-bio">{profile.bio}</p> : null}
 
@@ -160,7 +160,7 @@ export default function PublicProfilePage() {
           <div className="public-profile-actions">
             <Button asChild>
               <Link href={`/send?to=@${encodeURIComponent(profile.username)}`}>
-                Pay {isBusiness ? profile.displayName : `@${profile.username}`}
+                Pay {isBusiness ? profile.displayName : `${profile.username}.one`}
               </Link>
             </Button>
             {isBusiness ? (

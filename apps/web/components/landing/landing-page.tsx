@@ -10,17 +10,20 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
 
 import { LandingVideoBackground } from "@/components/landing/landing-video-background";
 import { AllieShowcase } from "@/components/landing/allie-showcase";
 import { BusinessShowcase } from "@/components/landing/business-showcase";
+import { DevelopersShowcase } from "@/components/landing/developers-showcase";
 import { FeatureStories } from "@/components/landing/feature-stories";
 import { HeroWelcome } from "@/components/landing/hero-welcome";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
+import { LazyPhoto } from "@/components/landing/lazy-photo";
+import { OneIdShowcase } from "@/components/landing/one-id-showcase";
 import { ProductShowcase } from "@/components/landing/product-showcase";
 import { SecuritySection } from "@/components/landing/security-section";
+import { useSignInReturn } from "@/components/landing/use-sign-in-return";
 import { FadeUp, Stagger, StaggerItem } from "@/components/design/motion";
 import { MarketingShell } from "@/components/layout/marketing-shell";
 import { useT } from "@/components/locale-provider";
@@ -32,6 +35,7 @@ import {
 } from "@/components/ui/accordion";
 
 import "./landing-home.css";
+import "./pillar-art.css";
 
 /** The rails SaphraONE runs on, shown under the hero. Names, not translated. */
 const partners: { logo?: string; name: string }[] = [
@@ -55,8 +59,9 @@ export function LandingPage() {
     { label: t("landing.home.metric3Label"), value: "24/7" },
     { label: t("landing.home.metric4Label"), value: "9" },
   ];
-  const pillars: { body: string; href: string; icon: LucideIcon; items: string[]; title: string }[] = [
+  const pillars: { art: string; body: string; href: string; icon: LucideIcon; items: string[]; title: string }[] = [
     {
+      art: "/landing/pillar-pay.svg",
       body: t("landing.home.payBody"),
       href: "/send",
       icon: Send,
@@ -70,6 +75,7 @@ export function LandingPage() {
       title: t("landing.home.payTitle"),
     },
     {
+      art: "/landing/pillar-grow.svg",
       body: t("landing.home.growBody"),
       href: "/save",
       icon: PiggyBank,
@@ -83,6 +89,7 @@ export function LandingPage() {
       title: t("landing.home.growTitle"),
     },
     {
+      art: "/landing/pillar-together.svg",
       body: t("landing.home.togetherBody"),
       href: "/circle",
       icon: UsersRound,
@@ -109,26 +116,7 @@ export function LandingPage() {
     { answer: t("landing.home.faq6A"), question: t("landing.home.faq6Q") },
   ];
 
-  useEffect(() => {
-    // Sign-in has its own page. Google returns to the site root (its redirect
-    // URI), and older links say /#sign-in: send both there, keeping the query
-    // (?next=) and Google's hash so the sign-in can finish on /sign-in.
-    const hashParams = new URLSearchParams(window.location.hash.slice(1));
-    const queryParams = new URLSearchParams(window.location.search);
-    const googleReturn = Boolean(
-      hashParams.get("id_token") ||
-        hashParams.get("error") ||
-        hashParams.get("state") ||
-        queryParams.get("id_token") ||
-        queryParams.get("code") ||
-        queryParams.get("error") ||
-        queryParams.get("state"),
-    );
-    if (googleReturn || window.location.hash === "#sign-in" || queryParams.get("next")) {
-      const hash = window.location.hash === "#sign-in" ? "" : window.location.hash;
-      window.location.replace(`/sign-in${window.location.search}${hash}`);
-    }
-  }, []);
+  useSignInReturn();
 
   return (
     <MarketingShell>
@@ -138,6 +126,7 @@ export function LandingPage() {
           mobileSrc="/video/hero-bg-mobile.mp4?v=2"
           poster="/video/hero-bg-poster.jpg?v=2"
           position="60% center"
+          priority
           src="/video/hero-bg.mp4?v=2"
         />
         <HeroWelcome />
@@ -172,6 +161,9 @@ export function LandingPage() {
         </Stagger>
       </section>
 
+      {/* ── ONE ID ── */}
+      <OneIdShowcase />
+
       {/* ── The platform ── */}
       <section className="marketing-section" id="products">
         <div className="marketing-section-header">
@@ -185,6 +177,9 @@ export function LandingPage() {
             return (
               <StaggerItem className="lp-pillar" key={pillar.href}>
                 <span aria-hidden className="lp-pillar-glow" />
+                {/* What the board is about, drawn faintly behind the words. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" aria-hidden className="lp-pillar-art" draggable={false} src={pillar.art} />
                 <span className="lp-pillar-icon">
                   <Icon className="h-5 w-5" />
                 </span>
@@ -213,6 +208,7 @@ export function LandingPage() {
 
       <FeatureStories />
       <BusinessShowcase />
+      <DevelopersShowcase />
 
       {/* ── Security ── */}
       <SecuritySection />
@@ -279,8 +275,7 @@ export function LandingPage() {
             </LaunchAppLink>
           </div>
           <div className="lp-cta-media">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={t("landing.home.ctaImageAlt")} draggable={false} src="/landing/pay-laptop.jpg" />
+            <LazyPhoto alt={t("landing.home.ctaImageAlt")} height={1067} src="/landing/pay-laptop.jpg" width={1600} />
           </div>
         </div>
       </section>

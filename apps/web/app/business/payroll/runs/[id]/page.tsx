@@ -838,7 +838,7 @@ export default function PayrollRunDetailPage({
                         <PayrollStatusBadge status={item.status} />
                       </div>
                       <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">
-                        {item.recipient_username_snapshot ? `@${item.recipient_username_snapshot} · ` : ""}
+                        {item.recipient_username_snapshot ? `${item.recipient_username_snapshot}.one · ` : ""}
                         {item.recipient_destination_snapshot}
                       </p>
                       {item.failure_reason ? (

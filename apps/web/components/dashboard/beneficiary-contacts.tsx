@@ -52,7 +52,7 @@ export function BeneficiaryContacts({
       return (
         beneficiary.name.toLowerCase().includes(needle) ||
         beneficiary.beneficiary_wallet.toLowerCase().includes(needle) ||
-        username.includes(needle.replace(/^@/, ""))
+        username.includes(needle.replace(/^@/, "").replace(/\.one$/i, ""))
       );
     });
   }, [query, savedBeneficiaries]);
@@ -82,7 +82,7 @@ export function BeneficiaryContacts({
             Beneficiaries
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Saved names with username or wallet. Pick one to fill Pay.
+            Saved names with ONE ID or wallet. Pick one to fill Pay.
           </p>
         </div>
         <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.9rem] border border-border bg-primary/8 text-primary">
@@ -97,7 +97,7 @@ export function BeneficiaryContacts({
           autoComplete="off"
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search name, @username, or wallet"
+          placeholder="Search name, ONE ID, or wallet"
           value={query}
         />
       </label>
@@ -246,7 +246,7 @@ function ContactEditor({
 }) {
   const [name, setName] = useState(beneficiary.name);
   const [recipient, setRecipient] = useState(
-    beneficiary.username ? `@${beneficiary.username}` : beneficiary.beneficiary_wallet,
+    beneficiary.username ? `${beneficiary.username}.one` : beneficiary.beneficiary_wallet,
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -296,7 +296,7 @@ function ContactEditor({
       </label>
       <label className="grid gap-1">
         <span className="text-[0.7rem] font-semibold text-muted-foreground">
-          Wallet or @username
+          Wallet or ONE ID
         </span>
         <span className="relative">
           <input

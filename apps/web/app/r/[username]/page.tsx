@@ -11,7 +11,7 @@ import { rewardsV2Enabled } from "@/lib/rewards/config";
 export default function ReferralLandingPage() {
   const params = useParams<{ username: string }>();
   const router = useRouter();
-  const rawIdentifier = decodeURIComponent(params.username ?? "").replace(/^@/, "");
+  const rawIdentifier = decodeURIComponent(params.username ?? "").replace(/^@/, "").replace(/\.one$/i, "");
 
   const [loading, setLoading] = useState(true);
   const [resolvedUsername, setResolvedUsername] = useState<string | null>(null);

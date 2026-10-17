@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { referralDb, referralTables, readReferralDbError } from "@/lib/referral/db";
 import { jsonError, jsonOk } from "@/lib/http";
 
@@ -9,7 +9,7 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  if (!isAdminAuthorized(request)) {
+  if (!(await adminCan(request, "rewards"))) {
     return jsonError("Unauthorized admin request.", 401);
   }
 

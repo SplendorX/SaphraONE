@@ -4,9 +4,10 @@ import { arcCircleBlockchain } from "@/lib/chains";
 import type { W3SSdk } from "@circle-fin/w3s-pw-web-sdk";
 import { ArrowLeft, ArrowRight, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { fetchAccountState } from "@/lib/account/client";
+import { finishCircleReverify, readCircleReverify } from "@/lib/circle-device";
 import {
   callCircleWalletApi,
   CircleClientError,
@@ -14,7 +15,7 @@ import {
   getCircleErrorMessage,
   isArcCircleWallet,
   preferArcCircleWallets,
-  readCircleSessionStorage,
+  readCircleLogin,
   writeCircleLogin,
   writeCircleSessionStorage,
   writeCircleWallets,
@@ -23,7 +24,11 @@ import {
 } from "@/lib/circle-session";
 import { ensureProfile } from "@/lib/profile";
 import { consumeNextPath, resolveSignInDestination } from "@/lib/sign-in-destination";
-import { ensureCircleWalletSession, notifyWalletSessionChanged } from "@/lib/wallet-auth-client";
+import {
+  endWalletSession,
+  ensureCircleWalletSession,
+  notifyWalletSessionChanged,
+} from "@/lib/wallet-auth-client";
 import { writePreferredWalletMode } from "@/lib/wallet-mode";
 
 /** "code": the PIN-wallet code form. "circle": Circle's own code screen is open. */
@@ -81,10 +86,13 @@ const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve,
  * server decides which (see /api/auth/email).
  */
 export function EmailSignIn({
+  autoSendCode = false,
   bare = false,
   initialEmail = "",
   onUseGoogle,
 }: {
+  /** Email the code to `initialEmail` straight away (confirming this device again). */
+  autoSendCode?: boolean;
   /** Controls only, for hosts that draw their own title (the sign-in board). */
   bare?: boolean;
   /** Pre-filled, e.g. when Google sent this address here. */
@@ -104,6 +112,15 @@ export function EmailSignIn({
   const appIdRef = useRef("");
   // A code works once; keep the verified login so a failed PIN step can retry.
   const verifiedRef = useRef<VerifyResponse | null>(null);
+  const autoSentRef = useRef(false);
+
+  useEffect(() => {
+    if (!autoSendCode || !initialEmail || autoSentRef.current) return;
+    autoSentRef.current = true;
+    void handleSendCode();
+    // Once, for the address it opened with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadSdk() {
     if (sdkRef.current) return sdkRef.current;
@@ -118,10 +135,13 @@ export function EmailSignIn({
     return sdkRef.current;
   }
 
-  /** This browser's Circle device id, kept for renewing the login later. */
+  /**
+   * The device ID Circle's frame holds right now, kept for renewing the login
+   * and checking the device later. Always asked of the frame, never reused
+   * from this page's storage: Safari can drop the frame's ID while ours stays,
+   * and a login made for the old ID can't confirm a single payment.
+   */
   async function resolveDeviceId() {
-    const stored = readCircleSessionStorage(circleStorageKeys.deviceId);
-    if (stored) return stored;
     const sdk = await loadSdk();
     let lastError: unknown = new Error("Your device couldn't be prepared. Reload and try again.");
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -230,6 +250,12 @@ export function EmailSignIn({
     setError(null);
     setUseGoogle(false);
     try {
+      // A sign-in from a browser that holds no Circle login replaces any
+      // session left behind; a locked one would refuse this sign-in's calls.
+      // Confirming this device again keeps it: same account, already unlocked.
+      if (!readCircleLogin() && !readCircleReverify()) {
+        await endWalletSession().catch(() => undefined);
+      }
       const deviceId = circleEmailSignIn ? await resolveDeviceId() : undefined;
       const started = await postEmailAuth<StartResponse>({ action: "start", deviceId, email });
       verifiedRef.current = null;
@@ -286,6 +312,8 @@ export function EmailSignIn({
     try {
       // Stored first: renewing the login and the session read it from here.
       writeCircleLogin(login);
+      // Back to where a device re-check started, once in.
+      finishCircleReverify();
       setStep("wallet");
       setStatus("Opening your wallet");
       const wallets = await ensureArcWallet(login, false);

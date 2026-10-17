@@ -7,6 +7,8 @@ import { AllieMark } from "@/components/allie/AllieMark";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { cn } from "@/lib/utils";
 
+import "./allie-showcase.css";
+
 /**
  * ALLIE, for people who have not signed in yet.
  *
@@ -26,10 +28,10 @@ type Scenario = {
 
 const scenarios: Scenario[] = [
   {
-    prompt: "Send $20 to @alex",
+    prompt: "Send $20 to alex.one",
     title: "Payment ready",
     rows: [
-      { label: "Recipient", value: "@alex" },
+      { label: "Recipient", value: "alex.one" },
       { label: "Amount", value: "20.00 USDC" },
       { label: "Rail", value: "Agent Wallet (Arc)" },
     ],
@@ -56,10 +58,10 @@ const scenarios: Scenario[] = [
     foot: "Answered from your own data — no payment made.",
   },
   {
-    prompt: "Pay @rent $500 on the 1st, monthly",
+    prompt: "Pay rent.one $500 on the 1st, monthly",
     title: "Schedule prepared",
     rows: [
-      { label: "Recipient", value: "@rent" },
+      { label: "Recipient", value: "rent.one" },
       { label: "Amount", value: "500.00 USDC" },
       { label: "Repeats", value: "Monthly, 1st" },
     ],
@@ -237,6 +239,30 @@ function AllieDemoStage({ reduced }: { reduced: boolean }) {
       </div>
 
       <div className="allie-stage-body">
+        {/* Every scenario's finished state, invisible, in the same cell as
+            the live one: the board is always as tall as the tallest of them,
+            at any width, so cycling never moves the page around it. */}
+        {scenarios.map((item) => (
+          <div aria-hidden className="allie-stage-layer allie-stage-sizer" key={item.prompt}>
+            <div className="allie-stage-prompt">
+              <span>{item.prompt}</span>
+            </div>
+            <div className="allie-stage-card">
+              <p className="allie-stage-card-title">{item.title}</p>
+              <div className="allie-stage-rows">
+                {item.rows.map((row) => (
+                  <div className="allie-stage-row" key={row.label}>
+                    <span>{row.label}</span>
+                    <span>{row.value}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="allie-stage-foot">{item.foot}</p>
+            </div>
+          </div>
+        ))}
+
+        <div className="allie-stage-layer">
         <div className="allie-stage-prompt">
           <span>{scenario.prompt.slice(0, typed)}</span>
           {phase === "typing" ? <i className="allie-stage-caret" /> : null}
@@ -270,6 +296,7 @@ function AllieDemoStage({ reduced }: { reduced: boolean }) {
             <p className="allie-stage-foot">{scenario.foot}</p>
           </div>
         ) : null}
+        </div>
       </div>
 
       <div className="allie-stage-pips" role="presentation">

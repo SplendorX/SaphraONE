@@ -211,7 +211,7 @@ type CircleChallengeResult = {
 };
 
 function formatDashboardGreetingName(username: string) {
-  const normalized = username.trim().replace(/^@+/, "");
+  const normalized = username.trim().replace(/^@+/, "").replace(/\.one$/i, "");
   const compact = normalized.replace(/[_-]+/g, " ");
 
   return compact
@@ -678,6 +678,9 @@ export function DashboardContent({
     business: string;
     code: string;
     status: string;
+    /** An online checkout: where the buyer goes back to the store from. */
+    checkoutPath: string | null;
+    siteHost: string | null;
   } | null>(null);
   const [chargeRecording, setChargeRecording] = useState<
     "idle" | "recording" | "recorded" | "failed"
@@ -1247,19 +1250,11 @@ export function DashboardContent({
     const requestedMemo = params.get("memo");
 
     if (requestedUsername) {
-      setRecipientAddress(
-        requestedUsername.startsWith("@")
-          ? requestedUsername
-          : `@${requestedUsername}`,
-      );
+      setRecipientAddress(formatUsernameLabel(requestedUsername));
     } else if (requestedRecipient && isAddress(requestedRecipient)) {
       setRecipientAddress(requestedRecipient);
     } else if (requestedRecipient) {
-      setRecipientAddress(
-        requestedRecipient.startsWith("@")
-          ? requestedRecipient
-          : `@${requestedRecipient}`,
-      );
+      setRecipientAddress(formatUsernameLabel(requestedRecipient));
     }
 
     if (requestedAmount) {
@@ -1363,9 +1358,12 @@ export function DashboardContent({
     void fetchPublicCharge(chargeCode)
       .then((payload) => {
         if (cancelled) return;
+        const online = payload.charge.online;
         setLinkedCharge({
           business: payload.business.name,
+          checkoutPath: online ? `/checkout/${encodeURIComponent(online.sessionId)}` : null,
           code: payload.charge.code,
+          siteHost: online?.siteHost || null,
           status: payload.charge.status,
         });
       })
@@ -2068,7 +2066,7 @@ export function DashboardContent({
     if (!isRecipientValid) {
       setBeneficiaryError(
         recipientResolveError ??
-          "Enter a valid beneficiary wallet address or @username.",
+          "Enter a valid beneficiary wallet address or ONE ID.",
       );
       return;
     }
@@ -2313,7 +2311,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or @username.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return;
     }
@@ -2510,7 +2508,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or @username.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return false;
     }
@@ -2626,7 +2624,7 @@ export function DashboardContent({
     if (!isRecipientValid || !resolvedRecipientAddress) {
       setPaymentError(
         recipientResolveError ??
-          "Enter a valid recipient wallet address or @username.",
+          "Enter a valid recipient wallet address or ONE ID.",
       );
       return;
     }
@@ -2960,9 +2958,11 @@ export function DashboardContent({
                 {linkedCharge.status === "PAID" ? "has your payment" : "received part of the payment"} ·{" "}
                 <a
                   className="font-medium text-primary hover:underline"
-                  href={`/c/${encodeURIComponent(chargeCode)}`}
+                  href={linkedCharge.checkoutPath ?? `/c/${encodeURIComponent(chargeCode)}`}
                 >
-                  View receipt
+                  {linkedCharge.checkoutPath
+                    ? `Return to ${linkedCharge.siteHost || linkedCharge.business}`
+                    : "View receipt"}
                 </a>
               </p>
             ) : chargeRecording === "recording" ? (

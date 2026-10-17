@@ -44,7 +44,8 @@ export async function resolveRecipient(
     ? { address: contact.wallet, username: null, label: `${contact.name} (contact)` }
     : null;
 
-  if (fromContact && !trimmed.startsWith("@")) {
+  // "amara.one" (or "@amara") names an account; a bare name may be a contact.
+  if (fromContact && !trimmed.startsWith("@") && !/\.one$/i.test(trimmed)) {
     return fromContact;
   }
 
@@ -74,6 +75,6 @@ async function resolveUsername(input: string): Promise<ResolvedRecipient | null>
   return {
     address: getAddress(data.wallet_address).toLowerCase() as Address,
     username: data.username,
-    label: `@${data.username}`,
+    label: `${data.username}.one`,
   };
 }

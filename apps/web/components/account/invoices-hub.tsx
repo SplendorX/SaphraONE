@@ -282,7 +282,7 @@ export function InvoicesHub() {
           currency,
           customerEmail,
           customerName,
-          customerUsername: customerUsername.replace(/^@+/, ""),
+          customerUsername: customerUsername.replace(/^@+/, "").replace(/\.one$/i, ""),
           dueDate,
           invoiceNumber,
           issueDate,
@@ -295,7 +295,7 @@ export function InvoicesHub() {
       );
       const made = created.invoice;
       const delivered = [
-        made.customer_username ? `@${made.customer_username}` : null,
+        made.customer_username ? `${made.customer_username}.one` : null,
         made.email_delivery === "sent" ? made.customer_email : null,
       ].filter(Boolean);
       toast.success(
@@ -530,16 +530,16 @@ export function InvoicesHub() {
                 </span>
               </label>
               <div className="text-sm font-medium">
-                <span className="mb-2 block">SaphraONE username</span>
+                <span className="mb-2 block">ONE ID</span>
                 <UsernameField
                   id="invoice-customer-username"
                   onChange={setCustomerUsername}
-                  placeholder="username (optional)"
+                  placeholder="ONE ID (optional)"
                   value={customerUsername.replace(/^@+/, "")}
                 />
               </div>
               <p className="sm:col-span-2 text-xs text-muted-foreground">
-                Username is optional. If filled, sending the invoice also delivers it to that account’s notifications.
+                ONE ID is optional. If filled, sending the invoice also delivers it to that account’s notifications.
               </p>
             </div>
           ) : null}
@@ -683,7 +683,7 @@ export function InvoicesHub() {
                 currency,
                 customerEmail,
                 customerName,
-                customerUsername: customerUsername.replace(/^@+/, "") || null,
+                customerUsername: customerUsername.replace(/^@+/, "").replace(/\.one$/i, "") || null,
                 discount: String(totals.discount),
                 dueDate,
                 invoiceNumber: invoiceNumber || "INV-auto",

@@ -232,7 +232,7 @@ async function payrollTeam(account: string, action: PayrollAction): Promise<Alli
 function addMember(action: PayrollAction): AllieOutcome {
   const recipient = action.recipient?.trim();
   const isWallet = recipient ? /^0x[a-fA-F0-9]{40}$/.test(recipient) : false;
-  const username = recipient && !isWallet ? recipient.replace(/^@/, "") : undefined;
+  const username = recipient && !isWallet ? recipient.replace(/^@/, "").replace(/\.one$/i, "") : undefined;
   const frequency = action.frequency?.toUpperCase();
 
   return {
@@ -244,7 +244,7 @@ function addMember(action: PayrollAction): AllieOutcome {
       ...(action.role ? [{ label: "Role", value: action.role }] : []),
       { label: "Type", value: action.memberType === "CONTRACTOR" ? "Contractor" : "Employee" },
       ...(recipient
-        ? [{ label: "Paid to", value: isWallet ? `${recipient.slice(0, 6)}…${recipient.slice(-4)}` : `@${username}` }]
+        ? [{ label: "Paid to", value: isWallet ? `${recipient.slice(0, 6)}…${recipient.slice(-4)}` : `${username}.one` }]
         : []),
       ...(action.amountUsdc
         ? [
@@ -481,14 +481,14 @@ function customerLabel(invoice: InvoiceRecord) {
   return (
     invoice.customer_company ||
     invoice.customer_name ||
-    (invoice.customer_username ? `@${invoice.customer_username}` : null) ||
+    (invoice.customer_username ? `${invoice.customer_username}.one` : null) ||
     invoice.customer_email ||
     "No customer"
   );
 }
 
 function matchesCustomer(invoice: InvoiceRecord, wanted: string) {
-  const needle = wanted.toLowerCase().replace(/^@/, "").trim();
+  const needle = wanted.toLowerCase().replace(/^@/, "").replace(/\.one$/i, "").trim();
   if (!needle) return true;
   return [
     invoice.customer_company,
@@ -623,7 +623,7 @@ function createInvoice(action: CreateInvoiceAction, isBusiness: boolean): AllieO
       ],
       href: `/pay${query({
         amount: action.amountUsdc,
-        from: customer.username ? `@${customer.username}` : undefined,
+        from: customer.username ? `${customer.username}.one` : undefined,
         memo: action.description ?? action.note,
         token: action.asset,
       })}`,

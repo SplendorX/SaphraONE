@@ -18,7 +18,9 @@ import {
 } from "@/components/earn/earn-views";
 import { EarnWithdraw } from "@/components/earn/EarnWithdraw";
 import { useEarnPosition } from "@/components/earn/use-earn-position";
+import { PageTagline } from "@/components/layout/page-tagline";
 import { PlatformChrome } from "@/components/layout/platform-chrome";
+import { useT } from "@/components/locale-provider";
 import { PlatformAccessGate } from "@/components/platform-access-gate";
 import { PlatformProfileControls } from "@/components/platform-profile-controls";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
@@ -32,6 +34,7 @@ type EarnSheetName = "deposit" | "withdraw" | "vaults" | "automate";
 
 export function EarnPage() {
   const searchParams = useSearchParams();
+  const t = useT();
   const { address, circleSocialUuid, isConnected } = usePlatformWallet();
   const { error, loading, vaults } = useEarnVaults();
   // Google sessions sign with their Circle wallet, everyone else with theirs.
@@ -99,6 +102,7 @@ export function EarnPage() {
             <h1 className="pocket-bar-title">Invest</h1>
             <span />
           </header>
+          <PageTagline text={t("pages.earnSubtitle")} />
 
           <EarnHero
             bestApy={bestApy}

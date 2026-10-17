@@ -49,7 +49,7 @@ export async function downloadChargeReceipt(payload: PublicChargePayload) {
   if (business.username) {
     context.fillStyle = muted;
     context.font = "500 22px Manrope, sans-serif";
-    context.fillText(`@${business.username}`, nameX, 262);
+    context.fillText(`${business.username}.one`, nameX, 262);
   }
 
   context.fillStyle = "#16a34a";

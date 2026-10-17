@@ -12,11 +12,7 @@ export const walletSessionCookieName = "saphra_wallet_session";
 type WalletTokenType = "challenge" | "session";
 
 export type WalletTokenPayload = {
-  /**
-   * The account has an app lock (PIN / Face ID): API calls need a valid
-   * unlock cookie too. Carried across renewals, so clearing it means signing
-   * out. See lib/app-lock.
-   */
+  /** From when the app locked itself on opening; still read, no longer written or enforced. */
   appLock?: boolean;
   connectorName?: string;
   /**
@@ -195,8 +191,6 @@ export function createWalletSession(
   metadata: WalletSessionMetadata = {},
   options: {
     additionalWallets?: string[];
-    /** Set the app-lock flag; otherwise it is carried from `previous`. */
-    appLock?: boolean;
     /** Set the two-factor flag; otherwise it is carried from `previous`. */
     mfaPending?: boolean;
     /** Background renewals keep the wallet the user explicitly signed in with. */
@@ -233,12 +227,10 @@ export function createWalletSession(
       ? previous.ownerWallet
       : ownerWallet;
 
-  const appLock = options.appLock ?? previous?.appLock ?? false;
   const mfaPending = options.mfaPending ?? previous?.mfaPending ?? false;
 
   return {
     ...metadata,
-    ...(appLock ? { appLock: true } : {}),
     ...(mfaPending ? { mfaPending: true } : {}),
     expiresAt: Object.values(trimmed).sort().at(-1) ?? expiresAt,
     issuedAt: new Date(now).toISOString(),

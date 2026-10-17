@@ -6,8 +6,13 @@ import { InstagramLogoLink, XLogoLink } from "@/components/brand/x-logo-link";
 import { circleFaucetUrl } from "@/components/circle-faucet-link";
 import { LaunchAppLink } from "@/components/landing/launch-app-link";
 import { useT } from "@/components/locale-provider";
+import { developerUrls } from "@/lib/developers/site";
+
+const developerPortal = developerUrls().portal;
 
 const resourceLinks = [
+  { href: developerPortal, label: "Developers & Checkout API" },
+  { href: `${developerPortal}/docs`, label: "API documentation" },
   { href: "https://www.arc.io/", label: "Arc Network" },
   { href: arcExplorerUrl, label: "Arc Explorer" },
   ...(arcChain.testnet

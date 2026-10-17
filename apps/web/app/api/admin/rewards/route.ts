@@ -1,12 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAdminAuthorized } from "@/lib/admin-auth";
+import { adminCan } from "@/lib/admin/access";
 import { readJsonRecord } from "@/lib/http";
 import {
   AdminRewardsError,
   awardQuestToWallet,
   createQuest,
+  deleteQuest,
+  endQuest,
   failDiscount,
+  listQuestCompletions,
   loadAdminRewards,
   markClaimPaid,
   markDiscountPaid,
@@ -29,7 +32,7 @@ function error(message: string, status: number) {
 
 /** Review queues (held earnings, claims, discount refunds) and quests. */
 export async function GET(request: NextRequest) {
-  if (!isAdminAuthorized(request)) return error("Unauthorized.", 401);
+  if (!(await adminCan(request, "rewards"))) return error("Unauthorized.", 401);
   try {
     return NextResponse.json(await loadAdminRewards(), { headers: noStore });
   } catch (cause) {
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
 
 /** One admin decision: `{ action, id, reason?, txHash?, ... }`. */
 export async function POST(request: NextRequest) {
-  if (!isAdminAuthorized(request)) return error("Unauthorized.", 401);
+  if (!(await adminCan(request, "rewards"))) return error("Unauthorized.", 401);
   const body = await readJsonRecord(request);
   if (!body) return error("A valid JSON body is required.", 400);
   const id = typeof body.id === "string" ? body.id : "";
@@ -77,6 +80,14 @@ export async function POST(request: NextRequest) {
       case "set_quest_active":
         await setQuestActive(id, body.active === true);
         break;
+      case "end_quest":
+        await endQuest(id);
+        break;
+      case "delete_quest":
+        await deleteQuest(id);
+        break;
+      case "quest_completions":
+        return NextResponse.json({ completions: await listQuestCompletions(id) }, { headers: noStore });
       case "award_quest":
         await awardQuestToWallet(id, body.wallet, body.reason);
         break;

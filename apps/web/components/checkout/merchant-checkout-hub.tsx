@@ -7,6 +7,7 @@ import {
   Copy,
   Delete,
   Download,
+  Globe,
   Loader2,
   Plus,
   QrCode,
@@ -21,6 +22,7 @@ import { toast } from "sonner";
 
 import { useAccountContext } from "@/components/account/account-provider";
 import { pressAmountKey } from "@/components/checkout/amount-keypad";
+import { OnlinePaymentsPanel } from "@/components/checkout/online-payments-panel";
 import { LazyQRCodeSVG } from "@/components/lazy-qr-code";
 import { showSuccess } from "@/components/success-popup";
 import { Button } from "@/components/ui/button";
@@ -44,7 +46,7 @@ import "./checkout.css";
 
 const POLL_MS = 2_500;
 
-type Tab = "charge" | "storefront";
+type Tab = "charge" | "storefront" | "online";
 
 function newIdempotencyKey() {
   return typeof crypto.randomUUID === "function"
@@ -121,12 +123,14 @@ export function MerchantCheckoutHub() {
 
   useEffect(() => {
     setOrigin(window.location.origin);
+    // The Developers page links here with ?tab=online.
+    if (new URLSearchParams(window.location.search).get("tab") === "online") setTab("online");
   }, []);
 
   const loadCharges = useCallback(async () => {
     if (!auth) return;
     try {
-      const result = await fetchCharges(auth);
+      const result = await fetchCharges(auth, { kind: "IN_PERSON" });
       setCharges(result.charges);
       setSummary(result.summary);
     } catch {
@@ -277,7 +281,8 @@ export function MerchantCheckoutHub() {
         {(
           [
             { icon: QrCode, id: "charge", label: "New charge" },
-            { icon: Store, id: "storefront", label: "Storefront QR" },
+            { icon: Store, id: "storefront", label: "Storefront" },
+            { icon: Globe, id: "online", label: "Online" },
           ] as const
         ).map((option) => (
           <button
@@ -294,7 +299,9 @@ export function MerchantCheckoutHub() {
         ))}
       </div>
 
-      {tab === "storefront" ? (
+      {tab === "online" ? (
+        <OnlinePaymentsPanel auth={auth} />
+      ) : tab === "storefront" ? (
         storefrontUrl ? (
           <section className="ck-card ck-center">
             <div className="ck-shop">
@@ -307,7 +314,7 @@ export function MerchantCheckoutHub() {
               )}
               <span className="min-w-0 text-left">
                 <span className="ck-shop-name">
-                  {profile?.business_name ?? account?.display_name ?? `@${account?.username}`}
+                  {profile?.business_name ?? account?.display_name ?? `${account?.username}.one`}
                 </span>
                 <span className="ck-muted block text-xs">Your permanent storefront QR</span>
               </span>
@@ -514,7 +521,7 @@ export function MerchantCheckoutHub() {
         </>
       )}
 
-      {summary ? (
+      {summary && tab !== "online" ? (
         <section aria-label="Today" className="ck-today">
           {[
             { label: "Paid today", value: String(summary.todayCount) },
@@ -529,6 +536,7 @@ export function MerchantCheckoutHub() {
         </section>
       ) : null}
 
+      {tab === "online" ? null : (
       <section className="ck-card">
         <h2 className="ck-card-title">
           <Receipt className="h-4 w-4 text-primary" />
@@ -598,6 +606,7 @@ export function MerchantCheckoutHub() {
           </ul>
         )}
       </section>
+      )}
     </div>
   );
 }

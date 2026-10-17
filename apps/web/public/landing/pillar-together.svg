@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" width="480" height="480" fill="none">
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6A0EF4"/>
+      <stop offset="0.55" stop-color="#3B2CF6"/>
+      <stop offset="1" stop-color="#0078FF"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6A0EF4" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#0078FF" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+  <!-- The circle that joins them -->
+  <circle cx="260" cy="270" r="170" stroke="url(#b)" stroke-width="4" stroke-dasharray="3 16" stroke-linecap="round" opacity="0.6"/>
+  <!-- Links from each person to the shared pocket -->
+  <path d="M260 140 V 222 M150 340 L 222 296 M370 340 L 298 296" stroke="url(#b)" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12"/>
+  <!-- Shared pocket in the middle -->
+  <rect x="206" y="226" width="108" height="92" rx="24" fill="url(#soft)" stroke="url(#b)" stroke-width="6"/>
+  <path d="M206 254 H 314" stroke="url(#b)" stroke-width="5"/>
+  <circle cx="260" cy="286" r="16" stroke="url(#b)" stroke-width="5"/>
+  <path d="M260 278 V 294" stroke="url(#b)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Person, top -->
+  <circle cx="260" cy="74" r="28" fill="url(#soft)" stroke="url(#b)" stroke-width="6"/>
+  <path d="M212 144 C 212 112, 236 102, 260 102 C 284 102, 308 112, 308 144" stroke="url(#b)" stroke-width="6" stroke-linecap="round"/>
+  <!-- Person, left -->
+  <circle cx="110" cy="330" r="28" fill="url(#soft)" stroke="url(#b)" stroke-width="6"/>
+  <path d="M62 400 C 62 368, 86 358, 110 358 C 134 358, 158 368, 158 400" stroke="url(#b)" stroke-width="6" stroke-linecap="round"/>
+  <!-- Person, right -->
+  <circle cx="410" cy="330" r="28" fill="url(#soft)" stroke="url(#b)" stroke-width="6"/>
+  <path d="M362 400 C 362 368, 386 358, 410 358 C 434 358, 458 368, 458 400" stroke="url(#b)" stroke-width="6" stroke-linecap="round"/>
+  <!-- Approval ticks -->
+  <circle cx="300" cy="50" r="14" fill="url(#b)"/>
+  <path d="M293 50 L 298 55 L 308 45" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="148" cy="306" r="14" fill="url(#b)"/>
+  <path d="M141 306 L 146 311 L 156 301" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Coins moving in -->
+  <circle cx="196" cy="190" r="10" fill="url(#b)" opacity="0.7"/>
+  <circle cx="330" cy="200" r="8" fill="url(#b)" opacity="0.5"/>
+</svg>

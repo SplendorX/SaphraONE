@@ -238,7 +238,9 @@ function normalizeRecipient(raw: string) {
     return trimmed;
   }
 
-  const handle = trimmed.replace(/^@/, "");
+  // "gentle.one" (a ONE ID) and "@gentle" (the older way) both name an account.
+  const isOneId = /\.one$/i.test(trimmed);
+  const handle = trimmed.replace(/^@/, "").replace(/\.one$/i, "");
 
   if (!handle || recipientStopWords.has(handle.toLowerCase())) {
     return null;
@@ -248,9 +250,9 @@ function normalizeRecipient(raw: string) {
     return null;
   }
 
-  // Keep the "@" only if the user typed it: "@gentle" asks for a username,
-  // a bare "gentle" is looked up in their contacts first.
-  return trimmed.startsWith("@") ? `@${handle}` : handle;
+  // An "@" marks a ONE ID from here on: "gentle.one" or "@gentle" asks for
+  // that account, a bare "gentle" is looked up in their contacts first.
+  return trimmed.startsWith("@") || isOneId ? `@${handle}` : handle;
 }
 
 /**
