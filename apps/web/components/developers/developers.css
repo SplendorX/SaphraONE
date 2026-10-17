@@ -119,3 +119,139 @@
 .ck-online-ref {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+/* Webhooks: endpoints, their secrets and the delivery log. */
+.dv-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dv-webhook-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.dv-webhook-form > button {
+  justify-self: start;
+  height: 2.75rem;
+}
+
+.dv-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem;
+}
+
+.dv-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  cursor: pointer;
+}
+
+.dv-event:has(input:checked) {
+  border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+  background: color-mix(in oklch, var(--primary) 6%, var(--card));
+}
+
+.dv-event input {
+  margin-top: 0.2rem;
+  accent-color: var(--primary);
+}
+
+.dv-event-code {
+  display: block;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ck-card .dv-event-code {
+  padding: 0;
+  background: none;
+}
+
+.dv-endpoint {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.dv-endpoint:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.dv-endpoint-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.dv-endpoint-url {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dv-endpoint-warn {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in oklch, var(--destructive) 10%, var(--card));
+  color: var(--destructive);
+  font-size: 0.8rem;
+}
+
+.dv-endpoint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.dv-endpoint-confirm {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--muted);
+}
+
+.dv-secret {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dv-secret .dv-key {
+  flex: 1;
+  min-width: 0;
+}
+
+.dv-delivery-type {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dv-delivery-error {
+  color: var(--destructive);
+}
+
+.ck-status[data-status="FAILED"] {
+  background: color-mix(in oklch, var(--destructive) 14%, transparent);
+  color: var(--destructive);
+}

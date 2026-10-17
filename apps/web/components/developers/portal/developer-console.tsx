@@ -18,8 +18,8 @@ import { toast } from "sonner";
 
 import { useAccountContext } from "@/components/account/account-provider";
 import { OnlinePaymentsPanel } from "@/components/checkout/online-payments-panel";
-import { Badge } from "@/components/developers/docs/blocks";
 import { DevelopersHub } from "@/components/developers/developers-hub";
+import { WebhooksPanel } from "@/components/developers/webhooks-panel";
 import { PortalLink, usePortal } from "@/components/developers/portal/portal-context";
 import { PlatformAccessGate } from "@/components/platform-access-gate";
 import type { MerchantAuth } from "@/lib/checkout/client";
@@ -137,18 +137,12 @@ function ConsoleBody() {
           <OnlinePaymentsPanel auth={auth} showDevelopersLink={false} />
         </div>
       ) : tab === "webhooks" ? (
-        <section className="dp-panel">
-          <h2>
-            Webhooks <Badge tone="soon">In development</Badge>
-          </h2>
-          <p className="dp-muted">
-            Signed notifications for completed, paid and expired sessions are coming. Until then, confirm payments by
-            retrieving the session and run a short reconcile job.
-          </p>
-          <PortalLink className="dp-text-link" href="/docs/fulfil-orders#reconcile">
-            How to reconcile <ArrowUpRight className="h-4 w-4" />
+        <div className="dp-console-embed ck-page">
+          <WebhooksPanel auth={auth} />
+          <PortalLink className="dp-text-link" href="/docs/api/webhooks">
+            Webhooks reference <ArrowUpRight className="h-4 w-4" />
           </PortalLink>
-        </section>
+        </div>
       ) : (
         <div className="dp-console-grid">
           <section className="dp-panel">
@@ -223,6 +217,9 @@ function ConsoleBody() {
             <div className="dp-resource-row">
               <PortalLink className="dp-resource" href="/docs/api/checkout-sessions">
                 <BookOpen className="h-4 w-4" /> Checkout Sessions reference
+              </PortalLink>
+              <PortalLink className="dp-resource" href="/docs/api/webhooks">
+                <Webhook className="h-4 w-4" /> Webhooks reference
               </PortalLink>
               <PortalLink className="dp-resource" href="/docs/api/errors">
                 <ShieldAlert className="h-4 w-4" /> Error codes

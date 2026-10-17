@@ -1,5 +1,6 @@
 import { Badge, Table } from "@/components/developers/docs/blocks";
 import { type DocContext } from "@/components/developers/docs/context";
+import { PortalLink } from "@/components/developers/portal/portal-context";
 
 type Props = { ctx: DocContext };
 
@@ -7,6 +8,19 @@ export function ChangelogDoc({ ctx }: Props) {
   return (
     <>
       <p className="dp-lead">Changes to the Checkout API, newest first. v1 only ever changes additively.</p>
+
+      <h2 id="2026-10-18-webhooks">
+        18 October 2026 · Webhooks <Badge tone="new">New</Badge>
+      </h2>
+      <ul>
+        <li>
+          Signed <PortalLink href="/docs/api/webhooks">webhooks</PortalLink> for{" "}
+          <code>checkout.session.completed</code>, <code>checkout.session.payment_received</code> and{" "}
+          <code>checkout.session.expired</code>, using the Standard Webhooks scheme.
+        </li>
+        <li>Up to three endpoints per business, with test events, secret rotation, a delivery log and Resend.</li>
+        <li>Automatic retries with backoff for about four days.</li>
+      </ul>
 
       <h2 id="2026-10-17-hosts">
         17 October 2026 · Developer platform <Badge tone="new">New</Badge>
@@ -31,7 +45,6 @@ export function ChangelogDoc({ ctx }: Props) {
       <Table
         head={["Feature", "What it does", "Status"]}
         rows={[
-          ["Webhooks", "Signed notifications for completed, paid, expired and refunded sessions.", <Badge key="s" tone="soon">In development</Badge>],
           ["Refunds API", "Request full or partial refunds; you approve them in SaphraONE.", <Badge key="s" tone="soon">In development</Badge>],
           ["Payment links", "Reusable no-code links that open a checkout.", <Badge key="s">Planned</Badge>],
           ["Embedded checkout", "A saphra.js popup so buyers never leave your site.", <Badge key="s">Planned</Badge>],

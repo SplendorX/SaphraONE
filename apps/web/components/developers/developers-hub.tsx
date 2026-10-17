@@ -29,6 +29,7 @@ import { apiBaseUrl, developerUrls } from "@/lib/developers/site";
 import type { ApiMode } from "@/lib/merchant-api/ids";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 
+import { WebhooksPanel } from "./webhooks-panel";
 import "../checkout/checkout.css";
 import "./developers.css";
 
@@ -194,7 +195,7 @@ export function DevelopersHub({ variant = "app" }: { variant?: "app" | "portal" 
         <ol className="dv-steps">
           <li>Your server creates a checkout session with a secret key.</li>
           <li>Send the buyer to the session&rsquo;s <code>url</code>. They pay with SaphraONE, any wallet, card or bank, or another chain.</li>
-          <li>The buyer comes back to your <code>success_url</code>. Confirm the order on your server with the session, never from the redirect alone.</li>
+          <li>The buyer comes back to your <code>success_url</code>. Fulfil the order from the <code>checkout.session.completed</code> webhook (or by retrieving the session), never from the redirect alone.</li>
         </ol>
         <p className="ck-muted text-sm">
           Payments go straight to your business wallet as USDC on Arc. No fee.
@@ -344,6 +345,8 @@ export function DevelopersHub({ variant = "app" }: { variant?: "app" | "portal" 
           </button>
         </section>
       ) : null}
+
+      {inPortal || !mode ? null : <WebhooksPanel auth={auth} />}
 
       {inPortal ? null : (
         <>

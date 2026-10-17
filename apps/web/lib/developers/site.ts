@@ -50,6 +50,20 @@ function configured(mode: DeveloperMode): DeveloperUrls {
       };
 }
 
+const appDefaults: Record<DeveloperMode, string> = {
+  live: "https://app.saphra.one",
+  sandbox: "https://testnet.saphra.one",
+};
+
+/**
+ * The SaphraONE app of a mode: where app pages and hosted checkout pages
+ * live. NEXT_PUBLIC_APP_URL (this deployment's) wins for its own mode.
+ */
+export function appUrlFor(mode: DeveloperMode = developerMode()) {
+  if (mode === developerMode()) return readOrigin(process.env.NEXT_PUBLIC_APP_URL, appDefaults[mode]);
+  return appDefaults[mode];
+}
+
 /** This deployment's mode: live on mainnet, the sandbox on testnet. */
 export function developerMode(): DeveloperMode {
   return isArcMainnet() ? "live" : "sandbox";

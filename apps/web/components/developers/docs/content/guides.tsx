@@ -284,8 +284,9 @@ export function FulfilOrdersDoc({ ctx }: Props) {
       </p>
 
       <h2 id="rule">The rule</h2>
-      <Callout title="Fulfil from the API, never from the redirect" tone="warning">
-        Only ship when a session you retrieved with your secret key says <code>&quot;status&quot;: &quot;complete&quot;</code>.
+      <Callout title="Fulfil from the webhook or the API, never from the redirect" tone="warning">
+        Only ship on a verified <PortalLink href="/docs/api/webhooks">checkout.session.completed</PortalLink> webhook,
+        or when a session you retrieved with your secret key says <code>&quot;status&quot;: &quot;complete&quot;</code>.
         The buyer&rsquo;s return to <code>success_url</code> is a convenience for them, not proof of payment.
       </Callout>
 
@@ -326,7 +327,7 @@ export function FulfilOrdersDoc({ ctx }: Props) {
 
       <h2 id="idempotent">Make fulfilment idempotent</h2>
       <p>
-        You may see the same completed session from the return page, your reconcile job and (soon) a webhook. Record
+        You may see the same completed session from a webhook, the return page and your reconcile job. Record
         the session id when you fulfil and skip it if it is already recorded:
       </p>
       <CodeTabs
@@ -349,14 +350,15 @@ export function FulfilOrdersDoc({ ctx }: Props) {
 
       <h2 id="reconcile">Reconcile with a scheduled job</h2>
       <p>
-        Until <PortalLink href="/docs/api/webhooks">webhooks</PortalLink> ship, a short job closes the gap for buyers
-        who never return. Retrieving a session also prompts SaphraONE to check for card and cross-chain payments, so
+        <PortalLink href="/docs/api/webhooks">Webhooks</PortalLink> tell you the moment a session completes. Keep a
+        short job as a safety net for the times your endpoint was down: hourly is enough with webhooks, every few
+        minutes without. Retrieving a session also prompts SaphraONE to check for card and cross-chain payments, so
         polling keeps them moving.
       </p>
       <CodeTabs
         samples={[
           {
-            code: `// Every 2–5 minutes
+            code: `// Hourly with webhooks, every 2–5 minutes without
 const pending = await db.orders.where({ status: "awaiting_payment" }).createdWithin("26h");
 for (const order of pending) {
   const session = await saphra(\`/checkout/sessions/\${order.saphraSessionId}\`);

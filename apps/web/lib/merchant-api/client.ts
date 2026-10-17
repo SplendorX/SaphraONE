@@ -1,6 +1,10 @@
-// Browser fetchers for the Developers page (API keys).
+// Browser fetchers for the Developers page (API keys and webhooks).
 import type { MerchantAuth } from "@/lib/checkout/client";
 import type { ApiMode } from "@/lib/merchant-api/ids";
+import type { WebhookEventType } from "@/lib/webhooks/rules";
+import type { WebhookDeliveryView, WebhookEndpointView } from "@/lib/webhooks/types";
+
+export type { WebhookDeliveryView, WebhookEndpointView, WebhookEventType };
 
 export type ApiKeyView = {
   id: string;
@@ -62,6 +66,71 @@ export function createApiKeyClient(auth: MerchantAuth, name: string) {
 export function revokeApiKeyClient(auth: MerchantAuth, keyId: string) {
   return postJson<{ key: ApiKeyView }>(
     `/api/business/developers/keys/${encodeURIComponent(keyId)}/revoke`,
+    auth,
+  );
+}
+
+// ── Webhooks ────────────────────────────────────────────────────────────────
+
+function sendJson<T>(path: string, method: "PATCH" | "DELETE", body: unknown) {
+  return requestJson<T>(path, {
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+    method,
+  });
+}
+
+function endpointPath(endpointId: string, action?: string) {
+  return `/api/business/developers/webhooks/${encodeURIComponent(endpointId)}${action ? `/${action}` : ""}`;
+}
+
+export function fetchWebhookEndpoints(auth: MerchantAuth) {
+  return requestJson<{
+    endpoints: WebhookEndpointView[];
+    eventTypes: WebhookEventType[];
+    maxEndpoints: number;
+  }>(withAuth("/api/business/developers/webhooks", auth));
+}
+
+/** The response carries the signing secret. */
+export function createWebhookEndpointClient(auth: MerchantAuth, input: { url: string; events: WebhookEventType[] }) {
+  return postJson<{ endpoint: WebhookEndpointView; secret: string }>("/api/business/developers/webhooks", {
+    ...auth,
+    ...input,
+  });
+}
+
+export function updateWebhookEndpointClient(
+  auth: MerchantAuth,
+  endpointId: string,
+  changes: { url?: string; events?: WebhookEventType[]; disabled?: boolean },
+) {
+  return sendJson<{ endpoint: WebhookEndpointView }>(endpointPath(endpointId), "PATCH", { ...auth, ...changes });
+}
+
+export function deleteWebhookEndpointClient(auth: MerchantAuth, endpointId: string) {
+  return sendJson<{ deleted: boolean }>(endpointPath(endpointId), "DELETE", auth);
+}
+
+export function revealWebhookSecretClient(auth: MerchantAuth, endpointId: string) {
+  return postJson<{ secret: string }>(endpointPath(endpointId, "secret"), auth);
+}
+
+export function rotateWebhookSecretClient(auth: MerchantAuth, endpointId: string) {
+  return postJson<{ secret: string }>(endpointPath(endpointId, "rotate"), auth);
+}
+
+export function sendWebhookTestClient(auth: MerchantAuth, endpointId: string) {
+  return postJson<{ delivery: WebhookDeliveryView | null }>(endpointPath(endpointId, "test"), auth);
+}
+
+export function fetchWebhookDeliveries(auth: MerchantAuth) {
+  return requestJson<{ deliveries: WebhookDeliveryView[] }>(withAuth("/api/business/developers/deliveries", auth));
+}
+
+export function resendWebhookDeliveryClient(auth: MerchantAuth, deliveryId: string) {
+  return postJson<{ delivery: WebhookDeliveryView }>(
+    `/api/business/developers/deliveries/${encodeURIComponent(deliveryId)}/resend`,
     auth,
   );
 }

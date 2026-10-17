@@ -132,12 +132,18 @@ async function loadChargeByCode(value: string) {
 /** Lazy expiry on read; the sweep catches the ones nobody looks at. */
 export async function expireIfStale(charge: ChargeRecord) {
   if (!isExpired(charge)) return charge;
-  const { error } = await accountDb()
+  const { data, error } = await accountDb()
     .from(accountTables.charges)
     .update({ status: "EXPIRED", updated_at: nowIso() })
     .eq("id", charge.id)
-    .eq("status", "OPEN");
+    .eq("status", "OPEN")
+    .select("id");
   if (error) throw new Error(readAccountDbError(error, "Could not update the charge."));
+  if (charge.kind === "ONLINE" && (data ?? []).length > 0) {
+    await import("@/lib/merchant-api/events")
+      .then(({ emitSessionsExpired }) => emitSessionsExpired([charge.id]))
+      .catch((cause) => console.error("[checkout] could not emit checkout.session.expired", cause));
+  }
   return { ...charge, status: "EXPIRED" as const };
 }
 

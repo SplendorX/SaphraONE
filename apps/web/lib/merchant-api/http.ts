@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isBusinessHttpError } from "@/lib/business/errors";
+import { appUrlFor, developerSurfaceFor, requestHost } from "@/lib/developers/site";
 import { apiErrors, isMerchantApiError } from "@/lib/merchant-api/errors";
 import { ApiParamError } from "@/lib/merchant-api/validate";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -91,15 +92,29 @@ export function readApiIdempotencyKey(request: NextRequest) {
   return key;
 }
 
-/** Where the hosted checkout page lives: the app's public URL, else this host. */
-export function publicOrigin(request: NextRequest) {
+function appUrlOrigin() {
   const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) {
-    try {
-      return new URL(configured).origin;
-    } catch {
-      // Fall back to the request's own origin.
-    }
+  if (!configured) return null;
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return null;
   }
+}
+
+/**
+ * Where the hosted checkout page lives: the app's public URL, else this host.
+ * A call through the API or portal host never links to that host: its pages
+ * are on the app.
+ */
+export function publicOrigin(request: NextRequest) {
+  const configured = appUrlOrigin();
+  if (configured) return configured;
+  if (developerSurfaceFor(requestHost(request.headers))) return appUrlFor();
   return request.nextUrl.origin;
+}
+
+/** The same outside a request (webhooks): the app's public URL, else this mode's app. */
+export function configuredAppOrigin() {
+  return appUrlOrigin() ?? appUrlFor();
 }

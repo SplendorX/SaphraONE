@@ -10,6 +10,7 @@ import { afterEach, describe, it } from "node:test";
 
 import {
   apiBaseUrl,
+  appUrlFor,
   developerSurfaceFor,
   developerUrls,
   keyPrefixFor,
@@ -22,6 +23,8 @@ const envKeys = [
   "NEXT_PUBLIC_API_SANDBOX_URL",
   "NEXT_PUBLIC_DEVELOPERS_LIVE_URL",
   "NEXT_PUBLIC_DEVELOPERS_SANDBOX_URL",
+  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_ARC_NETWORK",
 ];
 const saved = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
 
@@ -99,5 +102,30 @@ describe("modes", () => {
     assert.equal(keyPrefixFor("live"), "sk_live_");
     assert.equal(keyPrefixFor("sandbox"), "sk_test_");
     assert.equal(otherDeveloperMode("live"), "sandbox");
+  });
+});
+
+describe("appUrlFor", () => {
+  it("defaults to each mode's app", () => {
+    clearEnv();
+    assert.equal(appUrlFor("live"), "https://app.saphra.one");
+    assert.equal(appUrlFor("sandbox"), "https://testnet.saphra.one");
+  });
+
+  it("uses NEXT_PUBLIC_APP_URL for this deployment's own mode only", () => {
+    clearEnv();
+    process.env.NEXT_PUBLIC_APP_URL = "https://preview.example/some/path";
+    assert.equal(appUrlFor("sandbox"), "https://preview.example");
+    assert.equal(appUrlFor(), "https://preview.example");
+    assert.equal(appUrlFor("live"), "https://app.saphra.one");
+    process.env.NEXT_PUBLIC_ARC_NETWORK = "mainnet";
+    assert.equal(appUrlFor("live"), "https://preview.example");
+    assert.equal(appUrlFor("sandbox"), "https://testnet.saphra.one");
+  });
+
+  it("ignores a malformed NEXT_PUBLIC_APP_URL", () => {
+    clearEnv();
+    process.env.NEXT_PUBLIC_APP_URL = "not a url";
+    assert.equal(appUrlFor("sandbox"), "https://testnet.saphra.one");
   });
 });
