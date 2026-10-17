@@ -9,9 +9,15 @@ export async function expireStaleCharges() {
     .update({ status: "EXPIRED", updated_at: new Date().toISOString() })
     .eq("status", "OPEN")
     .lt("expires_at", new Date().toISOString())
-    .select("id");
+    .select("id, kind");
   if (error) throw new Error(readAccountDbError(error, "Could not expire charges."));
-  return (data ?? []).length;
+  const rows = (data ?? []) as Array<{ id: string; kind: string }>;
+  const online = rows.filter((row) => row.kind === "ONLINE").map((row) => row.id);
+  if (online.length > 0) {
+    const { emitSessionsExpired } = await import("@/lib/merchant-api/events");
+    await emitSessionsExpired(online);
+  }
+  return rows.length;
 }
 
 /**

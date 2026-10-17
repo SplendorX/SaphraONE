@@ -545,38 +545,201 @@ if (session.status === "complete") await fulfil(session);`,
   );
 }
 
-export function WebhooksDoc() {
+const verifyNode = `// npm install standardwebhooks
+import express from "express";
+import { Webhook } from "standardwebhooks";
+
+const wh = new Webhook(process.env.SAPHRA_WEBHOOK_SECRET);
+const app = express();
+
+app.post("/webhooks/saphraone", express.raw({ type: "application/json" }), async (req, res) => {
+  let event;
+  try {
+    event = wh.verify(req.body.toString("utf8"), req.headers);
+  } catch {
+    return res.status(400).send("Invalid signature");
+  }
+
+  if (event.type === "checkout.session.completed") {
+    await fulfil(event.data.object); // idempotent: keyed on the session id
+  }
+  res.sendStatus(200);
+});`;
+
+const verifyPython = `# pip install standardwebhooks
+from standardwebhooks.webhooks import Webhook
+
+wh = Webhook(os.environ["SAPHRA_WEBHOOK_SECRET"])
+
+@app.post("/webhooks/saphraone")
+def saphraone_webhook():
+    try:
+        event = wh.verify(request.get_data(), dict(request.headers))
+    except Exception:
+        return "Invalid signature", 400
+    if event["type"] == "checkout.session.completed":
+        fulfil(event["data"]["object"])
+    return "", 200`;
+
+const verifyManual = `import crypto from "node:crypto";
+
+// Without a library: HMAC-SHA256 over "{id}.{timestamp}.{rawBody}".
+function verify(rawBody, headers, secret) {
+  const id = headers["webhook-id"];
+  const timestamp = headers["webhook-timestamp"];
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
+  const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+  const expected = crypto.createHmac("sha256", key).update(\`\${id}.\${timestamp}.\${rawBody}\`).digest();
+  return headers["webhook-signature"].split(" ").some((entry) => {
+    const [version, value] = entry.split(",");
+    const given = Buffer.from(value ?? "", "base64");
+    return version === "v1" && given.length === expected.length && crypto.timingSafeEqual(given, expected);
+  });
+}`;
+
+export function WebhooksDoc({ ctx }: Props) {
+  const event = JSON.stringify(
+    {
+      created: 1792310400,
+      data: {
+        object: JSON.parse(
+          sampleSession(ctx, {
+            amount_received: "25",
+            completed_at: "2026-10-18T09:20:00.000Z",
+            payment_status: "paid",
+            status: "complete",
+          }),
+        ),
+      },
+      id: "evt_9m2hx4k7qwz3c8vtn5rj6bdy",
+      livemode: ctx.mode === "live",
+      type: "checkout.session.completed",
+    },
+    null,
+    2,
+  );
   return (
     <>
       <p className="dp-lead">
-        Webhooks will notify your server the moment a session completes, so you won&rsquo;t need to poll.{" "}
-        <Badge tone="soon">In development</Badge>
+        Webhooks notify your server the moment something happens to a session, so you don&rsquo;t have to poll. Add
+        an endpoint in the <PortalLink href="/console?tab=webhooks">console</PortalLink>, verify each request&rsquo;s
+        signature, and answer with any 2xx status.
       </p>
-      <Callout title="Until webhooks are live" tone="info">
-        Confirm payments by retrieving the session on your return page and with a short reconcile job. See{" "}
-        <PortalLink href="/docs/fulfil-orders#reconcile">Confirm and fulfil orders</PortalLink>. That integration
-        keeps working after webhooks launch.
-      </Callout>
 
-      <h2 id="planned">What&rsquo;s planned</h2>
+      <h2 id="events">Events</h2>
       <Table
-        head={["Event", "When"]}
+        head={["Event", "When", "data"]}
         rows={[
-          [<code key="e">checkout.session.completed</code>, "The full amount arrived. Fires once per session."],
-          [<code key="e">checkout.session.payment_received</code>, "Every verified transfer, including partial and extra payments."],
-          [<code key="e">checkout.session.expired</code>, "A session expired."],
-          [<code key="e">refund.succeeded</code>, "A refund was sent and verified."],
+          [
+            <code key="e">checkout.session.completed</code>,
+            "The full amount arrived. Fires once per session, even if it lands after the session expired.",
+            <code key="d">object</code>,
+          ],
+          [
+            <code key="e">checkout.session.payment_received</code>,
+            "Every verified transfer, including partial payments and extra money after completion.",
+            <span key="d">
+              <code>object</code>, <code>payment</code>
+            </span>,
+          ],
+          [
+            <code key="e">checkout.session.expired</code>,
+            "A session expired, by time or through the API.",
+            <code key="d">object</code>,
+          ],
+          [
+            <code key="e">refund.succeeded</code>,
+            <span key="w">
+              A refund was sent and verified on chain. <Badge tone="soon">With the Refunds API</Badge>
+            </span>,
+            <code key="d">object</code>,
+          ],
+          [<code key="e">ping</code>, "Only from Send test event in the console.", <code key="d">message</code>],
         ]}
       />
+      <p>
+        <code>data.object</code> is the same{" "}
+        <PortalLink href="/docs/api/checkout-sessions#object">session object</PortalLink> the API returns, as it was
+        when the event happened. Retrieve the session if you need its latest state.
+      </p>
+
+      <h2 id="payload">The request</h2>
+      <p>
+        A <code>POST</code> with a JSON body and these headers, from the open{" "}
+        <a href="https://www.standardwebhooks.com" rel="noreferrer" target="_blank">
+          Standard Webhooks
+        </a>{" "}
+        scheme:
+      </p>
+      <Table
+        head={["Header", "Value"]}
+        rows={[
+          [<code key="h">webhook-id</code>, "The event id (evt_…). The same on every retry: use it to skip duplicates."],
+          [<code key="h">webhook-timestamp</code>, "When this attempt was signed, in seconds since the epoch."],
+          [
+            <code key="h">webhook-signature</code>,
+            <span key="v">
+              <code>v1,</code> then the base64 HMAC-SHA256 of <code>{"{id}.{timestamp}.{body}"}</code>
+            </span>,
+          ],
+          [<code key="h">user-agent</code>, <code key="v">SaphraONE-Webhooks/1</code>],
+        ]}
+      />
+      <CodeTabs samples={[{ code: event, label: "checkout.session.completed", language: "json" }]} />
+
+      <h2 id="verify">Verify the signature</h2>
+      <p>
+        Every endpoint has its own signing secret (<code>whsec_…</code>), shown when you add it and revealable in the
+        console. Any Standard Webhooks or Svix library verifies the signature and rejects timestamps more than five
+        minutes old. Verify the <strong>raw</strong> body, before any JSON parsing.
+      </p>
+      <CodeTabs
+        samples={[
+          { code: verifyNode, label: "Node.js", language: "javascript" },
+          { code: verifyPython, label: "Python", language: "python" },
+          { code: verifyManual, label: "Manual", language: "javascript" },
+        ]}
+      />
+
+      <h2 id="retries">Retries and ordering</h2>
       <ul>
         <li>
-          Signed with the open <a href="https://www.standardwebhooks.com" rel="noreferrer" target="_blank">Standard Webhooks</a>{" "}
-          scheme (<code>webhook-id</code>, <code>webhook-timestamp</code>, <code>webhook-signature</code>), so you can
-          verify with off-the-shelf libraries.
+          Answer within 10 seconds with a 2xx. Anything else, a timeout or a redirect counts as a failure. Do slow work
+          after you reply.
         </li>
-        <li>The payload&rsquo;s <code>data.object</code> is the same session object the API returns.</li>
-        <li>Retried with backoff for about three days, with a delivery log and Resend in the console.</li>
+        <li>
+          A failed delivery is retried after 1 minute, 5 minutes, 30 minutes, then 2, 6, 12, 24 and 48 hours: nine
+          attempts over about four days. After the last one it is marked failed, the endpoint is flagged
+          and you get a notification.
+        </li>
+        <li>
+          Events can arrive more than once and out of order. Skip an event whose <code>webhook-id</code> you have
+          already handled, and treat <code>complete</code> as final whatever arrives after it.
+        </li>
+        <li>
+          The console&rsquo;s delivery log shows the last 50 deliveries with their status codes. <strong>Resend</strong>{" "}
+          sends one again straight away.
+        </li>
       </ul>
+
+      <h2 id="endpoints">Endpoints</h2>
+      <ul>
+        <li>Up to three endpoints per business, each subscribed to the events you choose.</li>
+        <li>
+          Endpoints must use <code>https</code> on a public address. To receive events on your machine, use a tunnel
+          such as ngrok or Cloudflare Tunnel.
+        </li>
+        <li>
+          <strong>Rotate</strong> replaces the signing secret at once; the old one stops verifying. Turn an endpoint
+          off to pause it without losing its settings.
+        </li>
+        <li>Sandbox and live have separate endpoints, set up in each environment&rsquo;s console.</li>
+      </ul>
+      <Callout title="Fulfil from the webhook, confirm with the API" tone="tip">
+        Ship the order on <code>checkout.session.completed</code>. Keep the{" "}
+        <PortalLink href="/docs/fulfil-orders#reconcile">reconcile job</PortalLink> as a safety net for an endpoint
+        that was down; with webhooks it can run hourly instead of every few minutes.
+      </Callout>
     </>
   );
 }

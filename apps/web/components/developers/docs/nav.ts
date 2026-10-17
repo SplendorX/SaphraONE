@@ -127,11 +127,10 @@ export const docEntries: DocEntry[] = [
     title: "Checkout Sessions",
   },
   {
-    description: "Signed event notifications to your server. In development; poll sessions until then.",
+    description: "Signed event notifications to your server: events, signatures, retries.",
     group: "API reference",
-    keywords: "webhook events signature standard webhooks",
+    keywords: "webhook events signature standard webhooks svix retries resend verify hmac",
     slug: "api/webhooks",
-    soon: true,
     title: "Webhooks",
   },
   {

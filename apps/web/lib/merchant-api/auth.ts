@@ -11,6 +11,7 @@ import {
   hashApiKey,
   touchApiKey,
 } from "@/lib/merchant-api/keys";
+import { driveMerchantDeliveries } from "@/lib/webhooks/events";
 
 export type ApiCaller = {
   /** The business wallet that payments go to. */
@@ -45,5 +46,6 @@ export async function requireApiKey(request: NextRequest): Promise<ApiCaller> {
   }
 
   void touchApiKey(record);
+  driveMerchantDeliveries(wallet);
   return { keyId: record.id, mode: record.mode, wallet };
 }

@@ -1,6 +1,11 @@
 import "@/lib/env-compat";
 import crypto from "node:crypto";
 
+import {
+  decryptSecret as decryptBoxSecret,
+  encryptSecret as encryptBoxSecret,
+  secretBoxAvailable,
+} from "@/lib/security/secret-box";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import { currentStep, verifyTotp } from "@/lib/two-factor/totp";
 import { sessionWallets, type WalletTokenPayload } from "@/lib/wallet-session";
@@ -21,41 +26,20 @@ export type TwoFactorRow = {
 };
 
 /**
- * The key that encrypts TOTP secrets at rest: 32 bytes as 64 hex characters
- * or base64. Its own secret, so rotating the session secret doesn't make
- * every authenticator unreadable. Without it, 2FA can't be turned on.
+ * TOTP secrets are encrypted at rest with SAPHRA_MFA_KEY (lib/security/secret-box).
+ * Its own key, so rotating the session secret doesn't make every
+ * authenticator unreadable. Without it, 2FA can't be turned on.
  */
-function encryptionKey() {
-  const raw = process.env.SAPHRA_MFA_KEY?.trim();
-  if (!raw) return null;
-  const key = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
-  return key.length === 32 ? key : null;
-}
-
 export function twoFactorAvailable() {
-  return encryptionKey() !== null;
+  return secretBoxAvailable("SAPHRA_MFA_KEY");
 }
 
 export function encryptSecret(secret: string) {
-  const key = encryptionKey();
-  if (!key) throw new Error("SAPHRA_MFA_KEY is not set.");
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const body = Buffer.concat([cipher.update(secret, "utf8"), cipher.final(), cipher.getAuthTag()]);
-  return `v1.${iv.toString("base64url")}.${body.toString("base64url")}`;
+  return encryptBoxSecret(secret, "SAPHRA_MFA_KEY");
 }
 
 export function decryptSecret(value: string) {
-  const key = encryptionKey();
-  if (!key) throw new Error("SAPHRA_MFA_KEY is not set.");
-  const [version, iv, body] = value.split(".");
-  if (version !== "v1" || !iv || !body) throw new Error("Unreadable secret.");
-  const data = Buffer.from(body, "base64url");
-  const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64url"));
-  decipher.setAuthTag(data.subarray(data.length - 16));
-  return Buffer.concat([decipher.update(data.subarray(0, data.length - 16)), decipher.final()]).toString(
-    "utf8",
-  );
+  return decryptBoxSecret(value, "SAPHRA_MFA_KEY");
 }
 
 // Backup codes: 10 characters from an alphabet without look-alikes, shown

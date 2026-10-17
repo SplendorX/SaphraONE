@@ -17,6 +17,7 @@ import type {
 } from "@/lib/checkout/types";
 import type { ApiCaller } from "@/lib/merchant-api/auth";
 import { apiErrors } from "@/lib/merchant-api/errors";
+import { emitSessionsExpired } from "@/lib/merchant-api/events";
 import { newSessionId, readSessionId } from "@/lib/merchant-api/ids";
 import { chargeStatusFor, toSessionObject } from "@/lib/merchant-api/serialize";
 import {
@@ -82,6 +83,14 @@ async function loadSessionRow(column: "public_id" | "charge_id", value: string) 
     .maybeSingle();
   if (error) throw new Error(readAccountDbError(error, "Could not load the checkout session."));
   return (data as CheckoutSessionRecord | null) ?? null;
+}
+
+/** The session object of an ONLINE charge, as webhooks send it; null for other charges. */
+export async function sessionObjectForCharge(charge: ChargeRecord, origin: string) {
+  if (charge.kind !== "ONLINE") return null;
+  const session = await loadSessionRow("charge_id", charge.id);
+  if (!session) return null;
+  return (await serialize([{ charge, session }], origin))[0];
 }
 
 /** The caller's session and its charge, or a 404 (also for another merchant's id). */
@@ -265,6 +274,7 @@ export async function expireSession(input: { caller: ApiCaller; id: unknown; ori
     if ((data ?? []).length === 0) {
       throw apiErrors.sessionState("A payment has arrived on this session, so it can't be expired.");
     }
+    await emitSessionsExpired([charge.id]);
   } else if (charge.status === "PAID") {
     throw apiErrors.sessionState("This session is already complete.");
   }

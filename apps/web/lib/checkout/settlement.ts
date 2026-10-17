@@ -157,7 +157,16 @@ export async function claimTransferForCharge(input: {
         : `Partial payment on charge ${charge.public_id}`,
   });
 
-  return { charge: await reloadCharge(charge.id), claimed: true };
+  const updated = await reloadCharge(charge.id);
+  if (charge.kind === "ONLINE") {
+    // Webhooks for the merchant's site. Recorded before we return, sent after.
+    await import("@/lib/merchant-api/events")
+      .then(({ emitChargeEvents }) =>
+        emitChargeEvents({ amount: input.amount, becamePaid, charge: updated, claimed: true, txHash }),
+      )
+      .catch((error) => console.error("[checkout] could not emit webhook events", error));
+  }
+  return { charge: updated, claimed: true };
 }
 
 async function reloadCharge(id: string) {

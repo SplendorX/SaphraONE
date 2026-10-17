@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import {
+  appUrlFor,
   developerMode,
   developerSurfaceFor,
   developerUrls,
@@ -186,9 +187,15 @@ function routePortalHost(request: NextRequest) {
     url.pathname = pathname.slice("/developers".length) || "/";
     return NextResponse.redirect(url, 308);
   }
+  // Signing in lands on the app's home pages; on the portal, home is the console.
+  if (pathname === "/dashboard" || pathname === "/business") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/console";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
   if (isProtectedRoute(pathname)) {
-    const app = process.env.NEXT_PUBLIC_APP_URL?.trim();
-    if (app) return NextResponse.redirect(new URL(`${pathname}${search}`, app));
+    return NextResponse.redirect(new URL(`${pathname}${search}`, appUrlFor()));
   }
   if ((pathname === "/console" || pathname.startsWith("/console/")) && !hasSignInCookie(request)) {
     const url = request.nextUrl.clone();
