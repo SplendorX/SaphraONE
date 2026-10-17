@@ -42,6 +42,12 @@ export const adminTools = [
     label: "Campaigns",
   },
   {
+    description: "Creator partners, their offers, members and payouts.",
+    href: "/admin/partners",
+    id: "partners",
+    label: "Partners",
+  },
+  {
     description: "Earn vaults and yields.",
     href: "/admin/earn",
     id: "earn",

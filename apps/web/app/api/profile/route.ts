@@ -21,6 +21,8 @@ import {
   attachReferral,
   getOrCreateReferralProfile,
 } from "@/lib/referral/attribution-service";
+import { PARTNER_OFFER_COOKIE } from "@/lib/partners/config";
+import { enrollPartnerMember, signupFingerprint } from "@/lib/partners/enroll";
 
 export const runtime = "nodejs";
 
@@ -578,7 +580,7 @@ export async function POST(request: NextRequest) {
           : cookieReferralToken;
 
       if (referralToken) {
-        await attachReferral({
+        const referral = await attachReferral({
           referrerTokenOrUsername: referralToken,
           referredWallet: walletAddress,
           accountType: "PERSONAL",
@@ -587,6 +589,20 @@ export async function POST(request: NextRequest) {
             timestamp: new Date().toISOString(),
           },
         });
+
+        // Signed up through a creator's link (/join/<code>): the welcome package.
+        const offerCode = cookieStore.get(PARTNER_OFFER_COOKIE)?.value;
+        if (offerCode) {
+          await enrollPartnerMember({
+            agentHash: signupFingerprint(request.headers.get("user-agent")),
+            ipHash: signupFingerprint(
+              request.headers.get("x-forwarded-for")?.split(",")[0] || request.headers.get("x-real-ip"),
+            ),
+            offerCode: decodeURIComponent(offerCode),
+            referral,
+            wallet: walletAddress,
+          });
+        }
       }
     } catch (referralErr) {
       // Log without failing profile creation

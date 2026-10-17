@@ -1,5 +1,7 @@
 // Server-only. Invite & Earn v2 (REWARDS-PLAN.md): referrers earn a share of
 // the service fees their direct referrals actually pay, in USDC, then claim it.
+import { loadPartnerByWallet } from "@/lib/partners/db";
+import { effectiveCommissionBps } from "@/lib/partners/rules";
 import { getOrCreateReferralProfile, getReferralForUser } from "@/lib/referral/attribution-service";
 import { readReferralDbError, referralDb, referralTables } from "@/lib/referral/db";
 import { maxAutomaticPayoutUsdc, payUsdcFromTreasury, TreasuryError } from "@/lib/referral/treasury";
@@ -132,12 +134,17 @@ export async function accrueReferralCommission(input: {
     referral.fraud_status === "REVIEW_REQUIRED";
 
   const standing = await referrerStanding(referral.referrer_wallet);
-  const amount = Math.floor(input.feeUsd * standing.tier.commissionBps * 100) / 1_000_000; // 6 decimals
+  // A creator partner earns their contract rate while it runs (CREATOR-PARTNERS-PLAN.md).
+  const commissionBps = effectiveCommissionBps(
+    await loadPartnerByWallet(referral.referrer_wallet),
+    standing.tier.commissionBps,
+  );
+  const amount = Math.floor(input.feeUsd * commissionBps * 100) / 1_000_000; // 6 decimals
   const { data, error } = await referralDb()
     .from("referral_fee_earnings")
     .insert({
       amount_usdc: amount,
-      commission_bps: standing.tier.commissionBps,
+      commission_bps: commissionBps,
       fee_usd: input.feeUsd,
       referred_wallet: input.referredWallet.toLowerCase(),
       referrer_wallet: referral.referrer_wallet.toLowerCase(),
