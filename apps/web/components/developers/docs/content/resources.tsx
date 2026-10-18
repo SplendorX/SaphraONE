@@ -9,6 +9,21 @@ export function ChangelogDoc({ ctx }: Props) {
     <>
       <p className="dp-lead">Changes to the Checkout API, newest first. v1 only ever changes additively.</p>
 
+      <h2 id="2026-10-18-refunds">
+        18 October 2026 · Refunds <Badge tone="new">New</Badge>
+      </h2>
+      <ul>
+        <li>
+          <PortalLink href="/docs/api/refunds">Refunds API</PortalLink>: request full or partial refunds with{" "}
+          <code>POST /v1/refunds</code>, retrieve them, and list a session&rsquo;s refunds.
+        </li>
+        <li>Merchants approve API requests, or start refunds themselves, in SaphraONE Checkout.</li>
+        <li>
+          <code>refund.succeeded</code> webhook once a refund is verified on chain; the session&rsquo;s{" "}
+          <code>amount_refunded</code> and <code>refunds</code> update.
+        </li>
+      </ul>
+
       <h2 id="2026-10-18-webhooks">
         18 October 2026 · Webhooks <Badge tone="new">New</Badge>
       </h2>
@@ -45,7 +60,6 @@ export function ChangelogDoc({ ctx }: Props) {
       <Table
         head={["Feature", "What it does", "Status"]}
         rows={[
-          ["Refunds API", "Request full or partial refunds; you approve them in SaphraONE.", <Badge key="s" tone="soon">In development</Badge>],
           ["Payment links", "Reusable no-code links that open a checkout.", <Badge key="s">Planned</Badge>],
           ["Embedded checkout", "A saphra.js popup so buyers never leave your site.", <Badge key="s">Planned</Badge>],
           ["Plugins", "WooCommerce first, then Shopify.", <Badge key="s">Planned</Badge>],

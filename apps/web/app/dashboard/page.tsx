@@ -146,7 +146,7 @@ import {
 import { getSwapErrorMessage } from "@/lib/swap-errors";
 import { trackTractionEvent } from "@/lib/traction/client";
 import { fetchPublicInvoice, payPublicInvoice } from "@/lib/account/client";
-import { fetchPublicCharge, payPublicCharge } from "@/lib/checkout/client";
+import { confirmRefundClient, fetchPublicCharge, payPublicCharge } from "@/lib/checkout/client";
 import { cn } from "@/lib/utils";
 import { CoinDetailSheet } from "@/components/dashboard/coin-detail-sheet";
 import { switchToArc } from "@/lib/arc-network";
@@ -655,7 +655,7 @@ export function DashboardContent({
 
   // The payment form lives on /send. Payment request links, and older links
   // that pointed here, carry their details in the query: pass them on.
-  const hasPaymentPrefill = ["requestId", "to", "recipient", "username", "amount", "businessPayment", "invoice", "charge"]
+  const hasPaymentPrefill = ["requestId", "to", "recipient", "username", "amount", "businessPayment", "invoice", "charge", "refund"]
     .some((key) => searchParams.has(key));
   // Paying a business invoice from a SaphraONE account: the invoice page sends
   // its public id so the payment is recorded against the invoice.
@@ -686,6 +686,14 @@ export function DashboardContent({
     "idle" | "recording" | "recorded" | "failed"
   >("idle");
   const recordedChargeHashes = useRef<Set<string>>(new Set());
+  // Sending a Checkout refund (Checkout → Refund): the refund id rides along
+  // so the send is confirmed against it.
+  const refundPublicId =
+    new URLSearchParams(dashboardPrefillQuery).get("refund")?.trim().toLowerCase() || "";
+  const [refundRecording, setRefundRecording] = useState<
+    "idle" | "recording" | "recorded" | "failed"
+  >("idle");
+  const recordedRefundHashes = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (view === "dashboard" && !preview && hasPaymentPrefill) {
       router.replace(`/send?${dashboardPrefillQuery}`);
@@ -1405,6 +1413,45 @@ export function DashboardContent({
     setChargeRecording("failed");
     setPaymentError(
       `Your payment was sent, but it couldn't be matched to charge ${chargeCode}: ${getErrorMessage(lastError)} Show the transaction to ${linkedCharge?.business ?? "the business"} so they can confirm it.`,
+    );
+  }
+
+  /**
+   * Confirm a sent refund against the Checkout refund it pays. The server
+   * reads the transfer off the chain, so this retries while the block
+   * propagates, and stops early on an answer that won't change.
+   */
+  async function settleRefund(txHash?: string | null) {
+    if (!refundPublicId || !txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) return;
+    const owner = workspaceContext?.ownerWallet ?? address;
+    if (!owner) return;
+    const key = txHash.toLowerCase();
+    if (recordedRefundHashes.current.has(key)) return;
+    recordedRefundHashes.current.add(key);
+    setRefundRecording("recording");
+
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await confirmRefundClient(
+          {
+            circleSocialUuid: getCircleLoginIdentity(circleLogin).socialUserUUID ?? undefined,
+            ownerWallet: owner,
+          },
+          refundPublicId,
+          txHash,
+        );
+        setRefundRecording("recorded");
+        return;
+      } catch (error) {
+        lastError = error;
+        if (!/isn't confirmed yet|try again/i.test(getErrorMessage(error))) break;
+        await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
+      }
+    }
+    setRefundRecording("failed");
+    setPaymentError(
+      `The refund was sent, but it couldn't be confirmed: ${getErrorMessage(lastError)} Check it in Checkout → Online.`,
     );
   }
 
@@ -2230,6 +2277,7 @@ export function DashboardContent({
     // recovered later — so the invoice is recorded whichever wallet paid.
     void settleInvoicePayment(txHash);
     void settleChargePayment(txHash);
+    void settleRefund(txHash);
     const actorAddress = address || circleAddress;
     if (!actorAddress || !paymentAmount.trim()) return;
     const numeric = parseFloat(paymentAmount.trim());
@@ -2254,12 +2302,14 @@ export function DashboardContent({
         counterparty: recipientLabel,
         counterpartyWallet: incomingRequestId ? resolvedRecipientAddress : null,
         direction: "out",
-        source: incomingRequestId ? "request" : chargeCode ? "checkout" : "send",
+        source: incomingRequestId ? "request" : chargeCode || refundPublicId ? "checkout" : "send",
         title: incomingRequestId
           ? `Paid request from ${recipientLabel}`
           : chargeCode
             ? `Paid ${linkedCharge?.business ?? recipientLabel}`
-            : `Sent to ${recipientLabel}`,
+            : refundPublicId
+              ? `Refund to ${recipientLabel}`
+              : `Sent to ${recipientLabel}`,
         token: selectedToken,
         txHash,
         walletAddress: actorAddress,
@@ -2937,6 +2987,41 @@ export function DashboardContent({
                 Paying invoice <span className="font-semibold">{linkedInvoice.number}</span> from{" "}
                 {linkedInvoice.business}. Keep the recipient and token as filled in so the payment
                 is matched to the invoice.
+              </p>
+            )}
+          </div>
+        ) : null}
+        {refundPublicId ? (
+          <div
+            className={cn(
+              "mb-4 rounded-xl border px-3 py-2.5 text-sm",
+              refundRecording === "recorded"
+                ? "border-emerald-500/40 bg-emerald-500/10"
+                : refundRecording === "failed"
+                  ? "border-destructive/40 bg-destructive/10"
+                  : "border-primary/30 bg-primary/5",
+            )}
+          >
+            {refundRecording === "recorded" ? (
+              <p>
+                Refund confirmed ·{" "}
+                <a className="font-medium text-primary hover:underline" href="/business/checkout?tab=online">
+                  Back to Checkout
+                </a>
+              </p>
+            ) : refundRecording === "recording" ? (
+              <p>Confirming the refund on chain…</p>
+            ) : refundRecording === "failed" ? (
+              <p>
+                The refund was sent but not confirmed yet.{" "}
+                <a className="font-medium text-primary hover:underline" href="/business/checkout?tab=online">
+                  Check it in Checkout
+                </a>
+              </p>
+            ) : (
+              <p>
+                Sending a refund from your business wallet. Keep the recipient, amount and token as filled in so it
+                is matched to the refund.
               </p>
             )}
           </div>

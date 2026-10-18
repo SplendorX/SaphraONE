@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "SaphraONE Checkout API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "summary": "Accept USDC and EURC on Arc from any website.",
     "description": "Create checkout sessions on your server, redirect buyers to the hosted payment page, and confirm payment by retrieving the session. Docs: https://developers.saphra.one/docs",
     "contact": {
@@ -29,6 +29,10 @@
     {
       "name": "Checkout Sessions",
       "description": "One payment for one order on the hosted page."
+    },
+    {
+      "name": "Refunds",
+      "description": "Full or partial refunds. Your server requests them; the merchant approves and sends them in SaphraONE."
     }
   ],
   "paths": {
@@ -239,6 +243,151 @@
             "$ref": "#/components/responses/Error"
           },
           "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/refunds": {
+      "post": {
+        "tags": [
+          "Refunds"
+        ],
+        "operationId": "createRefund",
+        "summary": "Request a refund",
+        "description": "Creates a refund with status requested. The amount is reserved at once; the merchant sends it in SaphraONE and it becomes succeeded (with a refund.succeeded webhook) once verified on chain.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefund"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The requested refund.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Refunds"
+        ],
+        "operationId": "listRefunds",
+        "summary": "List a session’s refunds",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The checkout session id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session’s refunds, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/refunds/{id}": {
+      "get": {
+        "tags": [
+          "Refunds"
+        ],
+        "operationId": "retrieveRefund",
+        "summary": "Retrieve a refund",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The refund id (re_…)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The refund.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
             "$ref": "#/components/responses/Error"
           },
           "429": {
@@ -668,6 +817,49 @@
                 "description": "The parameter at fault."
               }
             }
+          }
+        }
+      },
+      "CreateRefund": {
+        "type": "object",
+        "required": [
+          "session"
+        ],
+        "properties": {
+          "session": {
+            "type": "string",
+            "description": "The checkout session to refund (cs_…)."
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^d+(.d{1,6})?$",
+            "description": "Defaults to everything still refundable; at least 0.01."
+          },
+          "destination_wallet": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]{40}$",
+            "description": "The buyer’s Arc wallet. Required when the session was paid by card, bank or from another chain."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      },
+      "RefundList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Refund"
+            }
+          },
+          "has_more": {
+            "type": "boolean"
           }
         }
       }

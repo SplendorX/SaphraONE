@@ -23,6 +23,7 @@ import {
   ErrorsDoc,
   IdempotencyDoc,
   PaginationDoc,
+  RefundsDoc,
   WebhooksDoc,
 } from "@/components/developers/docs/content/reference";
 import { ChangelogDoc } from "@/components/developers/docs/content/resources";
@@ -36,6 +37,7 @@ export const docComponents: Record<string, ComponentType<{ ctx: DocContext }>> =
   "api/errors": ErrorsDoc,
   "api/idempotency": IdempotencyDoc,
   "api/pagination": PaginationDoc,
+  "api/refunds": RefundsDoc,
   "api/webhooks": WebhooksDoc,
   "business-guide": BusinessGuideDoc,
   changelog: ChangelogDoc,

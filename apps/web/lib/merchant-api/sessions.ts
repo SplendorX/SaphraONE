@@ -3,6 +3,7 @@
 // expires it exactly like an in-person charge.
 import { accountDb, accountTables, readAccountDbError } from "@/lib/account/db";
 import { isBusinessHttpError } from "@/lib/account/errors";
+import { loadRefunds } from "@/lib/checkout/refunds";
 import { syncChargeMatchesFor } from "@/lib/checkout/scan";
 import {
   createOnlineCharge,
@@ -10,11 +11,7 @@ import {
   loadChargeById,
   loadPayments,
 } from "@/lib/checkout/service";
-import type {
-  ChargeRecord,
-  ChargeRefundRecord,
-  CheckoutSessionRecord,
-} from "@/lib/checkout/types";
+import type { ChargeRecord, CheckoutSessionRecord } from "@/lib/checkout/types";
 import type { ApiCaller } from "@/lib/merchant-api/auth";
 import { apiErrors } from "@/lib/merchant-api/errors";
 import { emitSessionsExpired } from "@/lib/merchant-api/events";
@@ -40,23 +37,6 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-async function loadRefunds(chargeIds: string[]) {
-  const byCharge = new Map<string, ChargeRefundRecord[]>();
-  if (chargeIds.length === 0) return byCharge;
-  const { data, error } = await accountDb()
-    .from(accountTables.chargeRefunds)
-    .select("*")
-    .in("charge_id", chargeIds)
-    .order("created_at", { ascending: true });
-  if (error) throw new Error(readAccountDbError(error, "Could not load refunds."));
-  for (const refund of (data ?? []) as ChargeRefundRecord[]) {
-    const list = byCharge.get(refund.charge_id) ?? [];
-    list.push(refund);
-    byCharge.set(refund.charge_id, list);
-  }
-  return byCharge;
-}
-
 async function serialize(
   pairs: Array<{ charge: ChargeRecord; session: CheckoutSessionRecord }>,
   origin: string,
@@ -75,7 +55,7 @@ async function serialize(
   );
 }
 
-async function loadSessionRow(column: "public_id" | "charge_id", value: string) {
+export async function loadSessionRow(column: "public_id" | "charge_id", value: string) {
   const { data, error } = await accountDb()
     .from(accountTables.checkoutSessions)
     .select("*")
@@ -94,7 +74,7 @@ export async function sessionObjectForCharge(charge: ChargeRecord, origin: strin
 }
 
 /** The caller's session and its charge, or a 404 (also for another merchant's id). */
-async function loadOwnedSession(caller: ApiCaller, id: unknown) {
+export async function loadOwnedSession(caller: ApiCaller, id: unknown) {
   const sessionId = readSessionId(id);
   if (!sessionId) throw apiErrors.sessionNotFound();
   const session = await loadSessionRow("public_id", sessionId);

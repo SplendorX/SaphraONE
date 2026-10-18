@@ -628,3 +628,66 @@
 .ck-item-action:disabled {
   opacity: 0.5;
 }
+
+/* Refunds: the sheet, the requests list and the refunded line. */
+.ck-refund .ck-field {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.45rem 0.9rem;
+}
+
+.ck-field-label {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ck-refund .ck-field input {
+  width: 100%;
+}
+
+.ck-refund-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in oklch, #f59e0b 12%, var(--card));
+  font-size: 0.8rem;
+}
+
+.ck-refunded {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+}
+
+.ck-item-refund {
+  padding: 0 0 0.75rem;
+  border-top: 0;
+}
+
+.ck-request {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.ck-request:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ck-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ck-quiet-link svg {
+  display: inline;
+  margin-right: 0.25rem;
+  vertical-align: -2px;
+}

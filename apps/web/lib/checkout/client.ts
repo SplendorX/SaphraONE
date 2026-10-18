@@ -1,5 +1,6 @@
 import type {
   ChargeIntentMethod,
+  ChargeRefundRecord,
   ChargeStatus,
   ChargeSummary,
   ChargeWithPayments,
@@ -107,6 +108,51 @@ export function reconcileChargeClient(auth: MerchantAuth, chargeId: string, txHa
   return postJson<{ charge: ChargeWithPayments }>(
     `/api/business/checkout/charges/${chargeId}/reconcile`,
     { ...auth, txHash },
+  );
+}
+
+// ── Refunds ─────────────────────────────────────────────────────────────────
+
+/** A refund waiting to be sent, with where it came from and the Send link that pays it. */
+export type RefundRequestView = ChargeRefundRecord & {
+  charge_code: string;
+  session_id: string | null;
+  client_reference_id: string | null;
+  send_href: string;
+};
+
+/** Starts a refund; open `sendHref` to send it. It counts once that send is confirmed. */
+export function createRefundClient(
+  auth: MerchantAuth,
+  chargeId: string,
+  body: { amount?: string; destination?: string; reason?: string },
+) {
+  return postJson<{ refund: ChargeRefundRecord; sendHref: string }>(
+    `/api/business/checkout/charges/${chargeId}/refunds`,
+    { ...auth, ...body },
+  );
+}
+
+export function fetchPendingRefunds(auth: MerchantAuth) {
+  return requestJson<{ refunds: RefundRequestView[] }>(
+    withWallet("/api/business/checkout/refunds", auth.ownerWallet, {
+      circleSocialUuid: auth.circleSocialUuid,
+    }),
+    { cache: "no-store" },
+  );
+}
+
+export function confirmRefundClient(auth: MerchantAuth, refundId: string, txHash: string) {
+  return postJson<{ refund: ChargeRefundRecord }>(
+    `/api/business/checkout/refunds/${encodeURIComponent(refundId)}/confirm`,
+    { ...auth, txHash },
+  );
+}
+
+export function cancelRefundClient(auth: MerchantAuth, refundId: string) {
+  return postJson<{ refund: ChargeRefundRecord }>(
+    `/api/business/checkout/refunds/${encodeURIComponent(refundId)}/cancel`,
+    auth,
   );
 }
 

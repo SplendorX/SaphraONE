@@ -1,10 +1,12 @@
 // Server-only. Turns what happens to an ONLINE charge into checkout.session
 // webhook events. In-person charges return at once. Never throws: a webhook
 // problem must not fail a payment or an expiry.
+import { accountDb, accountTables } from "@/lib/account/db";
 import { roundMoney } from "@/lib/account/money";
 import { loadChargeById } from "@/lib/checkout/service";
-import type { ChargeRecord } from "@/lib/checkout/types";
+import type { ChargeRecord, ChargeRefundRecord } from "@/lib/checkout/types";
 import { configuredAppOrigin } from "@/lib/merchant-api/http";
+import { toRefundObject } from "@/lib/merchant-api/serialize";
 import { sessionObjectForCharge } from "@/lib/merchant-api/sessions";
 import { explorerTxUrl } from "@/lib/onchain-facts";
 import { emitMerchantEvent } from "@/lib/webhooks/events";
@@ -51,6 +53,26 @@ export async function emitChargeEvents(input: {
     }
   } catch (error) {
     console.error("[merchant-api] could not emit charge events", input.charge.id, error);
+  }
+}
+
+/** After a refund of an ONLINE charge is verified (lib/checkout/refunds). */
+export async function emitRefundSucceeded(refund: ChargeRefundRecord) {
+  try {
+    const { data, error } = await accountDb()
+      .from(accountTables.checkoutSessions)
+      .select("public_id")
+      .eq("charge_id", refund.charge_id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    await emitMerchantEvent({
+      data: { object: toRefundObject(refund, (data as { public_id: string } | null)?.public_id ?? null) },
+      dedupeKey: `refund:${refund.id}`,
+      type: "refund.succeeded",
+      wallet: refund.wallet_address,
+    });
+  } catch (error) {
+    console.error("[merchant-api] could not emit refund.succeeded", refund.public_id, error);
   }
 }
 
