@@ -84,27 +84,81 @@ export function nativeArcToUnits(value: bigint) {
   return value / 10n ** 12n;
 }
 
+// ─── Deposit fee ─────────────────────────────────────────────────────────────
+//
+// SaphraONE's fee on each sweep to Arc, which pays for the gas Circle's Gas
+// Station sponsors on the source network. Collected by App Kit as a custom fee
+// on top of the bridged amount: Circle keeps 10% of it, the platform fee
+// wallet gets the rest.
+
+/** The flat deposit fee, and the floor on every network: 0.10 USDC. */
+export const DEPOSIT_FEE_FLOOR_UNITS = 100_000n;
+/** Circle's share of any App Kit custom fee, in basis points. */
+export const CIRCLE_CUSTOM_FEE_SHARE_BPS = 1_000n;
+/** Kept above the gas cost: +25% and 5 cents, so a sweep never runs at a loss. */
+export const DEPOSIT_FEE_MARGIN_BPS = 2_500n;
+export const DEPOSIT_FEE_MARGIN_UNITS = 50_000n;
+/** A sweep waits rather than charge more than this share of what's waiting (gas spikes). */
+export const DEPOSIT_FEE_MAX_SHARE_BPS = 2_000n;
+/** What must still reach Arc after the fee, at least: 1 USDC. */
+export const MIN_SWEEP_AFTER_FEE_UNITS = 1_000_000n;
+
+/**
+ * The deposit fee for a sweep, in USDC units. With a gas estimate (Ethereum),
+ * it covers the gas in USD with the margin, grossed up for Circle's share and
+ * rounded up to the cent; never below the 0.10 floor. Without one, the floor.
+ */
+export function depositFeeUnits(gas?: {
+  /** Gas the sweep spends (approve, burn and the fee transfer, through the paymaster). */
+  gasUnits: bigint;
+  gasPriceWei: bigint;
+  /** The gas token's price in micro-USD (1 USD = 1_000_000n). */
+  nativeUsdMicros: bigint;
+}): bigint {
+  if (!gas || gas.gasUnits <= 0n || gas.gasPriceWei <= 0n || gas.nativeUsdMicros <= 0n) {
+    return DEPOSIT_FEE_FLOOR_UNITS;
+  }
+  // wei × micro-USD per 1e18 wei = micro-USD, the same scale as USDC units.
+  const costUnits = (gas.gasUnits * gas.gasPriceWei * gas.nativeUsdMicros + 10n ** 18n - 1n) / 10n ** 18n;
+  const withMargin = (costUnits * (10_000n + DEPOSIT_FEE_MARGIN_BPS) + 9_999n) / 10_000n + DEPOSIT_FEE_MARGIN_UNITS;
+  const gross = (withMargin * 10_000n + (10_000n - CIRCLE_CUSTOM_FEE_SHARE_BPS) - 1n) / (10_000n - CIRCLE_CUSTOM_FEE_SHARE_BPS);
+  const cents = ((gross + 9_999n) / 10_000n) * 10_000n;
+  return cents > DEPOSIT_FEE_FLOOR_UNITS ? cents : DEPOSIT_FEE_FLOOR_UNITS;
+}
+
 export type SweepPlan =
-  | { action: "sweep"; amountUnits: bigint }
-  | { action: "wait"; reason: "below-min" | "empty" | "paused" | "in-flight" };
+  | { action: "sweep"; amountUnits: bigint; feeUnits: bigint }
+  | { action: "wait"; reason: "below-min" | "empty" | "paused" | "in-flight" | "fee-high" };
 
 /**
  * Whether an address's balance should go to Arc now. The whole balance moves
  * in one sweep, so deposits below the minimum add up until they pass it.
+ * `amountUnits` is what leaves the address; the deposit fee comes out of it,
+ * and a sweep waits while the fee would take more than its share (gas spikes).
  */
 export function planSweep(input: {
   balanceUnits: bigint;
+  /** The deposit fee for this sweep; 0n when no fee is charged. */
+  feeUnits?: bigint;
   hasSweepInFlight: boolean;
   minDeposit: number;
   paused: boolean;
 }): SweepPlan {
+  const feeUnits = input.feeUnits ?? 0n;
   if (input.hasSweepInFlight) return { action: "wait", reason: "in-flight" };
   if (input.balanceUnits <= 0n) return { action: "wait", reason: "empty" };
   if (input.paused) return { action: "wait", reason: "paused" };
   if (input.balanceUnits < usdcToUnits(input.minDeposit)) {
     return { action: "wait", reason: "below-min" };
   }
-  return { action: "sweep", amountUnits: input.balanceUnits };
+  if (feeUnits > 0n) {
+    if (input.balanceUnits - feeUnits < MIN_SWEEP_AFTER_FEE_UNITS) return { action: "wait", reason: "below-min" };
+    // The floor is always allowed; above it, only up to the share.
+    if (feeUnits > DEPOSIT_FEE_FLOOR_UNITS && feeUnits * 10_000n > input.balanceUnits * DEPOSIT_FEE_MAX_SHARE_BPS) {
+      return { action: "wait", reason: "fee-high" };
+    }
+  }
+  return { action: "sweep", amountUnits: input.balanceUnits, feeUnits };
 }
 
 /**

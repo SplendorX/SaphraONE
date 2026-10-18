@@ -1,6 +1,8 @@
 // Server-only. What the browser sees of multichain receive.
 import { multichainChainByCircleBlockchain } from "@/lib/multichain/chains";
+import { depositFeesByNetwork } from "@/lib/multichain/deposit-fee";
 import { enabledMultichainChains, multichainEnabled } from "@/lib/multichain/flag";
+import { unitsToUsdc } from "@/lib/multichain/rules";
 import { walletAllowed } from "@/lib/multichain/service";
 import {
   listDepositAddresses,
@@ -65,13 +67,17 @@ function depositView(row: ChainDepositRow, sweep: ChainSweepRow | undefined): In
 
 export type MultichainOverview = {
   addresses: { address: string; network: string }[];
-  chains: { key: string; minDeposit: number; name: string; typicalWait: string }[];
+  /** `depositFee`: SaphraONE's fee per sweep in USDC ("0.1"), null when none is charged or unknown. */
+  chains: { depositFee: string | null; key: string; minDeposit: number; name: string; typicalWait: string }[];
   deposits: IncomingDepositView[];
   enabled: boolean;
 };
 
 export async function multichainOverview(ownerWallet: string): Promise<MultichainOverview> {
-  const chains = enabledMultichainChains().map((chain) => ({
+  const enabled = enabledMultichainChains();
+  const fees = multichainEnabled ? await depositFeesByNetwork(enabled).catch(() => ({}) as Record<string, bigint>) : {};
+  const chains = enabled.map((chain) => ({
+    depositFee: fees[chain.key] ? unitsToUsdc(fees[chain.key]) : null,
     key: chain.key,
     minDeposit: chain.minDeposit,
     name: chain.name,

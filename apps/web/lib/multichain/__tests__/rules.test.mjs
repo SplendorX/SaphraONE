@@ -10,6 +10,8 @@ import { describe, it } from "node:test";
 
 import {
   canMoveDeposit,
+  DEPOSIT_FEE_FLOOR_UNITS,
+  depositFeeUnits,
   checkOutbound,
   canMoveSweep,
   depositsForSweep,
@@ -56,12 +58,64 @@ describe("USDC units", () => {
   });
 });
 
+describe("depositFeeUnits", () => {
+  it("is the 0.10 floor without a gas estimate", () => {
+    assert.equal(depositFeeUnits(), 100_000n);
+    assert.equal(DEPOSIT_FEE_FLOOR_UNITS, 100_000n);
+  });
+
+  it("covers Ethereum gas with the margin and Circle's 10%, rounded up to the cent", () => {
+    // 350k gas at 2 gwei, ETH at $3,000: $2.10 of gas.
+    // +25% = 2.625, +0.05 = 2.675, ÷ 0.9 = 2.9722… → 2.98.
+    const fee = depositFeeUnits({ gasPriceWei: 2_000_000_000n, gasUnits: 350_000n, nativeUsdMicros: 3_000_000_000n });
+    assert.equal(fee, 2_980_000n);
+    // What the platform keeps after Circle's 10% still beats the gas.
+    assert.ok((fee * 9n) / 10n > 2_100_000n);
+  });
+
+  it("never goes below the floor when gas is nearly free", () => {
+    assert.equal(depositFeeUnits({ gasPriceWei: 1_000_000n, gasUnits: 350_000n, nativeUsdMicros: 3_000_000_000n }), 100_000n);
+  });
+
+  it("falls back to the floor on a missing price", () => {
+    assert.equal(depositFeeUnits({ gasPriceWei: 2_000_000_000n, gasUnits: 350_000n, nativeUsdMicros: 0n }), 100_000n);
+  });
+});
+
+describe("planSweep with a deposit fee", () => {
+  const base = { hasSweepInFlight: false, minDeposit: 1, paused: false };
+
+  it("sweeps the whole balance and carries the fee", () => {
+    assert.deepEqual(planSweep({ ...base, balanceUnits: 5_000_000n, feeUnits: 100_000n }), {
+      action: "sweep",
+      amountUnits: 5_000_000n,
+      feeUnits: 100_000n,
+    });
+  });
+
+  it("waits when less than 1 USDC would reach Arc", () => {
+    assert.deepEqual(planSweep({ ...base, balanceUnits: 1_050_000n, feeUnits: 100_000n }), {
+      action: "wait",
+      reason: "below-min",
+    });
+  });
+
+  it("waits out a gas spike rather than take more than 20%", () => {
+    // A 6 USDC fee on 25 USDC is 24%.
+    assert.deepEqual(planSweep({ ...base, balanceUnits: 25_000_000n, feeUnits: 6_000_000n, minDeposit: 25 }), {
+      action: "wait",
+      reason: "fee-high",
+    });
+    assert.equal(planSweep({ ...base, balanceUnits: 25_000_000n, feeUnits: 3_000_000n, minDeposit: 25 }).action, "sweep");
+  });
+});
+
 describe("planSweep", () => {
   const base = { hasSweepInFlight: false, minDeposit: 1, paused: false };
 
   it("sweeps the whole balance once it passes the minimum", () => {
-    assert.deepEqual(planSweep({ ...base, balanceUnits: 1_000_000n }), { action: "sweep", amountUnits: 1_000_000n });
-    assert.deepEqual(planSweep({ ...base, balanceUnits: 50_250_000n }), { action: "sweep", amountUnits: 50_250_000n });
+    assert.deepEqual(planSweep({ ...base, balanceUnits: 1_000_000n }), { action: "sweep", amountUnits: 1_000_000n, feeUnits: 0n });
+    assert.deepEqual(planSweep({ ...base, balanceUnits: 50_250_000n }), { action: "sweep", amountUnits: 50_250_000n, feeUnits: 0n });
   });
 
   it("waits below the minimum so small deposits add up", () => {

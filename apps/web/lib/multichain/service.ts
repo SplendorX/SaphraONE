@@ -16,6 +16,7 @@ import { AppKit } from "@circle-fin/app-kit";
 import { createCircleWalletsAdapter } from "@circle-fin/adapter-circle-wallets";
 
 import { recordAccountActivity } from "@/lib/activity/service";
+import { platformFeeRecipient } from "@/lib/fees";
 import { readCircleError } from "@/lib/agent-wallet/client";
 import { arcAppKitChain, getDepositErrorMessage } from "@/lib/deposit-to-arc";
 import {
@@ -23,6 +24,7 @@ import {
   multichainChainByKey,
   type MultichainChain,
 } from "@/lib/multichain/chains";
+import { quoteDepositFee } from "@/lib/multichain/deposit-fee";
 import { mintSenders } from "@/lib/multichain/senders";
 import {
   circleWalletsCredentials,
@@ -239,14 +241,22 @@ async function runBridge(sweep: ChainSweepRow, address: DepositAddressRow, resum
 
   const adapter = createCircleWalletsAdapter(circleWalletsCredentials());
   const kit = new AppKit();
+  const serviceFee = usdcToUnits(sweep.service_fee || "0");
   let result: BridgeResultLike;
   try {
     result = (
       resumeFrom
         ? await kit.retryBridge(resumeFrom as Parameters<typeof kit.retryBridge>[0], { from: adapter })
         : await kit.bridge({
-            amount: sweep.amount,
-            config: { transferSpeed: "FAST" },
+            // What reaches CCTP: the swept balance less the deposit fee, which
+            // App Kit collects on top of it for the platform fee wallet.
+            amount: unitsToUsdc(usdcToUnits(sweep.amount) - serviceFee),
+            config: {
+              transferSpeed: "FAST",
+              ...(serviceFee > 0n
+                ? { customFee: { recipientAddress: platformFeeRecipient(), value: unitsToUsdc(serviceFee) } }
+                : {}),
+            },
             from: { adapter, address: address.address, chain: chain.appKitChain },
             to: {
               chain: arcAppKitChain(),
@@ -352,7 +362,8 @@ export async function tryCredit(sweep: ChainSweepRow) {
   const credited = await updateSweep(sweep.id, ["BURNED", "FAILED"], {
     amount_credited: unitsToUsdc(minted),
     credited_at: now,
-    fee_units: sweepFeeUnits(usdcToUnits(sweep.amount), minted).toString(),
+    // Circle's share only: the deposit fee was taken before the burn.
+    fee_units: sweepFeeUnits(usdcToUnits(sweep.amount) - usdcToUnits(sweep.service_fee || "0"), minted).toString(),
     last_error: null,
     mint_tx_hash: mintTx,
     state: "CREDITED",
@@ -367,7 +378,13 @@ export async function tryCredit(sweep: ChainSweepRow) {
       amount: unitsToUsdc(minted),
       counterparty: label,
       direction: "in",
-      metadata: { network: chain.key, sender: from?.sender ?? null, swept: sweep.amount, sweepId: sweep.id },
+      metadata: {
+        depositFee: sweep.service_fee || "0",
+        network: chain.key,
+        sender: from?.sender ?? null,
+        swept: sweep.amount,
+        sweepId: sweep.id,
+      },
       source: "deposit",
       title: `Received from ${label}`,
       token: "USDC",
@@ -466,11 +483,18 @@ async function advanceSweep(sweep: ChainSweepRow, address: DepositAddressRow) {
     await moveDeposits({ sweepId: sweep.id }, ["SWEEPING", "FAILED"], { state: "NEEDS_REVIEW" });
     return sweep;
   }
+  // A fresh start is a fresh quote: the balance (and Ethereum's gas) may have moved.
+  const fee = await quoteDepositFee(chainFor(address)).catch(() => null);
+  if (fee === null) return sweep;
+  const restart = planSweep({ balanceUnits: balance, feeUnits: fee, hasSweepInFlight: false, minDeposit: 0, paused: false });
+  if (restart.action === "wait") return sweep;
   const claimed = await updateSweep(
     sweep.id,
     ["SWEEPING", "FAILED"],
     {
       amount: unitsToUsdc(balance),
+      // Left out when there's no fee, so a database without the column still restarts.
+      ...(restart.feeUnits > 0n ? { service_fee: unitsToUsdc(restart.feeUnits) } : {}),
       attempts: sweep.attempts + 1,
       bridge_result: null,
       started_at: new Date().toISOString(),
@@ -497,8 +521,12 @@ export async function sweepAddress(address: DepositAddressRow) {
 
   const balance = await depositUsdcBalance(address.provider_wallet_id, chain);
   const waiting = await listDepositsForAddress(address.id, ["DETECTED", "CONFIRMED", "BELOW_MIN"]);
+  // No gas reading on Ethereum: wait for the next pass rather than guess.
+  const feeUnits = balance > 0n ? await quoteDepositFee(chain).catch(() => null) : 0n;
+  if (feeUnits === null) return null;
   const plan = planSweep({
     balanceUnits: balance,
+    feeUnits,
     hasSweepInFlight: false,
     minDeposit: chain.minDeposit,
     paused: sweepsPaused(),
@@ -522,6 +550,7 @@ export async function sweepAddress(address: DepositAddressRow) {
 
   const sweep = await insertSweep({
     amount: unitsToUsdc(plan.amountUnits),
+    service_fee: unitsToUsdc(plan.feeUnits),
     chain: address.chain,
     deposit_address_id: address.id,
     owner_wallet: address.owner_wallet,

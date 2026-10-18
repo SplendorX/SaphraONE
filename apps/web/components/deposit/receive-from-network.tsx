@@ -246,6 +246,16 @@ export function ReceiveFromNetwork() {
             <span className="rx-value-strong">{chain.minDeposit} USDC</span>
           </div>
 
+          {chain.depositFee ? (
+            <div className="rx-tile">
+              <span className="rx-label-strong">
+                Deposit fee
+                {chain.key === "ethereum" ? <span className="rx-label-note">Follows Ethereum&apos;s gas price</span> : null}
+              </span>
+              <span className="rx-value-strong">{Number(chain.depositFee).toFixed(2)} USDC</span>
+            </div>
+          ) : null}
+
           <div className="rx-tile">
             <span className="rx-label-strong">Arrives in {arcChain.name}</span>
             <span className="rx-value-strong">{chain.typicalWait}</span>
@@ -255,7 +265,10 @@ export function ReceiveFromNetwork() {
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>
               Send <strong>USDC on {chain.name} only</strong>. Other tokens or networks aren&apos;t credited. Smaller
-              amounts wait until they reach the minimum; Circle&apos;s fee (about 2 cents) comes off the amount.
+              amounts wait until they reach the minimum.{" "}
+              {chain.depositFee
+                ? `The ${Number(chain.depositFee).toFixed(2)} USDC deposit fee and Circle's network fee (about 2 cents) come off the amount.`
+                : "Circle's fee (about 2 cents) comes off the amount."}
             </span>
           </p>
         </>

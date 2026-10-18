@@ -22,7 +22,10 @@ export type ChainSweepRow = {
   state: SweepState;
   amount: string;
   amount_credited: string | null;
+  /** Circle's fees on the bridge (swept less deposit fee, less what arrived). */
   fee_units: string | null;
+  /** SaphraONE's deposit fee, taken out of `amount` before the burn. */
+  service_fee: string;
   burn_tx_hash: string | null;
   mint_tx_hash: string | null;
   bridge_result: unknown;
@@ -260,8 +263,15 @@ export async function insertSweep(row: {
   owner_wallet: string;
   chain: string;
   amount: string;
+  service_fee: string;
 }) {
-  const { data, error } = await db().from("chain_sweeps").insert(row).select("*").maybeSingle<ChainSweepRow>();
+  let { data, error } = await db().from("chain_sweeps").insert(row).select("*").maybeSingle<ChainSweepRow>();
+  // Before multichain.sql adds service_fee, sweep without the fee rather than not at all.
+  if (error && /service_fee/.test(error.message ?? "")) {
+    console.warn("[multichain] chain_sweeps.service_fee is missing; run multichain.sql. Sweeping without the deposit fee.");
+    const { service_fee: _skipped, ...withoutFee } = row;
+    ({ data, error } = await db().from("chain_sweeps").insert(withoutFee).select("*").maybeSingle<ChainSweepRow>());
+  }
   if (error) {
     if (error.code === "23505") return null;
     fail(error, "Sweep could not be started.");

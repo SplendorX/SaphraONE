@@ -58,6 +58,11 @@ create table if not exists public.chain_sweeps (
   )
 );
 
+-- SaphraONE's deposit fee on the sweep (USDC), taken out of `amount` before
+-- the burn as App Kit's custom fee, to the platform fee wallet on the source
+-- network. Pays for the gas Circle's Gas Station sponsors there.
+alter table public.chain_sweeps add column if not exists service_fee text not null default '0';
+
 create unique index if not exists chain_sweeps_one_in_flight
   on public.chain_sweeps (deposit_address_id)
   where state in ('SWEEPING', 'BURNED');
@@ -157,12 +162,15 @@ create index if not exists chain_transfers_burned_idx
 alter table public.account_activity
   drop constraint if exists account_activity_source_check;
 
+-- The full list of sources (apps/web/lib/activity/types.ts), the same in every
+-- file that sets this constraint, so re-running any one never drops a source
+-- rows already use.
 alter table public.account_activity
   add constraint account_activity_source_check check (
     source in (
       'send', 'request', 'payroll', 'circle', 'swap', 'invoice',
       'save', 'earn', 'batch', 'recurepay', 'agent', 'points', 'checkout',
-      'deposit'
+      'deposit', 'ramp'
     )
   );
 

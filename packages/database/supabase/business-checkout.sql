@@ -138,10 +138,14 @@ create policy business_checkout_scan_cursors_no_client_access
 alter table public.account_activity
   drop constraint if exists account_activity_source_check;
 
+-- The full list of sources (apps/web/lib/activity/types.ts), the same in every
+-- file that sets this constraint, so re-running any one never drops a source
+-- rows already use.
 alter table public.account_activity
   add constraint account_activity_source_check check (
     source in (
       'send', 'request', 'payroll', 'circle', 'swap', 'invoice',
-      'save', 'earn', 'batch', 'recurepay', 'agent', 'points', 'checkout'
+      'save', 'earn', 'batch', 'recurepay', 'agent', 'points', 'checkout',
+      'deposit', 'ramp'
     )
   );
