@@ -23,7 +23,8 @@ function readDismissed(): string[] {
  * Home's announcement cards: a USDC campaign once it's published, a ONE
  * Points quest once it's live, and a creator partner's welcome package for
  * the member it belongs to (app/api/announcements). They scroll sideways
- * when there are several, and each one closes for good with its ×.
+ * when there are several, and each one closes for good with its ×. Two or
+ * more live quests share one "Challenges are live" card.
  */
 export function Announcements() {
   const [items, setItems] = useState<Announcement[]>([]);
@@ -43,8 +44,8 @@ export function Announcements() {
     };
   }, []);
 
-  function dismiss(id: string) {
-    const next = [...new Set([...(dismissed ?? []), id])].slice(-50);
+  function dismiss(ids: string[]) {
+    const next = [...new Set([...(dismissed ?? []), ...ids])].slice(-50);
     setDismissed(next);
     try {
       window.localStorage.setItem(dismissedKey, JSON.stringify(next));
@@ -53,31 +54,85 @@ export function Announcements() {
 
   // Wait for the dismissed list, so a closed card never flashes back.
   const shown = dismissed ? items.filter((item) => !dismissed.includes(item.id)) : [];
-  if (shown.length === 0) return null;
+  const cards = withQuestsCombined(shown);
+  if (cards.length === 0) return null;
 
   return (
-    <section aria-label="Announcements" className="ann" data-count={shown.length}>
-      {shown.map((item) => (
-        <article className="ann-card" data-kind={item.kind} key={item.id}>
-          <Link className="ann-link" href={item.href}>
-            <span className="ann-text">
-              <span className="ann-title">{item.title}</span>
-              <span className="ann-body">{item.body}</span>
-              <span className="ann-badge">{item.badge}</span>
-            </span>
-            {item.kind === "campaign" ? <TrophyArt /> : item.kind === "welcome" ? <GiftArt /> : <MedalArt />}
-          </Link>
-          <button
-            aria-label={`Dismiss ${item.title}`}
-            className="ann-close"
-            onClick={() => dismiss(item.id)}
-            type="button"
-          >
-            <X aria-hidden className="h-3.5 w-3.5" strokeWidth={2.6} />
-          </button>
-        </article>
+    <section aria-label="Announcements" className="ann" data-count={cards.length}>
+      {cards.map((item) => (
+        <AnnouncementCard item={item} key={item.id} onDismiss={() => dismiss(item.ids)} />
       ))}
     </section>
+  );
+}
+
+/**
+ * One card. Also the admin's live preview (app/admin/announcements), so what
+ * the team sees there is what everyone gets on Home.
+ */
+export function AnnouncementCard({ item, onDismiss }: { item: Announcement; onDismiss?: () => void }) {
+  const content = (
+    <>
+      <span className="ann-text">
+        <span className="ann-title">{item.title}</span>
+        {item.body ? <span className="ann-body">{item.body}</span> : null}
+        {item.badge ? <span className="ann-badge">{item.badge}</span> : null}
+      </span>
+      <AnnouncementArt item={item} />
+    </>
+  );
+  const external = item.href.startsWith("https://");
+  return (
+    <article className="ann-card" data-kind={item.kind} data-tone={item.tone}>
+      {!item.href ? (
+        <div className="ann-link">{content}</div>
+      ) : external ? (
+        <a className="ann-link" href={item.href} rel="noreferrer" target="_blank">
+          {content}
+        </a>
+      ) : (
+        <Link className="ann-link" href={item.href}>
+          {content}
+        </Link>
+      )}
+      {onDismiss && item.dismissible !== false ? (
+        <button aria-label={`Dismiss ${item.title}`} className="ann-close" onClick={onDismiss} type="button">
+          <X aria-hidden className="h-3.5 w-3.5" strokeWidth={2.6} />
+        </button>
+      ) : null}
+    </article>
+  );
+}
+
+function AnnouncementArt({ item }: { item: Announcement }) {
+  if (item.kind === "campaign") return <TrophyArt />;
+  if (item.kind === "welcome") return <GiftArt />;
+  if (item.kind === "quest") return <MedalArt />;
+  if (item.tone === "important") return <AlertArt />;
+  if (item.tone === "update") return <SparkArt />;
+  if (item.tone === "maintenance") return <WrenchArt />;
+  return <MegaphoneArt />;
+}
+
+type Card = Announcement & { ids: string[] };
+
+/** Each card with the ids it stands for; several quests become one card. */
+function withQuestsCombined(items: Announcement[]): Card[] {
+  const quests = items.filter((item) => item.kind === "quest");
+  if (quests.length < 2) return items.map((item) => ({ ...item, ids: [item.id] }));
+  const combined: Card = {
+    badge: `${quests.length} challenges`,
+    body: "Complete challenges. Build streaks. Earn points.",
+    href: "/rewards",
+    id: "quests",
+    ids: quests.map((quest) => quest.id),
+    kind: "quest",
+    publishedAt: quests[0].publishedAt,
+    title: "Challenges are live",
+  };
+  // In the first quest's place, the others dropped.
+  return items.flatMap((item) =>
+    item.kind !== "quest" ? [{ ...item, ids: [item.id] }] : item === quests[0] ? [combined] : [],
   );
 }
 
@@ -118,6 +173,59 @@ function MedalArt() {
         d="m48 46 3 6.2 6.8 1-4.9 4.8 1.2 6.8-6.1-3.2-6.1 3.2 1.2-6.8-4.9-4.8 6.8-1Z"
         fill="#ffffff"
       />
+    </svg>
+  );
+}
+
+/** A flat megaphone: team news. */
+function MegaphoneArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#dbeafe" r="44" />
+      <path d="M26 42h10l26-14v40L36 54H26a4 4 0 0 1-4-4v-4a4 4 0 0 1 4-4Z" fill="#2563eb" />
+      <path d="M36 42l26-14v40L36 54Z" fill="#3b82f6" />
+      <path d="M30 54l4 14a4 4 0 0 0 4 3h3a3 3 0 0 0 3-4l-3-13Z" fill="#1d4ed8" />
+      <path d="M68 40c4 2 4 14 0 16" fill="none" stroke="#5b21b6" strokeLinecap="round" strokeWidth="4" />
+      <path d="M73 34c8 5 8 23 0 28" fill="none" stroke="#5b21b6" strokeLinecap="round" strokeWidth="4" />
+    </svg>
+  );
+}
+
+/** A flat warning sign: something people need to act on. */
+function AlertArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#ffe4e6" r="44" />
+      <path d="M48 20 76 70H20Z" fill="#f43f5e" strokeLinejoin="round" />
+      <path d="M48 20 76 70H48Z" fill="#e11d48" />
+      <rect fill="#ffffff" height="20" rx="3" width="6" x="45" y="36" />
+      <circle cx="48" cy="63" fill="#ffffff" r="3.5" />
+    </svg>
+  );
+}
+
+/** Flat sparkles: something new in the app. */
+function SparkArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#e0e7ff" r="44" />
+      <path d="M44 22c2 14 6 18 20 20-14 2-18 6-20 20-2-14-6-18-20-20 14-2 18-6 20-20Z" fill="#6366f1" />
+      <path d="M44 22c2 14 6 18 20 20H44Z" fill="#4f46e5" />
+      <path d="M66 54c1 7 3 9 10 10-7 1-9 3-10 10-1-7-3-9-10-10 7-1 9-3 10-10Z" fill="#5b21b6" />
+    </svg>
+  );
+}
+
+/** A flat spanner: planned maintenance. */
+function WrenchArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#e2e8f0" r="44" />
+      <path
+        d="M62 22a14 14 0 0 0-13 19L25 65a5 5 0 0 0 7 7l24-24a14 14 0 0 0 19-13l-8 8-8-2-2-8 8-8a14 14 0 0 0-3-1Z"
+        fill="#475569"
+      />
+      <circle cx="30" cy="67" fill="#e2e8f0" r="2.5" />
     </svg>
   );
 }

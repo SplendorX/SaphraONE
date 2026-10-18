@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   BadgeCheck,
+  BellRing,
   BarChart3,
   Coins,
   FileClock,
@@ -51,6 +52,7 @@ import "../layout/windows-surfaces.css";
 const ownerKeyStorage = "saphra.admin-key";
 
 const toolIcons: Record<AdminToolId, LucideIcon> = {
+  announcements: BellRing,
   audit: FileClock,
   campaigns: Megaphone,
   earn: Coins,

@@ -36,6 +36,12 @@ export const adminTools = [
     label: "Rewards",
   },
   {
+    description: "Post important news to everyone, as a card on Home.",
+    href: "/admin/announcements",
+    id: "announcements",
+    label: "Announcements",
+  },
+  {
     description: "USDC campaigns and leaderboards.",
     href: "/admin/campaigns",
     id: "campaigns",
@@ -54,10 +60,10 @@ export const adminTools = [
     label: "Checkout API",
   },
   {
-    description: "Earn vaults and yields.",
+    description: "The vaults members can invest in, and their auto-invest rules.",
     href: "/admin/earn",
     id: "earn",
-    label: "Earn",
+    label: "Invest",
   },
   {
     description: "Growth and usage numbers.",

@@ -60,6 +60,7 @@ const ORDER = [
   "ramp",
   "creator-partners",
   "wallet-transfer-history",
+  "team-announcements",
 ];
 
 /** Not part of a new database: one-off fixes to existing data, or unused. */

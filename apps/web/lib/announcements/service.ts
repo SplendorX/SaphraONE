@@ -1,21 +1,27 @@
-// Server-only. What Home announces: USDC campaigns once they're published
-// (status "live") and ONE Points quests once they're active, each until it
-// ends. New ones show up by themselves; people dismiss them one by one.
+// Server-only. What Home announces: the team's own announcements
+// (lib/announcements/team.ts), USDC campaigns once they're published (status
+// "live") and ONE Points quests once they're active, each until it ends. New
+// ones show up by themselves; people dismiss them one by one.
 import { ENDING_NOTICE_DAYS } from "@/lib/partners/config";
 import { loadMember, loadOfferById } from "@/lib/partners/db";
 import { daysLeft, windowOpen } from "@/lib/partners/rules";
+import { liveTeamAnnouncements, type AnnouncementTone } from "@/lib/announcements/team";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 
 export type Announcement = {
-  /** The pill on the card: the prize or the points. */
+  /** The pill on the card: the prize or the points; may be empty for a notice. */
   badge: string;
   body: string;
+  /** Where the card goes; empty for a notice with no link. */
   href: string;
-  /** "campaign:<id>", "quest:<id>" or "welcome:<offer>", so a dismissal sticks to one item. */
+  /** "campaign:<id>", "quest:<id>", "welcome:<offer>" or "notice:<id>", so a dismissal sticks to one item. */
   id: string;
-  kind: "campaign" | "quest" | "welcome";
+  kind: "campaign" | "quest" | "welcome" | "notice";
   publishedAt: string;
   title: string;
+  /** A team notice: its style, and whether people can close it. */
+  dismissible?: boolean;
+  tone?: AnnouncementTone;
 };
 
 const limit = 6;
@@ -101,9 +107,23 @@ export async function listAnnouncements(
       };
     });
 
-  // A creator partner's welcome package comes first: it's the member's own.
+  const notices: Announcement[] = (await liveTeamAnnouncements(now).catch(() => [])).map((row) => ({
+    badge: row.badge,
+    body: row.body,
+    dismissible: row.dismissible,
+    href: row.href,
+    id: `notice:${row.id}`,
+    kind: "notice",
+    publishedAt: row.published_at ?? row.created_at,
+    title: row.title,
+    tone: row.tone,
+  }));
+
+  // The team's notices lead (pinned first), then a creator partner's welcome
+  // package: it's the member's own.
   const welcome = wallet ? await welcomeAnnouncement(wallet, now).catch(() => null) : null;
   return [
+    ...notices,
     ...(welcome ? [welcome] : []),
     ...[...fromCampaigns, ...fromQuests].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
   ].slice(0, limit);

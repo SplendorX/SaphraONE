@@ -23,6 +23,12 @@ const actionLabels: Record<string, string> = {
   "decide-verification": "Decided a business verification",
   "change-email": "Changed account email",
   "change-one-id": "Changed ONE ID",
+  "create-announcement": "Created an announcement",
+  "delete-announcement": "Deleted an announcement",
+  "end-announcement": "Ended an announcement",
+  "publish-announcement": "Published an announcement",
+  "unpublish-announcement": "Took an announcement back to draft",
+  "update-announcement": "Edited an announcement",
   "remove-member": "Removed from the team",
   "revoke-api-key": "Revoked an API key",
   "update-member": "Changed team access",
@@ -40,6 +46,7 @@ function describe(entry: Entry) {
   if (typeof d.disabled === "boolean") parts.push(d.disabled ? "disabled" : "enabled");
   if (typeof d.name === "string" && typeof d.prefix === "string") parts.push(`key: ${d.name} (${d.prefix}…)`);
   if (typeof d.reason === "string") parts.push(`why: ${d.reason}`);
+  if (typeof d.title === "string") parts.push(`“${d.title}”`);
   if (Array.isArray(d.notes)) parts.push(...(d.notes as string[]));
   return parts.join(" · ");
 }
