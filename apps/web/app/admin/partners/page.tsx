@@ -76,6 +76,28 @@ const perkFieldLabels: Record<string, string> = {
   withinDays: "Within days of signup",
 };
 
+/** The perk fields picked from a fixed list, and the name of each choice. */
+const perkChoices: Record<string, Record<string, string>> = {
+  products: {
+    ALLIE_PRO: "ALLIE Pro",
+    EARN_AUTO_DEPOSIT: "Auto-invest",
+    PAYROLL_AUTO_SCHEDULE: "Payroll auto-schedule",
+  } satisfies Record<(typeof discountableProducts)[number], string>,
+  sources: {
+    batch_payment: "BulkPay",
+    invoice_payment: "Invoice payments",
+    payroll_disbursement: "Payroll",
+    transfer: "Transfers",
+  } satisfies Record<(typeof rebateSources)[number], string>,
+};
+
+/** A choice list's draft is the picked values, comma-separated (perksPayload splits it). */
+function toggleChoice(draft: string, value: string) {
+  const picked = draft.split(",").map((item) => item.trim()).filter(Boolean);
+  const next = picked.includes(value) ? picked.filter((item) => item !== value) : [...picked, value];
+  return next.join(", ");
+}
+
 const emptyOffer = {
   budgetUsdc: "50",
   code: "",
@@ -540,18 +562,45 @@ export default function AdminPartnersPage() {
                   </label>
                   {perkOn[kind] ? (
                     <div className="ar-grid">
-                      {Object.entries(perkDrafts[kind]).map(([field, value]) => (
-                        <label key={field}>
-                          {perkFieldLabels[field] ?? field}
-                          <input
-                            className="ar-input"
-                            onChange={(event) =>
-                              setPerkDrafts({ ...perkDrafts, [kind]: { ...perkDrafts[kind], [field]: event.target.value } })
-                            }
-                            value={value}
-                          />
-                        </label>
-                      ))}
+                      {Object.entries(perkDrafts[kind]).map(([field, value]) =>
+                        perkChoices[field] ? (
+                          <fieldset className="ar-choices" key={field}>
+                            <legend>{perkFieldLabels[field] ?? field}</legend>
+                            <div className="ar-buttons">
+                              {Object.entries(perkChoices[field]).map(([choice, label]) => {
+                                const on = value.split(",").map((item) => item.trim()).includes(choice);
+                                return (
+                                  <button
+                                    aria-pressed={on}
+                                    className={cn("ar-choice", on && "is-on")}
+                                    key={choice}
+                                    onClick={() =>
+                                      setPerkDrafts({
+                                        ...perkDrafts,
+                                        [kind]: { ...perkDrafts[kind], [field]: toggleChoice(value, choice) },
+                                      })
+                                    }
+                                    type="button"
+                                  >
+                                    {label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </fieldset>
+                        ) : (
+                          <label key={field}>
+                            {perkFieldLabels[field] ?? field}
+                            <input
+                              className="ar-input"
+                              onChange={(event) =>
+                                setPerkDrafts({ ...perkDrafts, [kind]: { ...perkDrafts[kind], [field]: event.target.value } })
+                              }
+                              value={value}
+                            />
+                          </label>
+                        ),
+                      )}
                     </div>
                   ) : null}
                 </div>
