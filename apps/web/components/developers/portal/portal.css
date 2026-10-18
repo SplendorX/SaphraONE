@@ -159,6 +159,19 @@
   padding-top: 8px;
 }
 
+.dp-nav-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.dp-btn:disabled,
+.dp-nav-signout:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
 @media (min-width: 900px) {
   .dp-nav {
     display: flex;
