@@ -1,91 +1,86 @@
 "use client";
 
+import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Activity,
-  AlertTriangle,
-  ExternalLink,
-  Loader2,
-  RefreshCw,
-  Shield,
-} from "lucide-react";
-import Link from "next/link";
 
-import { EarnModeBanner } from "@/components/earn/earn-mode-banner";
 import { AdminPageHeader, useAdmin } from "@/components/admin/admin-shell";
-import { type EarnMode } from "@/lib/earn/config";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { formatApy, formatUsdGrouped, isActiveVault, isLowLiquidityVault, protocolLabel } from "@/lib/earn/display";
 
-type AdminPayload = {
-  mode: EarnMode;
-  banner: { tone: string; title: string; body: string };
-  tvl: {
-    totalAssetsDisplay: string;
-    totalAssetsUnits: string;
-    totalSupply: string;
-  };
-  users: {
-    depositEvents: number;
-    withdrawalEvents: number;
-    uniqueDepositorsIndexed: number;
-  };
-  fees: {
-    performanceFeeBps: number;
-    recent: Array<{ gross_yield: string; fee: string; timestamp: string | null }>;
-  };
-  apy: {
-    grossApyDisplay: string | null;
-    netApyDisplay: string | null;
-    dataSource: string;
-    message: string;
-    isSimulation: boolean;
-  };
-  strategy: {
-    name: string | null;
-    healthy: boolean | null;
-    isSimulation: boolean | null;
-    address: string | null;
-    aavePool: string | null;
-    aToken: string | null;
-  };
-  vault: {
-    address: string | null;
-    paused: boolean | null;
-  };
-  network: {
-    chainId: number;
-    name: string;
-    explorer: string;
-  };
-  errors: string[];
-  notes: string[];
-  message?: string;
+type Vault = {
+  address: string;
+  apy: number | null;
+  asset: string | null;
+  circleGuarded: boolean | null;
+  fee: number | null;
+  liquidity: string | null;
+  name: string;
+  nativeApy: number | null;
+  protocol: string | null;
+  status: string;
+  totalDeposits: string | null;
 };
 
-function explorerUrl(base: string, address: string | null) {
-  if (!address) return null;
-  return `${base}/address/${address}`;
+type AutoDeposit = {
+  activeRules: number;
+  failing: Array<{ error: string | null; lastRunAt: string | null; vault: string; wallet: string }>;
+  monthlyUsdc: number;
+  recent: Array<{
+    amountUsdc: number;
+    at: string | null;
+    mode: string | null;
+    reason: string | null;
+    status: string | null;
+    txHash: string | null;
+    vault: string | null;
+    wallet: string | null;
+  }>;
+  totalRules: number;
+  unattendedRules: number;
+  wallets: number;
+};
+
+type Payload = {
+  autoDeposit: AutoDeposit | null;
+  autoDepositError: string | null;
+  network: { explorer: string; mainnet: boolean };
+  vaults: Vault[];
+  vaultsError: string | null;
+};
+
+function short(value: string | null) {
+  return value ? `${value.slice(0, 6)}…${value.slice(-4)}` : "—";
 }
 
+function when(value: string | null) {
+  return value ? new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+}
+
+function usd(value: number) {
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`;
+}
+
+/**
+ * Invest (Earn): the outside vaults members can put USDC and EURC in, as
+ * Circle's App Kit lists them, and the auto-invest rules people have set.
+ * SaphraONE holds no vault of its own, so there is no SaphraONE TVL here.
+ */
 export default function AdminEarnPage() {
   const { adminFetch } = useAdmin();
-  const [data, setData] = useState<AdminPayload | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<Payload | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const res = await adminFetch("/api/admin/earn");
-      const payload = (await res.json()) as AdminPayload & { message?: string };
-      if (!res.ok) {
-        throw new Error(payload.message || "Admin API failed.");
-      }
-      setData(payload);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load.");
-      setData(null);
+      const response = await adminFetch("/api/admin/earn");
+      const body = (await response.json().catch(() => null)) as (Payload & { message?: string }) | null;
+      if (!response.ok || !body) throw new Error(body?.message ?? "Couldn't load Invest.");
+      setData(body);
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Couldn't load Invest.");
     } finally {
       setLoading(false);
     }
@@ -95,242 +90,211 @@ export default function AdminEarnPage() {
     void load();
   }, [load]);
 
+  const auto = data?.autoDeposit;
+  const explorer = data?.network.explorer ?? "";
+  const bestApy = data?.vaults.reduce<number | null>(
+    (best, vault) => (vault.apy !== null && (best === null || vault.apy > best) ? vault.apy : best),
+    null,
+  );
+
   return (
     <div>
-      <AdminPageHeader subtitle="TVL, fees, APY, strategy health" title="Earn" />
-      <div className="earn-page">
-        <div className="earn-admin-auth">
-          <div className="earn-actions">
-            <button
-              className="earn-btn earn-btn-primary"
-              disabled={loading}
-              onClick={() => void load()}
-              type="button"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4" /> Refresh
-                </>
-              )}
-            </button>
-          </div>
+      <AdminPageHeader
+        actions={
+          <Button disabled={loading} onClick={() => void load()} size="sm" variant="outline">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh
+          </Button>
+        }
+        subtitle="The vaults members can invest in, and their auto-invest rules"
+        title="Invest"
+      />
+
+      {error ? <p className="adm-error mb-4">{error}</p> : null}
+
+      {!data && loading ? (
+        <div className="adm-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-
-        {error && (
-          <p className="earn-error">
-            <AlertTriangle className="h-4 w-4" /> {error}
-          </p>
-        )}
-
-        {data && (
-          <>
-            <EarnModeBanner mode={data.mode} />
-
-            <div className="earn-admin-grid">
-              <article className="earn-balance-card">
-                <div className="earn-balance-header">
-                  <Activity className="h-5 w-5" />
-                  <span>Total TVL (on-chain)</span>
-                </div>
-                <p className="earn-balance-value">
-                  ${data.tvl.totalAssetsDisplay}
-                </p>
-                <div className="earn-stat-row">
-                  <div>
-                    <p className="earn-stat-label">Share supply</p>
-                    <p className="earn-stat-value">
-                      {data.tvl.totalSupply === "0"
-                        ? "0"
-                        : `${data.tvl.totalSupply.slice(0, 12)}…`}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="earn-stat-label">Vault paused</p>
-                    <p className="earn-stat-value">
-                      {data.vault.paused === null
-                        ? "—"
-                        : data.vault.paused
-                          ? "Yes"
-                          : "No"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="earn-stat-label">Network</p>
-                    <p className="earn-stat-value">{data.network.name}</p>
-                  </div>
-                </div>
-              </article>
-
-              <article className="earn-performance-card">
-                <h2>APY</h2>
-                <dl className="earn-dl">
-                  <div>
-                    <dt>Gross / underlying</dt>
-                    <dd>{data.apy.grossApyDisplay ?? "N/A"}</dd>
-                  </div>
-                  <div>
-                    <dt>Net (after SaphraONE fee)</dt>
-                    <dd>{data.apy.netApyDisplay ?? "N/A"}</dd>
-                  </div>
-                  <div>
-                    <dt>Data source</dt>
-                    <dd>{data.apy.dataSource}</dd>
-                  </div>
-                </dl>
-                <p className="earn-footnote">{data.apy.message}</p>
-              </article>
-
-              <article className="earn-performance-card">
-                <h2>Users (indexed)</h2>
-                <dl className="earn-dl">
-                  <div>
-                    <dt>Unique depositors</dt>
-                    <dd>{data.users.uniqueDepositorsIndexed}</dd>
-                  </div>
-                  <div>
-                    <dt>Deposit events</dt>
-                    <dd>{data.users.depositEvents}</dd>
-                  </div>
-                  <div>
-                    <dt>Withdrawal events</dt>
-                    <dd>{data.users.withdrawalEvents}</dd>
-                  </div>
-                </dl>
-                <p className="earn-footnote">
-                  Counts require Supabase + earn indexer cron.
-                </p>
-              </article>
-
-              <article className="earn-performance-card">
-                <h2>
-                  <Shield className="h-4 w-4" /> Strategy
-                </h2>
-                <dl className="earn-dl">
-                  <div>
-                    <dt>Name</dt>
-                    <dd>{data.strategy.name ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Healthy</dt>
-                    <dd>
-                      {data.strategy.healthy === null
-                        ? "—"
-                        : data.strategy.healthy
-                          ? "Yes"
-                          : "No"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Simulation</dt>
-                    <dd>
-                      {data.strategy.isSimulation === null
-                        ? "—"
-                        : data.strategy.isSimulation
-                          ? "Yes"
-                          : "No"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Fee</dt>
-                    <dd>{data.fees.performanceFeeBps / 100}% of yield</dd>
-                  </div>
-                </dl>
-                <div className="earn-address-grid">
-                  <Addr
-                    explorer={data.network.explorer}
-                    label="Vault"
-                    address={data.vault.address}
-                  />
-                  <Addr
-                    explorer={data.network.explorer}
-                    label="Strategy"
-                    address={data.strategy.address}
-                  />
-                  <Addr
-                    explorer={data.network.explorer}
-                    label="Aave Pool"
-                    address={data.strategy.aavePool}
-                  />
-                  <Addr
-                    explorer={data.network.explorer}
-                    label="aToken"
-                    address={data.strategy.aToken}
-                  />
-                </div>
-              </article>
+      ) : data ? (
+        <div className="grid gap-5">
+          <div className="adm-grid adm-grid-4">
+            <div className="adm-card">
+              <p className="adm-stat-label">Vaults on offer</p>
+              <p className="adm-stat-value">{data.vaults.length}</p>
             </div>
+            <div className="adm-card">
+              <p className="adm-stat-label">Best APY</p>
+              <p className="adm-stat-value">{formatApy(bestApy) ?? "—"}</p>
+            </div>
+            <div className="adm-card">
+              <p className="adm-stat-label">Auto-invest rules on</p>
+              <p className="adm-stat-value">{auto ? auto.activeRules : "—"}</p>
+              {auto ? (
+                <p className="adm-fine">
+                  {auto.wallets} {auto.wallets === 1 ? "member" : "members"} · {auto.unattendedRules} unattended
+                </p>
+              ) : null}
+            </div>
+            <div className="adm-card">
+              <p className="adm-stat-label">Auto-invest, up to / month</p>
+              <p className="adm-stat-value">{auto ? usd(auto.monthlyUsdc) : "—"}</p>
+            </div>
+          </div>
 
-            {data.fees.recent.length > 0 && (
-              <section className="earn-transparency">
-                <h2>Recent performance fees</h2>
-                <ul className="earn-admin-fees">
-                  {data.fees.recent.map((f, i) => (
-                    <li key={`${f.fee}-${i}`}>
-                      Gross yield ${f.gross_yield} · Fee ${f.fee}
-                      {f.timestamp
-                        ? ` · ${new Date(f.timestamp).toLocaleString()}`
-                        : ""}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+          <section className="adm-card grid gap-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-semibold">Vaults</h2>
+              <span className="adm-fine">
+                {data.network.mainnet ? "Arc mainnet · the vaults SaphraONE lists" : "Arc testnet · everything App Kit returns"}
+              </span>
+            </div>
+            {data.vaultsError ? <p className="adm-error">{data.vaultsError}</p> : null}
+            {data.vaults.length === 0 && !data.vaultsError ? (
+              <p className="adm-empty">App Kit returned no vaults.</p>
+            ) : data.vaults.length > 0 ? (
+              <div className="adm-table-wrap">
+                <table className="adm-table">
+                  <thead>
+                    <tr>
+                      <th>Vault</th>
+                      <th>Asset</th>
+                      <th className="adm-num">APY</th>
+                      <th className="adm-num">Vault fee</th>
+                      <th className="adm-num">Deposits</th>
+                      <th className="adm-num">Liquidity</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.vaults.map((vault) => (
+                      <tr key={vault.address}>
+                        <td>
+                          <p className="font-semibold">{vault.name}</p>
+                          <a
+                            className="adm-mono inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            href={`${explorer}/address/${vault.address}`}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            {protocolLabel(vault.protocol ?? undefined)} · {short(vault.address)}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </td>
+                        <td>{vault.asset ?? "—"}</td>
+                        <td className="adm-num">{formatApy(vault.apy) ?? "—"}</td>
+                        <td className="adm-num">{vault.fee !== null ? `${(vault.fee * 100).toFixed(1)}%` : "—"}</td>
+                        <td className="adm-num">{formatUsdGrouped(vault.totalDeposits) ?? "—"}</td>
+                        <td className="adm-num">{formatUsdGrouped(vault.liquidity) ?? "—"}</td>
+                        <td>
+                          <span
+                            className={
+                              isLowLiquidityVault(vault.status)
+                                ? "adm-chip is-warn"
+                                : isActiveVault(vault.status)
+                                  ? "adm-chip is-good"
+                                  : "adm-chip"
+                            }
+                          >
+                            {vault.status.replace(/_/g, " ").toLowerCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </section>
 
-            {data.errors.length > 0 && (
-              <section className="earn-risks">
-                <h2>Read errors</h2>
-                <ul>
-                  {data.errors.map((e) => (
-                    <li key={e}>{e}</li>
-                  ))}
-                </ul>
-              </section>
-            )}
+          <section className="adm-card grid gap-3">
+            <h2 className="font-semibold">Auto-invest</h2>
+            {data.autoDepositError ? <p className="adm-error">{data.autoDepositError}</p> : null}
+            {auto ? (
+              <>
+                <p className="adm-fine">
+                  {auto.totalRules} {auto.totalRules === 1 ? "rule" : "rules"} in all, {auto.activeRules} on.
+                </p>
+                {auto.failing.length > 0 ? (
+                  <div className="grid gap-2">
+                    <p className="adm-stat-label">Failing on their last run</p>
+                    <div className="adm-table-wrap">
+                      <table className="adm-table">
+                        <thead>
+                          <tr>
+                            <th>Member</th>
+                            <th>Vault</th>
+                            <th>Last run</th>
+                            <th>Error</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {auto.failing.map((rule) => (
+                            <tr key={`${rule.wallet}:${rule.vault}`}>
+                              <td className="adm-mono">{short(rule.wallet)}</td>
+                              <td className="adm-mono">{short(rule.vault)}</td>
+                              <td>{when(rule.lastRunAt)}</td>
+                              <td>{rule.error}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null}
+                <p className="adm-stat-label">Recent runs</p>
+                {auto.recent.length === 0 ? (
+                  <p className="adm-empty">No auto-invest runs yet.</p>
+                ) : (
+                  <div className="adm-table-wrap">
+                    <table className="adm-table">
+                      <thead>
+                        <tr>
+                          <th>When</th>
+                          <th>Member</th>
+                          <th className="adm-num">Amount</th>
+                          <th>Mode</th>
+                          <th>Result</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {auto.recent.map((run, index) => (
+                          <tr key={`${run.txHash ?? run.at ?? ""}:${index}`}>
+                            <td>{when(run.at)}</td>
+                            <td className="adm-mono">{short(run.wallet)}</td>
+                            <td className="adm-num">{usd(run.amountUsdc)}</td>
+                            <td>{run.mode?.toLowerCase() ?? "—"}</td>
+                            <td>
+                              {run.txHash ? (
+                                <a
+                                  className="inline-flex items-center gap-1 hover:underline"
+                                  href={`${explorer}/tx/${run.txHash}`}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  {run.status?.toLowerCase()} <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ) : (
+                                <span title={run.reason ?? undefined}>{run.status?.toLowerCase() ?? "—"}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </section>
 
-            <section className="earn-footnote">
-              {data.notes.map((n) => (
-                <p key={n}>{n}</p>
-              ))}
-            </section>
-          </>
-        )}
-
-        <p className="earn-footer-link">
-          <Link href="/earn">← Earn app</Link>
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function Addr({
-  label,
-  address,
-  explorer,
-}: {
-  label: string;
-  address: string | null;
-  explorer: string;
-}) {
-  const href = explorerUrl(explorer, address);
-  return (
-    <div className="earn-address-row">
-      <span>{label}</span>
-      {href && address ? (
-        <a
-          className={cn("earn-address-link")}
-          href={href}
-          rel="noreferrer"
-          target="_blank"
-        >
-          {address.slice(0, 6)}…{address.slice(-4)}
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      ) : (
-        <span className="text-muted-foreground">Not set</span>
-      )}
+          <p className="adm-note">
+            Members invest from their own wallets straight into these vaults through Circle&apos;s App Kit; SaphraONE
+            holds none of the money, so there&apos;s no SaphraONE total to show. Each vault&apos;s deposits are its
+            total across everyone who uses it.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

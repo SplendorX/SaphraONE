@@ -1,184 +1,113 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createPublicClient, type Address } from "viem";
 
-import { fetchAaveApy } from "@/lib/earn/aave-apy";
-import { earnConfig, earnModeBanner } from "@/lib/earn/config";
-import { bpsToPercentString, formatUnitsToDecimal } from "@/lib/earn/decimal";
-import { swiftPayVaultAbi, yieldStrategyAbi } from "@/lib/earn/abis";
 import { adminCan } from "@/lib/admin/access";
+import { arcExplorerUrl } from "@/lib/chains";
+import { autoDepositExecutionsTable, autoDepositTable, type AutoDepositRule } from "@/lib/earn/auto-deposit";
+import type { EarnVault } from "@/lib/earn/types";
+import { isArcMainnet } from "@/lib/network";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
-import { arcTokens } from "@/lib/tokens";
-import { arcChain, arcTransport } from "@/lib/chains";
+import { listEarnVaults, publicEarnMessage } from "@/server/earn";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
+type Execution = {
+  amount_usdc: number | string | null;
+  created_at?: string | null;
+  mode: string | null;
+  reason: string | null;
+  status: string | null;
+  tx_hash: string | null;
+  vault_address: string | null;
+  wallet_address: string | null;
+};
 
+function num(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Invest (Earn) for the admin: the vaults members can put money in, as App
+ * Kit lists them, and the auto-invest rules people have set.
+ *
+ * Invest deposits go straight from a member's wallet into an outside vault
+ * (Morpho and the like) through Circle's App Kit; SaphraONE holds no vault of
+ * its own, so there is no SaphraONE TVL to read on chain. The old in-house
+ * vault + Aave strategy (lib/earn/config.ts) was never deployed.
+ */
 export async function GET(request: NextRequest) {
   if (!(await adminCan(request, "earn"))) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
 
-  const banner = earnModeBanner();
-  const client = createPublicClient({
-    chain: arcChain,
-    transport: arcTransport(),
-  });
+  const [vaultsResult, autoResult] = await Promise.allSettled([listEarnVaults(), loadAutoDeposit()]);
 
-  let totalAssets = 0n;
-  let totalSupply = 0n;
-  let feeBps = earnConfig.performanceFeeBps;
-  let strategyName: string | null = null;
-  let strategyHealthy: boolean | null = null;
-  let isSimulation: boolean | null = null;
-  let paused: boolean | null = null;
-  const errors: string[] = [];
-
-  if (earnConfig.vaultAddress) {
-    try {
-      totalAssets = (await client.readContract({
-        address: earnConfig.vaultAddress,
-        abi: swiftPayVaultAbi,
-        functionName: "totalAssets",
-      })) as bigint;
-      totalSupply = (await client.readContract({
-        address: earnConfig.vaultAddress,
-        abi: swiftPayVaultAbi,
-        functionName: "totalSupply",
-      })) as bigint;
-      feeBps = Number(
-        (await client.readContract({
-          address: earnConfig.vaultAddress,
-          abi: swiftPayVaultAbi,
-          functionName: "performanceFeeBps",
-        })) as bigint,
-      );
-      paused = (await client.readContract({
-        address: earnConfig.vaultAddress,
-        abi: swiftPayVaultAbi,
-        functionName: "paused",
-      })) as boolean;
-    } catch (error) {
-      errors.push(
-        error instanceof Error ? error.message : "Vault read failed.",
-      );
-    }
-  }
-
-  if (earnConfig.strategyAddress) {
-    try {
-      strategyName = (await client.readContract({
-        address: earnConfig.strategyAddress,
-        abi: yieldStrategyAbi,
-        functionName: "strategyName",
-      })) as string;
-      strategyHealthy = (await client.readContract({
-        address: earnConfig.strategyAddress,
-        abi: yieldStrategyAbi,
-        functionName: "isHealthy",
-      })) as boolean;
-      isSimulation = (await client.readContract({
-        address: earnConfig.strategyAddress,
-        abi: yieldStrategyAbi,
-        functionName: "isSimulation",
-      })) as boolean;
-    } catch (error) {
-      errors.push(
-        error instanceof Error ? error.message : "Strategy read failed.",
-      );
-    }
-  }
-
-  const apy = await fetchAaveApy({
-    pool: earnConfig.aavePoolAddress,
-    asset: arcTokens.USDC.address as Address,
-    feeBps,
-    mode: earnConfig.mode,
-  });
-
-  let depositCount = 0;
-  let withdrawalCount = 0;
-  let uniqueUsers = 0;
-  let feeEvents: Array<{ gross_yield: string; fee: string; timestamp: string | null }> =
-    [];
-
-  try {
-    const supabase = createSupabaseAdminClient();
-    const vault = earnConfig.vaultAddress?.toLowerCase();
-
-    const deposits = await supabase
-      .from("earn_deposits")
-      .select("wallet_address", { count: "exact", head: false })
-      .limit(5000);
-    const withdrawals = await supabase
-      .from("earn_withdrawals")
-      .select("id", { count: "exact", head: true });
-    const fees = await supabase
-      .from("earn_fee_events")
-      .select("gross_yield, fee, timestamp")
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    depositCount = deposits.count ?? deposits.data?.length ?? 0;
-    withdrawalCount = withdrawals.count ?? 0;
-    const wallets = new Set(
-      (deposits.data ?? []).map((r) => r.wallet_address?.toLowerCase()),
-    );
-    uniqueUsers = wallets.size;
-    feeEvents = fees.data ?? [];
-
-    if (vault) {
-      // counts already global; ok for single-vault deploy
-    }
-  } catch {
-    // DB optional for admin shell
-  }
-
-  const decimals = arcTokens.USDC.decimals;
+  const vaults =
+    vaultsResult.status === "fulfilled"
+      ? (vaultsResult.value.vaults as EarnVault[]).map((vault) => ({
+          address: vault.vaultAddress,
+          apy: typeof vault.currentApy === "number" ? vault.currentApy : null,
+          asset: vault.asset ?? null,
+          circleGuarded: vault.circleGuarded ?? null,
+          fee: typeof vault.vaultFee === "number" ? vault.vaultFee : null,
+          liquidity: vault.liquidity ?? null,
+          name: vault.name?.trim() || "Vault",
+          nativeApy: typeof vault.nativeApy === "number" ? vault.nativeApy : null,
+          protocol: vault.protocol ?? null,
+          status: vault.status ?? "active",
+          totalDeposits: vault.totalDeposits ?? null,
+        }))
+      : [];
 
   return NextResponse.json({
-    mode: earnConfig.mode,
-    banner,
-    tvl: {
-      totalAssetsUnits: totalAssets.toString(),
-      totalAssetsDisplay: formatUnitsToDecimal(totalAssets, decimals),
-      totalSupply: totalSupply.toString(),
-    },
-    users: {
-      depositEvents: depositCount,
-      withdrawalEvents: withdrawalCount,
-      uniqueDepositorsIndexed: uniqueUsers,
-    },
-    fees: {
-      performanceFeeBps: feeBps,
-      recent: feeEvents,
-    },
-    apy: {
-      ...apy,
-      grossApyDisplay: bpsToPercentString(apy.grossApyBps),
-      netApyDisplay: bpsToPercentString(apy.netApyBps),
-    },
-    strategy: {
-      name: strategyName,
-      healthy: strategyHealthy,
-      isSimulation,
-      address: earnConfig.strategyAddress,
-      aavePool: earnConfig.aavePoolAddress,
-      aToken: earnConfig.aTokenAddress,
-    },
-    vault: {
-      address: earnConfig.vaultAddress,
-      paused,
-    },
-    network: {
-      chainId: arcChain.id,
-      name: arcChain.name,
-      explorer: earnConfig.explorerBase,
-    },
-    errors,
-    notes: [
-      "On-chain TVL is authoritative.",
-      "Indexed user counts depend on earn indexer + Supabase.",
-      "Never invent APY — null means unavailable or simulation.",
-    ],
+    autoDeposit: autoResult.status === "fulfilled" ? autoResult.value : null,
+    autoDepositError: autoResult.status === "rejected" ? "Auto-invest rules couldn't be loaded." : null,
+    network: { explorer: arcExplorerUrl, mainnet: isArcMainnet() },
+    vaults,
+    vaultsError: vaultsResult.status === "rejected" ? publicEarnMessage(vaultsResult.reason) : null,
   });
+}
+
+async function loadAutoDeposit() {
+  const db = createSupabaseAdminClient();
+  const [rulesResult, executionsResult] = await Promise.all([
+    db.from(autoDepositTable).select("*").limit(5000),
+    db.from(autoDepositExecutionsTable).select("*").order("created_at", { ascending: false }).limit(25),
+  ]);
+  if (rulesResult.error) throw rulesResult.error;
+
+  const rules = (rulesResult.data ?? []) as AutoDepositRule[];
+  const active = rules.filter((rule) => rule.enabled);
+  const perMonth = { daily: 30, monthly: 1, weekly: 52 / 12 } as const;
+
+  return {
+    activeRules: active.length,
+    // What the active rules would move in a month, at most (before balance floors).
+    monthlyUsdc: Math.round(active.reduce((sum, rule) => sum + num(rule.amount_usdc) * perMonth[rule.frequency], 0) * 100) / 100,
+    failing: active
+      .filter((rule) => rule.last_error)
+      .slice(0, 20)
+      .map((rule) => ({
+        error: rule.last_error,
+        lastRunAt: rule.last_run_at,
+        vault: rule.vault_address,
+        wallet: rule.wallet_address,
+      })),
+    recent: executionsResult.error
+      ? []
+      : ((executionsResult.data ?? []) as Execution[]).map((row) => ({
+          amountUsdc: num(row.amount_usdc),
+          at: row.created_at ?? null,
+          mode: row.mode,
+          reason: row.reason,
+          status: row.status,
+          txHash: row.tx_hash,
+          vault: row.vault_address,
+          wallet: row.wallet_address,
+        })),
+    totalRules: rules.length,
+    unattendedRules: active.filter((rule) => rule.mode === "UNATTENDED").length,
+    wallets: new Set(active.map((rule) => rule.wallet_address.toLowerCase())).size,
+  };
 }
