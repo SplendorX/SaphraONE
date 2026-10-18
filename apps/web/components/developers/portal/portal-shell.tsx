@@ -1,13 +1,16 @@
 "use client";
 
-import { ArrowRight, ArrowUpRight, FlaskConical, Menu, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, FlaskConical, Loader2, LogOut, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
+import { useDisconnect } from "wagmi";
 
+import { useAccountContext } from "@/components/account/account-provider";
 import { PlatformLogoMark } from "@/components/brand/platform-logo-mark";
 import { ModeToggle } from "@/components/developers/portal/mode-toggle";
 import { PortalLink, usePortal } from "@/components/developers/portal/portal-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { signOutForAppLock } from "@/lib/app-lock/client";
 import { cn } from "@/lib/utils";
 
 import "./portal.css";
@@ -29,10 +32,22 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const inner = base && pathname.startsWith(base) ? pathname.slice(base.length) || "/" : pathname;
   const [menuOpen, setMenuOpen] = useState(false);
+  const { account, ownerWallet } = useAccountContext();
+  const { disconnect } = useDisconnect();
+  const signedIn = Boolean(account || ownerWallet);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  // The same full sign-out as the app; it lands on "/", the portal's home here.
+  function signOut() {
+    setSigningOut(true);
+    void signOutForAppLock(disconnect);
+  }
+
+  const signOutIcon = signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />;
 
   return (
     <div className="dp-root" data-mode={mode}>
@@ -71,9 +86,20 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <ThemeToggle />
             </span>
             <PortalLink className="dp-btn dp-btn-primary dp-hide-sm" href="/console">
-              Get API keys
+              {signedIn ? "Console" : "Get API keys"}
               <ArrowRight className="h-4 w-4" />
             </PortalLink>
+            {signedIn ? (
+              <button
+                className="dp-btn dp-btn-ghost dp-hide-sm"
+                disabled={signingOut}
+                onClick={signOut}
+                type="button"
+              >
+                {signOutIcon}
+                Sign out
+              </button>
+            ) : null}
             <button
               aria-expanded={menuOpen}
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -102,6 +128,12 @@ export function PortalShell({ children }: { children: ReactNode }) {
                 Open SaphraONE
               </a>
             </div>
+            {signedIn ? (
+              <button className="dp-nav-link dp-nav-signout" disabled={signingOut} onClick={signOut} type="button">
+                {signOutIcon}
+                Sign out
+              </button>
+            ) : null}
           </nav>
         ) : null}
       </header>
