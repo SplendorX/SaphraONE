@@ -28,6 +28,7 @@ import {
   calculateItemAmounts,
   calculateRunTotals,
 } from "@/lib/payroll/calculation-service";
+import { bulkFeeLabel, usesLegacyPayrollFee } from "@/lib/fees";
 import {
   createPayrollRunClient,
   fetchPayrollGroups,
@@ -275,7 +276,11 @@ export default function NewPayrollRunPage() {
                 {totals.recipientCount} recipients
               </span>
               <span>Payout {totals.totalAmount}</span>
-              <span>Fee (1%) {totals.totalFees}</span>
+              <span>
+                {/* BulkPay's banded fee (1% only on the old payroll contract). */}
+                {bulkFeeLabel(totals.totalAmountUnits, totals.recipientCount, usesLegacyPayrollFee())}{" "}
+                {totals.totalFees}
+              </span>
             </div>
           </section>
 
