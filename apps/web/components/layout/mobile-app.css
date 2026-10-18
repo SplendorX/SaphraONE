@@ -401,13 +401,47 @@
     margin-right: auto;
   }
 
-  /* The account chip becomes a round avatar, gold ring kept. */
+  /* The account chip becomes the photo itself, no ring: the picture fills
+     the whole circle. */
   .platform-shell .app-topbar-profile .profile-trigger {
     width: 2.9rem;
     height: 2.9rem;
     gap: 0;
     padding: 0;
+    border: 0;
     border-radius: 9999px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .platform-shell .app-topbar-profile .profile-trigger:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .platform-shell .app-topbar-profile .profile-trigger:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 35%, transparent);
+  }
+
+  .platform-shell .app-topbar-profile .profile-avatar {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* No photo: initials on a soft lilac disc. */
+  .platform-shell .app-topbar-profile .profile-avatar:not(:has(img)) {
+    border: 0;
+    background: radial-gradient(circle at 50% 45%, #f3ecfe 0%, #e7dcfb 70%, #ddd0f8 100%);
+    box-shadow: 0 6px 18px -10px rgb(91 33 182 / 0.35);
+    color: #3b1478;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  .dark .platform-shell .app-topbar-profile .profile-avatar:not(:has(img)) {
+    background: radial-gradient(circle at 50% 45%, #4c2a85 0%, #3a1f6a 70%, #2f1858 100%);
+    color: #ede4ff;
   }
 
   .platform-shell .app-topbar-profile .profile-trigger > svg,

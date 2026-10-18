@@ -148,6 +148,101 @@ function SocialQuestActions({
   );
 }
 
+type Quest = RewardsOverview["quests"][number];
+
+function questChip(quest: Quest) {
+  if (quest.completed) return "Done";
+  return quest.reward.kind === "percent" ? `up to ${points(quest.points)}` : `+${points(quest.points)}`;
+}
+
+function QuestProgressBar({ progress }: { progress: NonNullable<Quest["progress"]> }) {
+  return (
+    <span className="rw-quest-progress">
+      <span style={{ width: `${Math.min(100, (progress.current / progress.target) * 100)}%` }} />
+    </span>
+  );
+}
+
+/** A quest in full, in its sheet: the ask, the reward, progress and how it completes. */
+function QuestDetails({
+  circleSocialUuid,
+  onClaimed,
+  quest,
+  wallet,
+}: {
+  circleSocialUuid?: string | null;
+  onClaimed: () => void;
+  quest: Quest;
+  wallet: string;
+}) {
+  return (
+    <div className="rw-quest-detail">
+      <span className="rw-quest-detail-icon">
+        <Target className="h-6 w-6" />
+      </span>
+      {quest.description ? <p className="rw-quest-detail-body">{quest.description}</p> : null}
+
+      <dl className="rw-quest-facts">
+        <div>
+          <dt>Reward</dt>
+          <dd>
+            {quest.reward.kind === "percent"
+              ? `${quest.reward.percent}% back in points, up to ${points(quest.points)}`
+              : `${points(quest.points)} ONE Points`}
+          </dd>
+        </div>
+        {quest.progress ? (
+          <div>
+            <dt>Progress</dt>
+            <dd>
+              {points(Math.min(quest.progress.current, quest.progress.target))} of {points(quest.progress.target)}{" "}
+              {quest.progress.unit}
+            </dd>
+          </div>
+        ) : null}
+        {quest.endsAt ? (
+          <div>
+            <dt>Ends</dt>
+            <dd>{new Date(quest.endsAt).toLocaleDateString()}</dd>
+          </div>
+        ) : null}
+        {quest.placesLeft !== null ? (
+          <div>
+            <dt>Places left</dt>
+            <dd>{points(quest.placesLeft)}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt>For</dt>
+          <dd>
+            {quest.audience === "business" ? "Business accounts" : quest.audience === "personal" ? "Personal accounts" : "Everyone"}
+          </dd>
+        </div>
+      </dl>
+
+      {quest.progress ? <QuestProgressBar progress={quest.progress} /> : null}
+
+      <p className="rw-quest-how">
+        {quest.automatic
+          ? "Completes automatically once you do it."
+          : quest.social
+            ? `Follow SaphraONE on ${quest.social.platformLabel}, then claim your points.`
+            : "SaphraONE awards this one."}
+      </p>
+
+      {quest.social ? (
+        <SocialQuestActions
+          circleSocialUuid={circleSocialUuid}
+          onClaimed={onClaimed}
+          questId={quest.id}
+          social={quest.social}
+          wallet={wallet}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 /** Rewards: OnePoints from your own transactions, streaks and quests. */
 export function RewardsPage() {
   const { address: platformAddress, circleSocialUuid } = usePlatformWallet();
@@ -161,6 +256,7 @@ export function RewardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sheet, setSheet] = useState<"earn" | "claim" | "streak" | "discount" | null>(null);
+  const [openQuestId, setOpenQuestId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!wallet) {
@@ -204,6 +300,8 @@ export function RewardsPage() {
   const activeTier =
     data.month.tiers.find((tier) => tier.spentUsd < tier.limitUsd) ?? data.month.tiers[data.month.tiers.length - 1];
   const capReached = data.month.pointsEarned >= data.month.capPoints;
+  // The open quest, while it is still live (it closes once claimed).
+  const openQuest = data.quests.find((quest) => quest.id === openQuestId && !quest.completed) ?? null;
 
   return (
     <div className="rw-page">
@@ -353,68 +451,65 @@ export function RewardsPage() {
               </span>
             </div>
             <ul className="rw-quests">
-              {data.quests.map((quest) => (
-                <li className={cn(quest.completed && "is-done")} key={quest.id}>
-                  <span className="rw-quest-icon">
-                    <Target className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="rw-activity-label">{quest.title}</p>
-                    {quest.description ? <p className="rw-activity-sub">{quest.description}</p> : null}
-                    {quest.reward.kind === "percent" && !quest.completed ? (
-                      <p className="rw-activity-sub">
-                        {quest.reward.percent}% back in points, up to {points(quest.points)}
-                      </p>
-                    ) : null}
-                    {quest.progress && !quest.completed ? (
-                      <div className="rw-quest-progress">
-                        <span
-                          style={{ width: `${Math.min(100, (quest.progress.current / quest.progress.target) * 100)}%` }}
-                        />
-                      </div>
-                    ) : null}
-                    <p className="rw-activity-sub">
-                      {quest.progress && !quest.completed
-                        ? `${points(Math.min(quest.progress.current, quest.progress.target))} of ${points(quest.progress.target)} ${quest.progress.unit}`
-                        : null}
-                      {quest.progress && !quest.completed && quest.endsAt ? " · " : null}
-                      {quest.endsAt ? `Ends ${new Date(quest.endsAt).toLocaleDateString()}` : null}
-                      {quest.placesLeft !== null && !quest.completed
-                        ? `${quest.progress || quest.endsAt ? " · " : ""}${points(quest.placesLeft)} place${quest.placesLeft === 1 ? "" : "s"} left`
-                        : null}
-                    </p>
-                    {!quest.completed ? (
-                      <p className="rw-quest-how">
-                        {quest.automatic
-                          ? "Completes automatically once you do it."
-                          : quest.social
-                            ? "Follow, then claim your points."
-                            : "SaphraONE awards this one."}
-                      </p>
-                    ) : null}
-                  </div>
-                  <span className="rw-chip">
-                    {quest.completed
-                      ? "Done"
-                      : quest.reward.kind === "percent"
-                        ? `up to ${points(quest.points)}`
-                        : `+${points(quest.points)}`}
-                  </span>
-                  {quest.social && !quest.completed ? (
-                    <SocialQuestActions
-                      circleSocialUuid={circleSocialUuid}
-                      onClaimed={() => void load()}
-                      questId={quest.id}
-                      social={quest.social}
-                      wallet={wallet}
-                    />
-                  ) : null}
-                </li>
-              ))}
+              {data.quests.map((quest) => {
+                const body = (
+                  <>
+                    <span className="rw-quest-icon">
+                      <Target className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="rw-activity-label">{quest.title}</span>
+                      {quest.description ? <span className="rw-activity-sub">{quest.description}</span> : null}
+                      {quest.progress && !quest.completed ? <QuestProgressBar progress={quest.progress} /> : null}
+                    </span>
+                    <span className="rw-chip">{questChip(quest)}</span>
+                  </>
+                );
+                // An active quest opens its details; a finished one is just a row.
+                return (
+                  <li className={cn(quest.completed && "is-done")} key={quest.id}>
+                    {quest.completed ? (
+                      <div className="rw-quest-row">{body}</div>
+                    ) : (
+                      <button
+                        aria-label={`${quest.title}: details`}
+                        className="rw-quest-row is-open"
+                        onClick={() => setOpenQuestId(quest.id)}
+                        type="button"
+                      >
+                        {body}
+                        <ChevronRight aria-hidden className="rw-quest-chevron h-4 w-4" />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}
       </div>
+
+      {/* One quest, in full */}
+      <RewardsSheet
+        description="What the quest asks, its reward and how it completes"
+        onOpenChange={(open) => {
+          if (!open) setOpenQuestId(null);
+        }}
+        open={Boolean(openQuest)}
+        title={openQuest?.title ?? "Quest"}
+      >
+        {openQuest ? (
+          <QuestDetails
+            circleSocialUuid={circleSocialUuid}
+            onClaimed={() => {
+              setOpenQuestId(null);
+              void load();
+            }}
+            quest={openQuest}
+            wallet={wallet}
+          />
+        ) : null}
+      </RewardsSheet>
 
       {/* Earn points */}
       <RewardsSheet

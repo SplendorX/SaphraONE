@@ -3356,7 +3356,7 @@ export function DashboardContent({
       banners={
         <>
           <InstallAppBanner />
-          <DashboardIncoming />
+          <DashboardIncoming onBalanceChange={() => void refreshBalances()} />
           {isTreasuryMismatch && treasuryAddress ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-950 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">

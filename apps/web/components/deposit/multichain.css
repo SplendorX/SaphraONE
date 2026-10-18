@@ -112,6 +112,21 @@
   opacity: 0.55;
 }
 
+/* The dashboard's incoming card: a heading with Refresh over the list. */
+.mc-dashboard-incoming {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.mc-dashboard-incoming-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.mc-check:not(:disabled) {
+  cursor: pointer;
+}
+
 /* Incoming list (receive screen and dashboard) */
 .mc-incoming {
   display: grid;
