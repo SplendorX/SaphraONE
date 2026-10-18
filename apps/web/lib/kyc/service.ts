@@ -25,6 +25,8 @@ import { checkLiveness, lookupBvn, lookupNin, matchFaceToId, premblyReady } from
 import { resetRateLimit } from "@/lib/rate-limit";
 
 const DAY_MS = 86_400_000;
+/** How long a matched record waits for the user's "Is this you?" Confirm. */
+const CONFIRM_TTL_MS = 30 * 60 * 1000;
 
 type KybLevel = "NONE" | "BASIC" | "FULL";
 type RampDirection = "ONRAMP" | "OFFRAMP";
@@ -48,12 +50,22 @@ function maskPhone(phone: string | null) {
   return phone ? phone.replace(/(\+234)(\d{3})\d+(\d{2})$/, "$1$2***$3") : null;
 }
 
-/** Flags without the short-lived iGree bookkeeping. */
+/** Flags without the short-lived iGree and confirm bookkeeping. */
 function settledFlags(flags: Record<string, unknown> | undefined) {
   const rest = { ...(flags ?? {}) };
   delete rest.consent_sent_at;
   delete rest.consent_ref;
+  delete rest.consent_required;
+  delete rest.consent_verified_at;
+  delete rest.confirm_pending_at;
   return rest;
+}
+
+/** A matched record still waiting for Confirm, within its window. */
+function awaitingConfirm(row: KycProfileRow | null) {
+  if (!row || row.status !== "PENDING" || !row.id_hash) return false;
+  const at = typeof row.flags?.confirm_pending_at === "string" ? Date.parse(row.flags.confirm_pending_at) : Number.NaN;
+  return Number.isFinite(at) && Date.now() - at <= CONFIRM_TTL_MS;
 }
 
 function publicState(row: KycProfileRow | null, used: { onrampNgn: number; offrampUsdc: number }, kybLevel: KybLevel) {
@@ -120,8 +132,9 @@ async function markTier1(wallet: string, patch: Partial<KycProfileRow>) {
 
 /**
  * Tier 1: BVN or NIN, date of birth and name, matched against the record.
- * The phone comes from the record. With iGree on, a BVN check waits for
- * the OTP sent to the BVN's own phone (see confirmConsent).
+ * The phone comes from the record. A match is held PENDING until the user
+ * taps Confirm on "Is this you?" (confirmIdentity). With iGree on, a BVN
+ * check first needs the OTP sent to the BVN's own phone (confirmConsent).
  */
 export async function submitId(
   wallet: string,
@@ -163,6 +176,26 @@ export async function submitId(
   if (await findVerifiedHash(idHash, wallet)) {
     await recordAttempt({ wallet, step: "ID_LOOKUP", idHash, result: "FAIL", reasonCode: "reused" });
     throw kycErrors.conflict("This number already verifies another SaphraONE account.");
+  }
+
+  // Same details again while the last match waits for Confirm (e.g. after a
+  // reload): show "Is this you?" again without paying for another lookup.
+  if (
+    row &&
+    awaitingConfirm(row) &&
+    !row.flags?.consent_required &&
+    row.id_type === idType &&
+    row.id_hash === idHash &&
+    row.dob &&
+    dobMatches(input.dob, row.dob) &&
+    namesMatch(`${input.firstName} ${input.lastName}`, legalName(row.first_name, row.middle_name, row.last_name))
+  ) {
+    return {
+      ...(await getKycState(wallet)),
+      consentRequired: false,
+      confirmRequired: true,
+      preview: { firstName: row.first_name, lastName: row.last_name, last4: row.id_last4 },
+    };
   }
 
   const lookup = idType === "BVN" ? await lookupBvn(number) : await lookupNin(number);
@@ -220,7 +253,7 @@ export async function submitId(
     await upsertKycProfile(wallet, {
       ...identity,
       status: "PENDING",
-      flags: { ...flags, consent_sent_at: nowIso(), consent_ref: sent.reference },
+      flags: { ...flags, consent_required: true, consent_sent_at: nowIso(), consent_ref: sent.reference },
     });
     await recordAttempt({ wallet, step: "PHONE_OTP", idHash, result: "PASS", reasonCode: "sent", providerRef: sent.reference, providerCode: sent.code });
     return {
@@ -231,8 +264,8 @@ export async function submitId(
     };
   }
 
-  await markTier1(wallet, { ...identity, flags });
-  return { ...(await getKycState(wallet)), consentRequired: false, preview };
+  await upsertKycProfile(wallet, { ...identity, status: "PENDING", flags: { ...flags, confirm_pending_at: nowIso() } });
+  return { ...(await getKycState(wallet)), consentRequired: false, confirmRequired: true, preview };
 }
 
 /** Finishes a BVN check with the iGree code. The client resends the BVN. */
@@ -259,8 +292,59 @@ export async function confirmConsent(wallet: string, input: { number: unknown; c
     await recordAttempt({ wallet, step: "PHONE_OTP", idHash: row.id_hash, result: "FAIL", reasonCode: "code", providerCode: checked.code });
     throw kycErrors.invalid("That code doesn't match. Try again.");
   }
-  await markTier1(wallet, { flags: settledFlags(row.flags), phone_verified_at: nowIso(), otp_provider: "prembly_igree" });
+  await upsertKycProfile(wallet, {
+    phone_verified_at: nowIso(),
+    otp_provider: "prembly_igree",
+    flags: { ...settledFlags(row.flags), consent_required: true, consent_verified_at: nowIso(), confirm_pending_at: nowIso() },
+  });
   await recordAttempt({ wallet, step: "PHONE_OTP", idHash: row.id_hash, result: "PASS", reasonCode: "verified", providerRef: checked.reference });
+  return {
+    ...(await getKycState(wallet)),
+    confirmRequired: true,
+    preview: { firstName: row.first_name, lastName: row.last_name, last4: row.id_last4 },
+  };
+}
+
+/**
+ * The user's answer to "Is this you?". Confirm is the only step that sets
+ * Tier 1. "That's not me" clears the matched record and counts as a failed
+ * attempt, since someone else's details passed the lookup.
+ */
+export async function confirmIdentity(wallet: string, accept: unknown) {
+  if (typeof accept !== "boolean") throw kycErrors.invalid("Confirm or decline the match.");
+  const { row } = await loadKycProfile(wallet);
+  if (row?.status === "VERIFIED" && row.tier >= 1) return getKycState(wallet);
+  if (!row || row.status !== "PENDING" || !row.id_hash || typeof row.flags?.confirm_pending_at !== "string") {
+    throw kycErrors.invalid("Check your BVN or NIN first.");
+  }
+  if (!awaitingConfirm(row)) throw kycErrors.invalid("That check has expired. Enter your BVN or NIN again.");
+  if (row.flags.consent_required && !row.flags.consent_verified_at) {
+    throw kycErrors.invalid("Enter the code sent to the phone on your BVN first.");
+  }
+
+  if (!accept) {
+    await upsertKycProfile(wallet, {
+      status: "NONE",
+      tier: 0,
+      id_type: null,
+      id_hash: null,
+      id_last4: null,
+      first_name: null,
+      last_name: null,
+      middle_name: null,
+      dob: null,
+      phone_e164: null,
+      phone_verified_at: null,
+      otp_provider: null,
+      provider_ref: null,
+      flags: settledFlags(row.flags),
+    });
+    await recordAttempt({ wallet, step: "ID_LOOKUP", idHash: row.id_hash, result: "FAIL", reasonCode: "not_me" });
+    return getKycState(wallet);
+  }
+
+  await markTier1(wallet, { flags: settledFlags(row.flags) });
+  await recordAttempt({ wallet, step: "ID_LOOKUP", idHash: row.id_hash, result: "PASS", reasonCode: "confirmed" });
   return getKycState(wallet);
 }
 

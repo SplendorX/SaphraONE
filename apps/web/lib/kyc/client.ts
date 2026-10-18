@@ -99,7 +99,7 @@ export async function submitKycIdentity(
   wallet: string,
   input: { type: "BVN" | "NIN"; number: string; dob: string; firstName: string; lastName: string },
 ) {
-  return call<KycState & { consentRequired: boolean; consentPhone?: string | null }>(`/api/kyc/identity`, {
+  return call<KycState & { consentRequired: boolean; confirmRequired?: boolean; consentPhone?: string | null }>(`/api/kyc/identity`, {
     body: JSON.stringify({ ...input, wallet }),
     method: "POST",
   });
@@ -108,6 +108,11 @@ export async function submitKycIdentity(
 /** The iGree code NIBSS sent to the BVN's phone. The BVN is sent again, never stored. */
 export async function confirmKycConsent(wallet: string, number: string, code: string) {
   return call<KycState>(`/api/kyc/identity/consent`, { body: JSON.stringify({ code, number, wallet }), method: "POST" });
+}
+
+/** "Is this you?": true verifies Tier 1, false clears the match. */
+export async function confirmKycIdentity(wallet: string, confirm: boolean) {
+  return call<KycState>(`/api/kyc/identity/confirm`, { body: JSON.stringify({ confirm, wallet }), method: "POST" });
 }
 
 export async function submitKycSelfie(wallet: string, image: string, number: string) {

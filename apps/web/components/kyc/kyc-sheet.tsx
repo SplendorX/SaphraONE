@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   confirmKycConsent,
+  confirmKycIdentity,
   submitKycIdentity,
   submitKycSelfie,
   type KycState,
@@ -43,7 +44,6 @@ export function KycSheet({
   const [step, setStep] = useState<Step>(mode === "selfie" ? "selfie" : "id");
   const [consentPhone, setConsentPhone] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [verified, setVerified] = useState<KycState | null>(null);
   const [idType, setIdType] = useState<"BVN" | "NIN">("BVN");
   const [number, setNumber] = useState("");
   const [dob, setDob] = useState("");
@@ -142,7 +142,6 @@ export function KycSheet({
                     setStep("consent");
                     return;
                   }
-                  setVerified(next);
                   setStep("confirm");
                 })}
                 type="button"
@@ -171,7 +170,7 @@ export function KycSheet({
                 />
               </label>
               <Button disabled={busy || code.length < 4} onClick={() => void run(async () => {
-                setVerified(await confirmKycConsent(wallet, number, code));
+                await confirmKycConsent(wallet, number, code);
                 setStep("confirm");
               })} type="button">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -193,14 +192,30 @@ export function KycSheet({
               </p>
               <Button
                 disabled={busy}
-                onClick={() => {
-                  if (verified) onVerified?.(verified);
+                onClick={() => void run(async () => {
+                  const next = await confirmKycIdentity(wallet, true);
+                  onVerified?.(next);
                   setStep("done");
                   onOpenChange(false);
-                }}
+                })}
                 type="button"
               >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Confirm
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => void run(async () => {
+                  await confirmKycIdentity(wallet, false);
+                  setPreview(null);
+                  setNumber("");
+                  setStep("id");
+                  setError("We didn't verify that record. Check the number and try again.");
+                })}
+                type="button"
+                variant="ghost"
+              >
+                That&apos;s not me
               </Button>
             </>
           ) : null}

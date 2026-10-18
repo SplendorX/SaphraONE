@@ -39,7 +39,8 @@ Redacted bodies live in `__tests__/fixtures/` and drive `prembly-map.test.mjs`.
 
 1. The user enters BVN or NIN, date of birth and name. The lookup must match the DOB and name. The phone is taken from the record; there is no separate SMS vendor.
 2. With `KYC_BVN_IGREE=true`, a BVN check is held `PENDING` and Prembly iGree sends an OTP to the phone on the BVN. The client sends the BVN again with the code (`/api/kyc/identity/consent`); the server checks it against the pending `id_hash`. NIN checks pass at step 1.
-3. Tier 2 asks for the BVN or NIN again. It is never kept in a cookie or a row, only compared with `id_hash`.
+3. Nothing is verified until the user taps **Confirm** on "Is this you?" (`/api/kyc/identity/confirm`, `{ confirm: true }`). Until then the record is `PENDING` and the ramp refuses new orders. The match waits 30 minutes; sending the same details again in that time shows it again without a second Prembly call. "That's not me" (`{ confirm: false }`) clears the record and counts as a failed attempt.
+4. Tier 2 asks for the BVN or NIN again. It is never kept in a cookie or a row, only compared with `id_hash`.
 
 ## Gate
 

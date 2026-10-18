@@ -182,12 +182,18 @@ describe("payout names", () => {
 describe("Tier 1 identity", () => {
   const input = { type: "NIN", number: "12345678901", dob: "1990-01-15", firstName: "Adebayo", lastName: "Smith" };
 
-  it("verifies a NIN with no phone step and takes the phone from the record", async () => {
+  it("holds a NIN match until Confirm, with the phone from the record", async () => {
     stubPrembly({ "/verification/vnin": premblyOk(person) });
     const state = await kyc.submitId(wallet, input);
-    assert.equal(state.tier, 1);
+    assert.equal(state.tier, 0, "a match alone is not verified");
+    assert.equal(state.confirmRequired, true);
     assert.equal(state.consentRequired, false);
+    await rejectsWith(kyc.assertRampAllowed(wallet, "ONRAMP", "1000"), "KYC_REQUIRED");
+    const confirmed = await kyc.confirmIdentity(wallet, true);
+    assert.equal(confirmed.tier, 1);
+    await kyc.assertRampAllowed(wallet, "ONRAMP", "1000");
     const [row] = fakeDb.rows("kyc_profiles");
+    assert.equal(row.flags.confirm_pending_at, undefined);
     assert.equal(row.phone_e164, "+2348031234567");
     assert.equal(row.id_last4, "8901");
     assert.equal(JSON.stringify(row).includes("12345678901"), false, "the raw NIN is never stored");
@@ -196,7 +202,38 @@ describe("Tier 1 identity", () => {
   it("rejects the same NIN on a second wallet", async () => {
     stubPrembly({ "/verification/vnin": premblyOk(person) });
     await kyc.submitId(wallet, input);
+    await kyc.confirmIdentity(wallet, true);
     await rejectsWith(kyc.submitId(other, input), "CONFLICT");
+  });
+
+  it("shows the same match again after a reload without a second lookup", async () => {
+    const calls = stubPrembly({ "/verification/vnin": premblyOk(person) });
+    await kyc.submitId(wallet, input);
+    const again = await kyc.submitId(wallet, input);
+    assert.equal(again.confirmRequired, true);
+    assert.equal(again.preview.firstName, "ADEBAYO");
+    assert.equal(calls.length, 1, "Prembly is called once");
+    assert.equal(again.tier, 0);
+  });
+
+  it("clears the match on That's not me and counts a failure", async () => {
+    stubPrembly({ "/verification/vnin": premblyOk(person) });
+    await kyc.submitId(wallet, input);
+    const state = await kyc.confirmIdentity(wallet, false);
+    assert.equal(state.tier, 0);
+    const [row] = fakeDb.rows("kyc_profiles");
+    assert.equal(row.status, "NONE");
+    assert.equal(row.id_hash, null);
+    assert.equal(row.first_name, null);
+    assert.equal(fakeDb.rows("kyc_attempts").at(-1).reason_code, "not_me");
+    await rejectsWith(kyc.confirmIdentity(wallet, true), "INVALID");
+  });
+
+  it("refuses Confirm once the window has passed", async () => {
+    stubPrembly({ "/verification/vnin": premblyOk(person) });
+    await kyc.submitId(wallet, input);
+    fakeDb.rows("kyc_profiles")[0].flags.confirm_pending_at = new Date(Date.now() - 31 * 60_000).toISOString();
+    await rejectsWith(kyc.confirmIdentity(wallet, true), "INVALID");
   });
 
   it("rejects a wrong date of birth and logs the failure", async () => {
@@ -230,16 +267,22 @@ describe("BVN consent (iGree)", () => {
 
     await rejectsWith(kyc.confirmConsent(wallet, { number: "22345678900", code: "123456" }), "INVALID");
     await rejectsWith(kyc.confirmConsent(wallet, { number: bvn, code: "999999" }), "INVALID");
-    const done = await kyc.confirmConsent(wallet, { number: bvn, code: "123456" });
+    await rejectsWith(kyc.confirmIdentity(wallet, true), "INVALID");
+    const consented = await kyc.confirmConsent(wallet, { number: bvn, code: "123456" });
+    assert.equal(consented.tier, 0, "the code alone is not Confirm");
+    const done = await kyc.confirmIdentity(wallet, true);
     assert.equal(done.tier, 1);
     assert.equal(fakeDb.rows("kyc_profiles")[0].otp_provider, "prembly_igree");
     assert.equal(fakeDb.rows("kyc_profiles")[0].flags.consent_sent_at, undefined);
   });
 
-  it("verifies a BVN straight away while iGree is off", async () => {
-    stubPrembly({ "/verification/bvn": premblyOk(person) });
+  it("skips the code while iGree is off and goes straight to Confirm", async () => {
+    const calls = stubPrembly({ "/verification/bvn": premblyOk(person) });
     const state = await kyc.submitId(wallet, input);
-    assert.equal(state.tier, 1);
+    assert.equal(state.consentRequired, false);
+    assert.equal(state.confirmRequired, true);
+    assert.equal(calls.some((call) => call.path === "/verification/bvn/igree"), false);
+    assert.equal((await kyc.confirmIdentity(wallet, true)).tier, 1);
   });
 });
 
