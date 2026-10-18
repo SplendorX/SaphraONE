@@ -423,13 +423,13 @@
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 35%, transparent);
   }
 
-  .platform-shell .app-topbar-profile .profile-avatar {
+  .platform-shell .app-topbar-profile .profile-trigger > .profile-avatar {
     width: 100%;
     height: 100%;
   }
 
   /* No photo: initials on a soft lilac disc. */
-  .platform-shell .app-topbar-profile .profile-avatar:not(:has(img)) {
+  .platform-shell .app-topbar-profile .profile-trigger > .profile-avatar:not(:has(img)) {
     border: 0;
     background: radial-gradient(circle at 50% 45%, #f3ecfe 0%, #e7dcfb 70%, #ddd0f8 100%);
     box-shadow: 0 6px 18px -10px rgb(91 33 182 / 0.35);
@@ -439,7 +439,7 @@
     letter-spacing: 0.01em;
   }
 
-  .dark .platform-shell .app-topbar-profile .profile-avatar:not(:has(img)) {
+  .dark .platform-shell .app-topbar-profile .profile-trigger > .profile-avatar:not(:has(img)) {
     background: radial-gradient(circle at 50% 45%, #4c2a85 0%, #3a1f6a 70%, #2f1858 100%);
     color: #ede4ff;
   }
