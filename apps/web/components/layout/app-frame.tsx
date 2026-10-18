@@ -7,9 +7,8 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
-import { SidebarToggle } from "@/components/layout/sidebar-toggle";
 import { useT } from "@/components/locale-provider";
-import { PlatformNav } from "@/components/platform-nav";
+import { PlatformNav, PlatformNavFooter } from "@/components/platform-nav";
 import { cn } from "@/lib/utils";
 
 type AppFrameProps = {
@@ -40,11 +39,8 @@ export function AppFrame({
   return (
     <div className="app-frame w-full min-w-0">
       <aside className={cn("app-sidebar", collapsed && "app-sidebar-collapsed")}>
-        <div className="app-sidebar-header">
-          <SidebarToggle />
-        </div>
-
-        <PlatformNav />
+        <PlatformNav collapsed={collapsed} />
+        <PlatformNavFooter collapsed={collapsed} />
       </aside>
 
       <div className={cn("app-main min-w-0 w-full", isCircleRoom && "app-main-circle-room")}>

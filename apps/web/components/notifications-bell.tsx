@@ -487,6 +487,17 @@ export function NotificationsBell({
     };
   }, [open]);
 
+  // The installed app's taskbar (Windows) or dock icon shows the unread count.
+  useEffect(() => {
+    const badge = navigator as Navigator & {
+      clearAppBadge?: () => Promise<void>;
+      setAppBadge?: (count?: number) => Promise<void>;
+    };
+    if (!badge.setAppBadge || !badge.clearAppBadge) return;
+    const update = unreadCount > 0 ? badge.setAppBadge(unreadCount) : badge.clearAppBadge();
+    void update.catch(() => undefined);
+  }, [unreadCount]);
+
   async function markAllRead() {
     if (!ownerWallet || unreadCount === 0) return;
     setMarking(true);

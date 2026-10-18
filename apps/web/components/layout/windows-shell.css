@@ -1,0 +1,383 @@
+/* Desktop: SaphraONE as a Windows 11 app. Its own file (not globals.css), so
+ * the build cache can't serve a stale copy.
+ *
+ * The pages keep the iPhone app's look (components/layout/ios-skin.css
+ * applies at every width); this file only shapes the window around them:
+ *   - Mica: a quiet, brand-tinted backdrop the title bar and sidebar sit on;
+ *   - the content as a raised layer with a rounded top-left corner, as in
+ *     Settings, Store or Outlook;
+ *   - search in the middle of the title bar;
+ *   - installed from Edge or Chrome, the title bar is the window's own
+ *     (window controls overlay): drag it to move the window, and it leaves
+ *     room for the minimise, maximise and close buttons;
+ *   - thin scrollbars, keyboard focus rings and pointer hover states.
+ * Phones and tablets (below 1024px) are untouched. */
+
+/* ── Title bar: search slot below desktop keeps the phone layout ───────── */
+@media (max-width: 767px) {
+  .platform-shell .app-topbar-center {
+    display: contents;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .platform-shell .app-topbar-center {
+    margin-left: auto;
+  }
+
+  .platform-shell .app-topbar-center + .app-topbar-tools {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* ── Surfaces per theme ───────────────────────────────────────────── */
+  .platform-shell {
+    --win-mica:
+      radial-gradient(70% 55% at 0% 0%, rgb(91 33 182 / 0.16), transparent 62%),
+      radial-gradient(55% 45% at 100% 0%, rgb(31 95 224 / 0.1), transparent 60%),
+      #0a080c;
+    --win-layer: #0e0b11;
+    --win-layer-border: rgb(244 235 221 / 0.07);
+    --win-layer-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 18px 50px -30px rgb(0 0 0 / 0.9);
+    --win-hover: rgb(244 235 221 / 0.05);
+    --win-scroll: rgb(244 235 221 / 0.18);
+    --win-scroll-hover: rgb(244 235 221 / 0.32);
+  }
+
+  /* Liquid Glass: a cool lilac Mica, the white layer lifted on it with the
+     faint lilac glow at the top of the iOS app. */
+  html[data-light-surface="glass"]:not(.dark) .platform-shell {
+    --win-mica:
+      radial-gradient(70% 60% at 0% 0%, rgb(124 58 237 / 0.12), transparent 62%),
+      radial-gradient(55% 50% at 100% 0%, rgb(37 99 235 / 0.08), transparent 60%),
+      #eef0f6;
+    --win-layer: radial-gradient(130% 38% at 50% 0%, #f3efff 0%, #f8f9fc 55%, #ffffff 85%);
+    --win-layer-border: rgb(18 20 26 / 0.07);
+    --win-layer-shadow: 0 1px 2px rgb(18 20 26 / 0.04), 0 18px 50px -32px rgb(91 33 182 / 0.35);
+    --win-hover: rgb(18 20 26 / 0.04);
+    --win-scroll: rgb(18 20 26 / 0.2);
+    --win-scroll-hover: rgb(18 20 26 / 0.36);
+  }
+
+  /* Cashmere: warm paper Mica, a cream layer. */
+  html[data-light-surface="cream"]:not(.dark) .platform-shell {
+    --win-mica:
+      radial-gradient(70% 60% at 0% 0%, rgb(91 33 182 / 0.07), transparent 62%),
+      #ebe0d0;
+    --win-layer: #f4ebdd;
+    --win-layer-border: rgb(23 17 28 / 0.08);
+    --win-layer-shadow: 0 1px 2px rgb(23 17 28 / 0.05), 0 18px 50px -32px rgb(23 17 28 / 0.35);
+    --win-hover: rgb(23 17 28 / 0.045);
+    --win-scroll: rgb(23 17 28 / 0.22);
+    --win-scroll-hover: rgb(23 17 28 / 0.38);
+  }
+
+  /* ── Mica: the window's backdrop ──────────────────────────────────── */
+  .platform-shell {
+    background: var(--win-mica);
+    background-attachment: fixed;
+  }
+
+  .platform-shell .app-frame {
+    background: transparent;
+  }
+
+  /* ── Title bar ────────────────────────────────────────────────────── */
+  .platform-shell .app-topbar {
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  /* Brand over the sidebar · search in the middle · tools on the right. */
+  .platform-shell .app-topbar-inner {
+    display: grid;
+    /* The tools never shrink; search gives way on a narrower window. */
+    grid-template-columns: minmax(max-content, 1fr) minmax(12rem, 36rem) minmax(max-content, 1fr);
+    align-items: center;
+    gap: 1rem;
+    min-height: 3.5rem;
+    padding: 0.5rem 1rem 0.5rem 1.35rem;
+  }
+
+  .platform-shell .app-topbar-center {
+    display: flex;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .platform-shell .app-topbar-tools {
+    margin-left: 0;
+  }
+
+  /* The search box: a field in the title bar, as in Windows' own apps. */
+  .platform-shell .app-topbar-search {
+    width: 100%;
+    height: 2.5rem;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    padding: 0 0.5rem 0 0.9rem;
+    border-color: color-mix(in oklch, var(--foreground) 10%, transparent);
+    border-radius: 0.8rem;
+    background: color-mix(in oklch, var(--card) 70%, transparent);
+    box-shadow: inset 0 -1px 0 color-mix(in oklch, var(--foreground) 8%, transparent);
+    font-size: 0.85rem;
+  }
+
+  .platform-shell .app-topbar-search:hover {
+    border-color: color-mix(in oklch, var(--primary) 35%, transparent);
+    background: var(--card);
+  }
+
+  .platform-shell .app-topbar-search .cmdk-trigger-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .platform-shell .app-topbar-search .cmdk-trigger-kbd {
+    margin-left: auto;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.4rem;
+    font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  }
+
+  html[data-light-surface="glass"]:not(.dark) .platform-shell .app-topbar-search {
+    background: rgb(255 255 255 / 0.72);
+  }
+
+  /* ── Sidebar: on Mica, no edge ────────────────────────────────────── */
+  .platform-shell .app-sidebar {
+    border-right: 0;
+    background: transparent;
+  }
+
+  /* Its fold button lives in the title bar (app-header.tsx). */
+  .platform-shell .app-sidebar {
+    padding-top: 0.25rem;
+  }
+
+  .platform-shell .app-topbar-navtoggle {
+    margin-left: -0.35rem;
+    border-color: transparent;
+    border-radius: 0.7rem;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .platform-shell .app-topbar-navtoggle:hover {
+    background: var(--win-hover);
+  }
+
+  /* ── The content: a raised layer ──────────────────────────────────── */
+  .platform-shell .app-main {
+    border-top: 1px solid var(--win-layer-border);
+    border-left: 1px solid var(--win-layer-border);
+    border-top-left-radius: 1rem;
+    background: var(--win-layer);
+    box-shadow: var(--win-layer-shadow);
+    scrollbar-gutter: stable;
+  }
+
+  .platform-shell .app-main-content {
+    padding: 1.5rem 2rem 3rem;
+    gap: 1.25rem;
+  }
+
+  .platform-shell .app-page-back-row {
+    padding: 1.25rem 2rem 0;
+  }
+
+  .platform-shell .app-page-title {
+    padding: 1.5rem 2rem 0;
+  }
+
+  /* Sidebar places are where you live: no "back" from them on desktop,
+     as tab roots have none on a phone. */
+  .platform-shell[data-nav-root] a[aria-label="Back to the dashboard"],
+  .platform-shell[data-nav-root] .app-page-back-row {
+    display: none;
+  }
+
+  /* ── Scrollbars: thin, quiet, as in Windows 11 ────────────────────── */
+  .platform-shell,
+  .platform-shell * {
+    scrollbar-color: var(--win-scroll) transparent;
+    scrollbar-width: thin;
+  }
+
+  .platform-shell ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .platform-shell ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .platform-shell ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background: var(--win-scroll) padding-box;
+  }
+
+  .platform-shell ::-webkit-scrollbar-thumb:hover {
+    border-width: 2px;
+    background: var(--win-scroll-hover) padding-box;
+  }
+
+  /* ── Keyboard focus: a clear ring, only for the keyboard ──────────── */
+  .platform-shell :is(a, button, [role="button"], [role="tab"], [role="option"], [tabindex]):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* ── Pointer: rows and tiles answer the mouse ─────────────────────── */
+  .platform-shell[data-ios] :is(.sx-row, .dep-row, .st-row, .cl-row, .inv-row, .ck-row, .tx-row, .cr-tile, .sx-option) {
+    transition:
+      transform 140ms ease,
+      background-color 160ms ease;
+  }
+
+  .platform-shell[data-ios] :is(.sx-row, .dep-row, .st-row, .cl-row, .inv-row, .ck-row, .tx-row, .cr-tile, .sx-option):hover {
+    background-color: var(--win-hover);
+  }
+
+  .platform-shell :is(.dh-action, .dh-points, .dh-week, .save-pocket) {
+    transition:
+      transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 160ms ease,
+      filter 160ms ease;
+  }
+
+  .platform-shell :is(.dh-action, .save-pocket):hover {
+    transform: translateY(-2px);
+  }
+
+  .platform-shell :is(.dh-points, .dh-week):hover {
+    filter: brightness(1.06);
+  }
+
+  html:not(.dark) .platform-shell :is(.dh-points, .dh-week):hover {
+    filter: brightness(0.985);
+  }
+
+  /* Text you might copy (amounts, IDs, addresses) stays selectable; the
+     chrome around it doesn't, as in a native app. */
+  .platform-shell :is(.app-topbar, .app-sidebar) {
+    user-select: none;
+  }
+}
+
+/* ── Installed on Windows: the title bar is the window's ───────────────
+   env(titlebar-area-*) is the strip left free beside the window buttons. */
+@media (min-width: 1024px) and (display-mode: window-controls-overlay) {
+  .platform-shell .app-topbar {
+    app-region: drag;
+    -webkit-app-region: drag;
+  }
+
+  .platform-shell .app-topbar-inner {
+    min-height: max(3.5rem, env(titlebar-area-height, 0px));
+    padding-left: max(1.35rem, env(titlebar-area-x, 0px));
+    /* Clear the minimise / maximise / close buttons on the right. */
+    padding-right: max(
+      1rem,
+      calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.5rem)
+    );
+  }
+
+  .platform-shell .app-topbar :is(a, button, input, [role="button"], [data-slot="button"], .profile-trigger) {
+    app-region: no-drag;
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* ── Keyboard shortcuts sheet (components/layout/desktop-shortcuts.tsx) ── */
+.ks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem 2rem;
+  max-height: min(70dvh, 34rem);
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.ks-group-title {
+  margin-bottom: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.ks-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem 1rem;
+}
+
+.ks-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.ks-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ks-key {
+  display: inline-grid;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 0.4rem;
+  background: var(--muted);
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ks-plus {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-shell :is(.dh-action, .save-pocket):hover {
+    transform: none;
+  }
+}
+
+/* ── Windows contrast themes: system colours, nothing lost ─────────────── */
+@media (forced-colors: active) {
+  .platform-shell .app-main {
+    border-color: CanvasText;
+  }
+
+  .platform-shell .app-topbar-search,
+  .app-nav-cta {
+    border: 1px solid ButtonText;
+  }
+
+  :is(nav.app-nav, .app-nav-footer) .app-nav-link.app-nav-link-active {
+    outline: 1px solid Highlight;
+  }
+
+  :is(nav.app-nav, .app-nav-footer) .app-nav-link::before,
+  .app-nav-network-dot {
+    background: Highlight;
+  }
+
+  .platform-shell :is(a, button, [role="button"], [role="tab"], [role="option"], [tabindex]):focus-visible {
+    outline-color: Highlight;
+  }
+}

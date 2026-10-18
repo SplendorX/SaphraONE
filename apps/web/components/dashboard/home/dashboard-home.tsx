@@ -6,11 +6,15 @@ import {
   ArrowLeftRight,
   ArrowUpFromLine,
   ArrowUpRight,
+  CalendarClock,
+  ChartPie,
   ChevronRight,
   Eye,
   EyeOff,
   QrCode,
+  ReceiptText,
   Send,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -45,6 +49,12 @@ function splitAmount(label: string) {
  * greeting, one balance card, the four everyday actions as
  * tiles under it, ONE Points, this week in two numbers, then transactions
  * and the rest. Every other place is in the tab bar and its More sheet.
+ *
+ * A wide desktop window splits it in two: the card, actions, transactions
+ * and promos in the main column, and ONE Points, this week, announcements,
+ * notices and Invest in a rail beside them. On narrower screens the two
+ * columns dissolve (display: contents) and `order` puts every block back in
+ * the phone's sequence (dashboard-home.css).
  */
 export function DashboardHome({
   avatarUrl,
@@ -104,128 +114,152 @@ export function DashboardHome({
         </span>
       </header>
 
-      {/* The one card that matters */}
-      <section aria-label="Balance" className="dh-card">
-        <span aria-hidden className="dh-card-glow" />
-        <span aria-hidden className="dh-card-sheen" />
-        {/* The ONE ribbon from the logo, drawn flat into the card. */}
-        <svg aria-hidden className="dh-card-art" fill="none" viewBox="170 365 685 295">
-          <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="44">
-            <path d="M317 632a120 120 0 0 0 120-120 120 120 0 0 0-120-120 120 120 0 0 0-120 120 120 120 0 0 0 120 120" />
-            <path d="M317 632h145q55 0 55-55V392l150 240V392h160" />
-            <path d="M667 512h130M667 632h160" />
-          </g>
-        </svg>
-        <div className="dh-card-top">
-          <span className="dh-card-label">
-            {isBusiness ? "Business balance" : "Total balance"} · {currency}
-          </span>
-          <button
-            aria-label={hideBalance ? "Show balance" : "Hide balance"}
-            className="dh-eye"
-            onClick={onToggleHide}
-            type="button"
-          >
-            {hideBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
+      <div className="dh-main">
+        {/* The one card that matters */}
+        <section aria-label="Balance" className="dh-card">
+          <span aria-hidden className="dh-card-glow" />
+          <span aria-hidden className="dh-card-sheen" />
+          {/* The ONE ribbon from the logo, drawn flat into the card. */}
+          <svg aria-hidden className="dh-card-art" fill="none" viewBox="170 365 685 295">
+            <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="44">
+              <path d="M317 632a120 120 0 0 0 120-120 120 120 0 0 0-120-120 120 120 0 0 0-120 120 120 120 0 0 0 120 120" />
+              <path d="M317 632h145q55 0 55-55V392l150 240V392h160" />
+              <path d="M667 512h130M667 632h160" />
+            </g>
+          </svg>
+          <div className="dh-card-top">
+            <span className="dh-card-label">
+              {isBusiness ? "Business balance" : "Total balance"} · {currency}
+            </span>
+            <button
+              aria-label={hideBalance ? "Show balance" : "Hide balance"}
+              className="dh-eye"
+              onClick={onToggleHide}
+              type="button"
+            >
+              {hideBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {!isConnected ? (
+            <p className="dh-amount">
+              <span className="dh-amount-quiet">Connect a wallet</span>
+            </p>
+          ) : isLoading ? (
+            <p className="dh-amount">
+              <span className="dh-amount-skeleton" />
+            </p>
+          ) : (
+            <BalanceWheel
+              hidden={hideBalance}
+              rows={[
+                {
+                  amount: tokens.find((token) => token.symbol === "USDC")?.amount ?? "0.00",
+                  key: "USDC",
+                  label: "USDC",
+                  unit: "USDC",
+                },
+                { amount: balanceLabel, key: "all", label: "All", unit: currency },
+                {
+                  amount: tokens.find((token) => token.symbol === "EURC")?.amount ?? "0.00",
+                  key: "EURC",
+                  label: "EURC",
+                  unit: "EURC",
+                },
+              ]}
+            />
+          )}
+
+          {isConnected ? (
+            <p className={cn("dh-change", `is-${trend}`)}>
+              {trend === "up" ? "▲ " : trend === "down" ? "▼ " : ""}
+              {hideBalance ? "••••" : changeLabel}
+            </p>
+          ) : null}
+
+          {isConnected && tokens.length > 1 ? (
+            <div aria-hidden className="dh-split">
+              {tokens.map((token) => (
+                <span data-symbol={token.symbol} key={token.symbol} style={{ flexGrow: Math.max(token.share, 0.5) }} />
+              ))}
+            </div>
+          ) : null}
+
+        </section>
+
+        {/* The four everyday actions, as tiles under the card. */}
+        <nav aria-label="Money actions" className="dh-actions">
+          <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
+          <Action href="/send" icon={Send} label="Send" />
+          <Action href="/pay" icon={QrCode} label="Request" />
+          {/* With the Naira ramp on, Withdraw takes Swap's place (Swap moves
+              to the More sheet). */}
+          {rampEntryEnabled ? (
+            <Action href="/withdraw" icon={ArrowUpFromLine} label="Withdraw" />
+          ) : (
+            <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
+          )}
+        </nav>
+
+        <div className="dh-slot dh-slot-transactions">{transactions}</div>
+
+        <div className="dh-slot dh-slot-extras">{extras}</div>
+      </div>
+
+      <aside aria-label="At a glance" className="dh-side">
+        {/* Phones and wide desktops: ONE Points live here (in between, the top
+            bar's points pill carries them). */}
+        <PointsStrip />
+
+        {/* Live campaigns and quests, each dismissible. */}
+        <div className="dh-slot dh-slot-announcements">
+          <Announcements />
         </div>
 
-        {!isConnected ? (
-          <p className="dh-amount">
-            <span className="dh-amount-quiet">Connect a wallet</span>
-          </p>
-        ) : isLoading ? (
-          <p className="dh-amount">
-            <span className="dh-amount-skeleton" />
-          </p>
-        ) : (
-          <BalanceWheel
-            hidden={hideBalance}
-            rows={[
-              {
-                amount: tokens.find((token) => token.symbol === "USDC")?.amount ?? "0.00",
-                key: "USDC",
-                label: "USDC",
-                unit: "USDC",
-              },
-              { amount: balanceLabel, key: "all", label: "All", unit: currency },
-              {
-                amount: tokens.find((token) => token.symbol === "EURC")?.amount ?? "0.00",
-                key: "EURC",
-                label: "EURC",
-                unit: "EURC",
-              },
-            ]}
-          />
-        )}
+        <div className="dh-slot dh-slot-banners">{banners}</div>
 
-        {isConnected ? (
-          <p className={cn("dh-change", `is-${trend}`)}>
-            {trend === "up" ? "▲ " : trend === "down" ? "▼ " : ""}
-            {hideBalance ? "••••" : changeLabel}
-          </p>
-        ) : null}
+        {/* This week, in two numbers */}
+        <Link className="dh-week" href="/insights">
+          <span className="dh-week-tile">
+            <span className="dh-week-icon is-in">
+              <ArrowDownLeft className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="dh-week-label">In · 7 days</span>
+              <span className="dh-week-value">{hideBalance ? "••••" : moneyIn}</span>
+            </span>
+          </span>
+          <span aria-hidden className="dh-week-rule" />
+          <span className="dh-week-tile">
+            <span className="dh-week-icon is-out">
+              <ArrowUpRight className="h-4 w-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="dh-week-label">Out · 7 days</span>
+              <span className="dh-week-value">{hideBalance ? "••••" : moneyOut}</span>
+            </span>
+          </span>
+        </Link>
 
-        {isConnected && tokens.length > 1 ? (
-          <div aria-hidden className="dh-split">
-            {tokens.map((token) => (
-              <span data-symbol={token.symbol} key={token.symbol} style={{ flexGrow: Math.max(token.share, 0.5) }} />
-            ))}
+        <div className="dh-slot dh-slot-earn">{earn}</div>
+
+        {/* Wide desktops only: what the phone keeps in Send and More. */}
+        <nav aria-label="Shortcuts" className="dh-more">
+          <p className="dh-more-title">Shortcuts</p>
+          <div className="dh-more-grid">
+            {rampEntryEnabled ? (
+              <MoreLink href="/swap" icon={ArrowLeftRight} label="Swap" />
+            ) : (
+              <MoreLink href="/withdraw" icon={ArrowUpFromLine} label="Withdraw" />
+            )}
+            <MoreLink href="/bulkpay" icon={UsersRound} label="BulkPay" />
+            <MoreLink href="/recurepay" icon={CalendarClock} label="Scheduled" />
+            <MoreLink href="/transactions" icon={ReceiptText} label="Transactions" />
+            <MoreLink href="/insights" icon={ChartPie} label="Insights" />
+            <MoreLink href="/deposit" icon={ArrowDownToLine} label="Add money" />
           </div>
-        ) : null}
-
-      </section>
-
-      {/* The four everyday actions, as tiles under the card. */}
-      <nav aria-label="Money actions" className="dh-actions">
-        <Action href="/deposit" icon={ArrowDownToLine} label="Add money" />
-        <Action href="/send" icon={Send} label="Send" />
-        <Action href="/pay" icon={QrCode} label="Request" />
-        {/* With the Naira ramp on, Withdraw takes Swap's place (Swap moves
-            to the More sheet). */}
-        {rampEntryEnabled ? (
-          <Action href="/withdraw" icon={ArrowUpFromLine} label="Withdraw" />
-        ) : (
-          <Action href="/swap" icon={ArrowLeftRight} label="Swap" />
-        )}
-      </nav>
-
-      {/* Phones: ONE Points live here (the top bar's points pill is desktop's). */}
-      <PointsStrip />
-
-      {/* Live campaigns and quests, each dismissible. */}
-      <Announcements />
-
-      {banners}
-
-      {/* This week, in two numbers */}
-      <Link className="dh-week" href="/insights">
-        <span className="dh-week-tile">
-          <span className="dh-week-icon is-in">
-            <ArrowDownLeft className="h-4 w-4" />
-          </span>
-          <span className="min-w-0">
-            <span className="dh-week-label">In · 7 days</span>
-            <span className="dh-week-value">{hideBalance ? "••••" : moneyIn}</span>
-          </span>
-        </span>
-        <span aria-hidden className="dh-week-rule" />
-        <span className="dh-week-tile">
-          <span className="dh-week-icon is-out">
-            <ArrowUpRight className="h-4 w-4" />
-          </span>
-          <span className="min-w-0">
-            <span className="dh-week-label">Out · 7 days</span>
-            <span className="dh-week-value">{hideBalance ? "••••" : moneyOut}</span>
-          </span>
-        </span>
-      </Link>
-
-      {earn}
-
-      {transactions}
-
-      {extras}
+        </nav>
+      </aside>
     </div>
   );
 }
@@ -364,6 +398,17 @@ function Action({ href, icon: Icon, label }: { href: string; icon: LucideIcon; l
     <Link className="dh-action" href={href}>
       <span className="dh-action-icon">
         <Icon className="h-5 w-5" />
+      </span>
+      {label}
+    </Link>
+  );
+}
+
+function MoreLink({ href, icon: Icon, label }: { href: string; icon: LucideIcon; label: string }) {
+  return (
+    <Link className="dh-more-link" href={href}>
+      <span className="dh-more-icon">
+        <Icon className="h-[1.1rem] w-[1.1rem]" />
       </span>
       {label}
     </Link>

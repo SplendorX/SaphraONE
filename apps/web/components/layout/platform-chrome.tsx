@@ -6,13 +6,16 @@ import type { ReactNode } from "react";
 import { OnboardingRedirect } from "@/components/business/workspace-provider";
 import { AppFrame } from "@/components/layout/app-frame";
 import { AppHeader } from "@/components/layout/app-header";
+import { DesktopShortcuts } from "@/components/layout/desktop-shortcuts";
 import { isTabRoot, MobileTabBar, showsMobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { MobileTitleBar } from "@/components/layout/mobile-title-bar";
 import { SidebarProvider } from "@/components/layout/sidebar-context";
 import { useT } from "@/components/locale-provider";
+import { isPlatformNavRoot } from "@/components/platform-nav";
 import { pageCopyForPath } from "@/lib/i18n";
 
 import "./ios-skin.css";
+import "./windows-shell.css";
 
 /** Pages that keep their own design instead of the iPhone-app look. */
 const ownDesign = /^\/(?:referral|rewards|swap)(?:\/|$)/;
@@ -52,6 +55,7 @@ export function PlatformChrome({
         <div
           className="platform-shell w-full min-w-0 bg-background"
           data-ios={iosLook ? "" : undefined}
+          data-nav-root={isPlatformNavRoot(pathname) ? "" : undefined}
           data-tab-root={tabBar && isTabRoot(pathname) ? "" : undefined}
           data-tabbar={tabBar ? "" : undefined}
         >
@@ -67,6 +71,7 @@ export function PlatformChrome({
           </AppFrame>
           {iosLook && pathname !== "/dashboard" ? <MobileTitleBar /> : null}
           {tabBar ? <MobileTabBar /> : null}
+          <DesktopShortcuts />
         </div>
       </SidebarProvider>
     </>

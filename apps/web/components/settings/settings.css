@@ -301,3 +301,82 @@
 .st-help-icon[data-tone="faq"] {
   color: #f59e0b;
 }
+
+/* ── List and section side by side (settings-hub.tsx) ─────────────────────
+   Phones and narrower windows show one or the other: the panes dissolve
+   into .st-page's grid, exactly as before. A wide desktop window shows both,
+   as Windows Settings does. */
+.st-list-pane,
+.st-detail-pane {
+  display: contents;
+}
+
+@media (min-width: 1180px) {
+  .st-page.st-split {
+    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.75rem;
+    max-width: 76rem;
+  }
+
+  .st-split .st-list-pane,
+  .st-split .st-detail-pane {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 1.1rem;
+  }
+
+  /* The section reads as a page of its own, raised beside the list. */
+  .st-split .st-detail-pane {
+    padding: 1.5rem 1.75rem 2rem;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: color-mix(in oklch, var(--card) 70%, transparent);
+  }
+
+  .st-split .st-detail-pane .st-bar {
+    display: block;
+    padding-top: 0;
+  }
+
+  /* Both stay on screen, so there's nothing to go back to. */
+  .st-split .st-detail-pane .st-bar > :is(button, span) {
+    display: none;
+  }
+
+  .st-split .st-detail-pane .st-bar > .st-title {
+    margin-top: 0;
+    font-size: 1.75rem;
+  }
+
+  /* The list is a navigation pane now: one line per row. */
+  .st-split .st-list-pane .st-row-sub {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .st-split .st-list-pane .st-row {
+    width: calc(100% + 1.2rem);
+    margin-inline: -0.6rem;
+    padding-inline: 0.6rem;
+    border-radius: 0.85rem;
+    transition: background-color 140ms ease;
+  }
+
+  .st-split .st-list-pane .st-row:hover {
+    background: color-mix(in oklch, var(--foreground) 5%, transparent);
+  }
+
+  .st-split .st-list-pane .st-row.is-current,
+  .st-split .st-list-pane .st-row.is-current:hover {
+    background: color-mix(in oklch, var(--primary) 14%, transparent);
+  }
+
+  .st-split .st-row.is-current .st-row-title {
+    color: var(--nav-active);
+  }
+}

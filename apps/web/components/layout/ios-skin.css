@@ -1,4 +1,6 @@
-/* Phones and tablets: every app page in the look of the SaphraONE iPhone app.
+/* Every app page in the look of the SaphraONE iPhone app, on phones,
+ * tablets and desktop alike (the Windows window around the pages is
+ * components/layout/windows-shell.css).
  * Hero cards in the brand gradient with the ONE loop, Liquid Glass cards with
  * a soft purple shadow, capsule buttons and roomy fields. It restyles the
  * pages' own classes, so markup and behaviour are unchanged.
@@ -6,14 +8,15 @@
  * Scoped to .platform-shell[data-ios], which PlatformChrome sets on every page
  * except Invite & Earn, Rewards and Swap (they keep their own design). The
  * transfer animation (.tp) and Save's piggy art (.save-art) are never touched.
- * Desktop keeps its current look. Its own file, not globals.css. */
+ * Its own file, not globals.css. */
 
-/* Taglines show only in the phone layout. */
+/* Taglines show only with the iPhone look (not on pages with their own design). */
 .ios-tagline {
   display: none;
 }
 
-@media (max-width: 1023px) {
+/* All widths. A media block, so the rules below keep their indentation. */
+@media all {
   /* ── Surfaces per theme ──────────────────────────────────────────── */
   .platform-shell[data-ios] {
     --ios-hero:
@@ -381,7 +384,7 @@
   }
 }
 
-@media (max-width: 1023px) and (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) {
   html:has(.platform-shell[data-ios]) [data-slot="dialog-content"] {
     animation: none;
   }

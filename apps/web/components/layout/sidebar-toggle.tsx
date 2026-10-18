@@ -4,15 +4,17 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function SidebarToggle() {
+export function SidebarToggle({ className }: { className?: string }) {
   const { collapsed, toggleCollapsed } = useSidebar();
 
   return (
     <Button
       aria-expanded={!collapsed}
       aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
-      className="h-9 w-9 shrink-0"
+      aria-keyshortcuts="Control+B Meta+B"
+      className={cn("h-9 w-9 shrink-0", className)}
       onClick={toggleCollapsed}
       size="icon"
       type="button"
