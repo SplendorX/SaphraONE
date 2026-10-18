@@ -80,11 +80,17 @@
   border-radius: 7px;
 }
 
-.dp-brand-name {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: -0.01em;
+/* The SaphraONE wordmark (an image sized in em): 16px puts it level with
+   the 26px mark. The selector outweighs .platform-wordmark-header. */
+.dp-brand .dp-brand-name {
+  font-size: 16px;
+}
+
+/* A narrow phone: the tag gives way so the sandbox switch and menu fit. */
+@media (max-width: 419px) {
+  .dp-header .dp-brand-tag {
+    display: none;
+  }
 }
 
 .dp-brand-tag {

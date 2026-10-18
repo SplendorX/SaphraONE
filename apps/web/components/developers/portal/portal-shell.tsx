@@ -7,6 +7,7 @@ import { useDisconnect } from "wagmi";
 
 import { useAccountContext } from "@/components/account/account-provider";
 import { PlatformLogoMark } from "@/components/brand/platform-logo-mark";
+import { PlatformWordmark } from "@/components/brand/platform-wordmark";
 import { ModeToggle } from "@/components/developers/portal/mode-toggle";
 import { PortalLink, usePortal } from "@/components/developers/portal/portal-context";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -65,7 +66,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         <div className="dp-header-inner">
           <PortalLink className="dp-brand" href="/">
             <PlatformLogoMark className="dp-brand-mark" />
-            <span className="dp-brand-name">SaphraONE</span>
+            <PlatformWordmark className="dp-brand-name" />
             <span className="dp-brand-tag">Developers</span>
           </PortalLink>
 
@@ -146,7 +147,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           <div className="dp-footer-brand">
             <span className="dp-brand">
               <PlatformLogoMark className="dp-brand-mark" />
-              <span className="dp-brand-name">SaphraONE</span>
+              <PlatformWordmark className="dp-brand-name" />
               <span className="dp-brand-tag">Developers</span>
             </span>
             <p>Stablecoin checkout for websites and platforms. USDC on Arc, settled to your wallet in under a second.</p>
