@@ -56,6 +56,14 @@ import type {
 import { beneficiaryView, orderView } from "@/lib/ramp/view";
 import { verifyOfframpDeposit } from "@/lib/ramp/verify";
 import { verifySvixSignature } from "@/lib/ramp/webhook-signature";
+import {
+  assertBeneficiaryMatchesKyc,
+  assertRampAllowed,
+  getKycState,
+  getVerifiedPerson,
+  settleDailyCap,
+} from "@/lib/kyc/service";
+import { legalName } from "@/lib/kyc/match";
 
 /** An open order re-reads Centiiv at most this often when the browser polls. */
 const REFRESH_AFTER_MS = 10_000;
@@ -86,15 +94,33 @@ function requireAmount(value: unknown, direction: RampDirection) {
   return parsed.value;
 }
 
-export function rampStatus(): RampStatusInfo {
+export async function rampStatus(wallet?: string | null): Promise<RampStatusInfo> {
   const config = centiivConfig();
   const currencies = config ? rampCurrencies() : [];
-  return {
+  const base: RampStatusInfo = {
     enabled: Boolean(config) && currencies.length > 0,
     currencies,
     directions: ["ONRAMP", "OFFRAMP"],
     environment: config?.environment ?? null,
   };
+  if (!wallet) return base;
+  try {
+    const kyc = await getKycState(wallet);
+    return {
+      ...base,
+      kyc: {
+        available: kyc.available,
+        limits: kyc.limits,
+        nextTier: kyc.nextTier,
+        remainingToday: kyc.remainingToday,
+        required: kyc.required,
+        status: kyc.status,
+        tier: kyc.tier,
+      },
+    };
+  } catch {
+    return base;
+  }
 }
 
 // ── Quotes ──────────────────────────────────────────────────────────────
@@ -185,6 +211,8 @@ export async function createOnramp(input: { wallet: string; amountNgn: unknown; 
   const previous = await findOrderByIdempotencyKey(input.wallet, input.idempotencyKey);
   if (previous) return orderView(previous);
 
+  await assertRampAllowed(input.wallet, "ONRAMP", amount);
+
   const quoted = await fetchQuote(config, "ONRAMP", amount);
   const { row, existing } = await startOrder({
     wallet_address: input.wallet,
@@ -199,12 +227,17 @@ export async function createOnramp(input: { wallet: string; amountNgn: unknown; 
     idempotency_key: input.idempotencyKey,
   });
   if (existing) return orderView(row);
+  await settleDailyCap(input.wallet, "ONRAMP", () => failOrder(row, "Daily limit reached."));
 
   const contact = await readProfileContact(input.wallet).catch(() => null);
+  const verified = await getVerifiedPerson(input.wallet).catch(() => null);
   const sender: Record<string, string> = { externalId: input.wallet };
-  if (contact?.fullName) sender.fullName = contact.fullName;
+  const verifiedName = verified ? legalName(verified.first_name, verified.middle_name, verified.last_name) : "";
+  if (verifiedName) sender.fullName = verifiedName;
+  else if (contact?.fullName) sender.fullName = contact.fullName;
   if (contact?.email) sender.email = contact.email;
-  if (contact?.phone) sender.phone = contact.phone;
+  if (verified?.phone_e164) sender.phone = verified.phone_e164;
+  else if (contact?.phone) sender.phone = contact.phone;
 
   // The destination is always the signed-in wallet, never the request body.
   const result = await createRequest(
@@ -258,6 +291,9 @@ export async function createOfframp(input: {
   const beneficiary =
     typeof input.beneficiaryId === "string" ? await findBeneficiary(input.beneficiaryId, input.wallet) : null;
   if (!beneficiary) throw rampErrors.invalid("Choose a bank account to withdraw to.");
+  // Older accounts are re-checked here; OWNER payouts keep personal limits.
+  const payout = await assertBeneficiaryMatchesKyc(input.wallet, beneficiary.account_name);
+  await assertRampAllowed(input.wallet, "OFFRAMP", amount, { payout });
 
   const quoted = await fetchQuote(config, "OFFRAMP", amount);
   const { row, existing } = await startOrder({
@@ -280,6 +316,7 @@ export async function createOfframp(input: {
     idempotency_key: input.idempotencyKey,
   });
   if (existing) return orderView(row);
+  await settleDailyCap(input.wallet, "OFFRAMP", () => failOrder(row, "Daily limit reached."), { payout });
 
   // Refunds go back to the signed-in wallet, never an address from the body.
   const result = await createRequest(
@@ -581,6 +618,7 @@ export async function listBeneficiaries(wallet: string) {
 export async function addBeneficiary(input: { wallet: string; bankCode: unknown; accountNumber: unknown }) {
   const existing = await listBeneficiaryRows(input.wallet);
   const account = await resolveAccount(input.bankCode, input.accountNumber);
+  const nameMatch = await assertBeneficiaryMatchesKyc(input.wallet, account.accountName);
   const duplicate = existing.find(
     (row) => row.bank_code === account.bankCode && row.account_number === account.accountNumber,
   );
@@ -595,6 +633,7 @@ export async function addBeneficiary(input: { wallet: string; bankCode: unknown;
     bank_name: account.bankName,
     account_number: account.accountNumber,
     account_name: account.accountName,
+    name_match: nameMatch,
   });
   return beneficiaryView(row);
 }

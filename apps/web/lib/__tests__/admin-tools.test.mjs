@@ -41,6 +41,7 @@ describe("admin access", () => {
     assert.equal(adminToolForPath("/admin"), null);
     assert.equal(adminToolForPath("/admin/users"), "users");
     assert.equal(adminToolForPath("/admin/business-verifications"), "verifications");
+    assert.equal(adminToolForPath("/admin/kyc"), "verifications");
     assert.equal(adminToolForPath("/admin/team/anything"), "team");
   });
 

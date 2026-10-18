@@ -94,6 +94,11 @@ export default function BusinessVerificationsAdminPage() {
         <p className="mt-2 text-sm text-muted-foreground">
           Submissions an official register couldn&rsquo;t settle automatically. Check the number on the
           country&rsquo;s official register, then approve or reject with a reason the business will see.
+          Personal KYC reviews are on{" "}
+          <a className="underline" href="/admin/kyc">
+            Personal KYC
+          </a>
+          .
         </p>
       </header>
 

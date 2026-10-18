@@ -550,9 +550,7 @@ cd apps/web && pnpm run typecheck && pnpm run test:ramp && pnpm run test:checkou
 
 ## 13. Known gaps to decide later
 
-- **End-user KYC:** Centiiv runs KYB on SwiftPay as the aggregator and only asks for optional `sender` info. SwiftPay is responsible for its own user checks and limits.
-  - **Suggested launch rule:** require a verified email and phone on the profile before the first ramp order.
-  - **Per-wallet daily cap:** ₦500,000 on-ramp and $500 off-ramp, enforced in `service.ts` from `ramp_orders` totals.
+- **End-user KYC:** Done in `PREMBLY-KYC-KYB-PLAN.md`. Off until `NEXT_PUBLIC_KYC_REQUIRED=true` and Prembly keys are set; then new ramp orders need Tier 1 (phone OTP + BVN/NIN) with daily caps. Open orders still finish.
 - **More currencies:** KES needs the `depositor` M-Pesa block for on-ramp, and GHS uses MOBILEMONEY payouts. Add them by widening the currency check constraint and `RAMP_CURRENCIES`.
 - **Notifications:** on-ramp deliveries already show as incoming transfers in the bell. A dedicated "Withdrawal paid" notification can come later.
 

@@ -3,8 +3,8 @@
  * Client-safe: the settings panel uses it to offer the right ID types; the
  * server (registry-check.ts) does the actual lookups.
  *
- * Every automatic source here is an official register with a free API.
- * Anything else is reviewed by a person — never a paid provider.
+ * Every automatic source here is an official register with a free API,
+ * except Nigeria CAC/TIN through Prembly when that key is configured.
  */
 export type BusinessIdType = "VAT" | "REGISTRATION" | "TAX" | "LEI";
 
@@ -39,7 +39,7 @@ const lei: BusinessIdOption = {
  */
 export function businessIdOptions(
   countryCode: string | null | undefined,
-  keys: { companiesHouse?: boolean; abnLookup?: boolean } = {},
+  keys: { companiesHouse?: boolean; abnLookup?: boolean; prembly?: boolean } = {},
 ): BusinessIdOption[] {
   const code = countryCode?.toUpperCase() ?? "";
   const options: BusinessIdOption[] = [];

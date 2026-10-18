@@ -1,0 +1,12 @@
+{
+  "status": false,
+  "message": "Verification 'igree' could not be processed at the moment",
+  "data": null,
+  "errors": {
+    "error_code": "02"
+  },
+  "meta": {
+    "timestamp": "2026-10-18T22:05:16.000000",
+    "version": "v1"
+  }
+}

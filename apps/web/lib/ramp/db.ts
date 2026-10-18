@@ -17,6 +17,8 @@ export type BeneficiaryRow = {
   bank_name: string | null;
   account_number: string;
   account_name: string;
+  /** Which verified name the account matched (kyb.sql). Null before KYC. */
+  name_match?: "OWNER" | "COMPANY" | null;
   created_at: string;
 };
 
@@ -197,11 +199,17 @@ export async function findBeneficiary(id: string, wallet: string) {
 export async function upsertBeneficiary(
   row: Omit<BeneficiaryRow, "id" | "created_at">,
 ): Promise<BeneficiaryRow> {
-  const { data, error } = await db()
-    .from(rampTables.beneficiaries)
-    .upsert(row, { onConflict: "wallet_address,bank_code,account_number" })
-    .select("*")
-    .single();
+  const save = (values: typeof row) =>
+    db()
+      .from(rampTables.beneficiaries)
+      .upsert(values, { onConflict: "wallet_address,bank_code,account_number" })
+      .select("*")
+      .single();
+  const { name_match: nameMatch, ...base } = row;
+  let { data, error } = await save(nameMatch ? row : base);
+  // name_match comes with kyb.sql. Without it, save the account anyway:
+  // createOfframp re-checks the name on every payout.
+  if (error && nameMatch && /name_match/.test(error.message ?? "")) ({ data, error } = await save(base));
   if (error) fail(error, "Could not save the bank account.");
   return data as BeneficiaryRow;
 }

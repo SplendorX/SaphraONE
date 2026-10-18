@@ -1,0 +1,32 @@
+{
+  "status": true,
+  "response_code": "00",
+  "message": "Verification successful (SANDBOX MODE) - You are in sandbox mode. Switch to production mode for live data.",
+  "detail": "Verification successful (SANDBOX MODE) - You are in sandbox mode. Switch to production mode for live data.",
+  "data": {
+    "email": "redacted@example.com",
+    "jittin": "10001",
+    "firstin": "00000000000",
+    "tax_office": "yaba tax office",
+    "phone_number": "00000000000",
+    "taxpayer_name": "test test",
+    "cac_reg_number": "Rc000000"
+  },
+  "meta": {},
+  "billing_info": {
+    "was_charged": false,
+    "amount": 0,
+    "currency": "NGN",
+    "note": "No charges in sandbox mode"
+  },
+  "verification": {
+    "status": "VERIFIED",
+    "reference": "7dfe8a64-3b82-42fc-8971-2a2801ea61bb",
+    "verification_id": "0a8f7f88-0824-4cbc-ba5f-734d0000000b"
+  },
+  "reference_id": "SBX-TIN_NG-1JGWG42ECD",
+  "is_sandbox": true,
+  "account_verified": true,
+  "verification_status": "sandbox",
+  "metadata": {}
+}

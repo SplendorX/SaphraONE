@@ -58,6 +58,8 @@ const ORDER = [
   "business-checkout",
   "merchant-api",
   "ramp",
+  "kyc",
+  "kyb",
   "creator-partners",
   "wallet-transfer-history",
   "team-announcements",

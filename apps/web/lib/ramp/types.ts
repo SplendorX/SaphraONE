@@ -100,11 +100,22 @@ export type RampQuote = {
   totalToPay: string;
 };
 
+export type RampKycInfo = {
+  required: boolean;
+  available: boolean;
+  tier: number;
+  status: "NONE" | "PENDING" | "VERIFIED" | "MANUAL_REVIEW" | "REJECTED";
+  limits: { onrampNgn: number; offrampUsdc: number };
+  remainingToday: { onrampNgn: number; offrampUsdc: number };
+  nextTier: number | null;
+};
+
 export type RampStatusInfo = {
   enabled: boolean;
   currencies: RampCurrency[];
   directions: RampDirection[];
   environment: RampEnvironment | null;
+  kyc?: RampKycInfo;
 };
 
 export type RampBank = { code: string; name: string };

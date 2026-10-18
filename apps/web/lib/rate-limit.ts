@@ -54,3 +54,13 @@ export async function consumeRateLimit(
     return consumeLocally(key, max, windowSeconds);
   }
 }
+
+/**
+ * Clears every window for these keys, e.g. when a reviewer reopens a check
+ * the user was locked out of. Best effort: a failure leaves the old limit.
+ */
+export async function resetRateLimit(keys: string[]) {
+  for (const key of keys) localWindows.delete(key);
+  const { error } = await createSupabaseAdminClient().from("rate_limit_windows").delete().in("key", keys);
+  if (error) console.warn("[rate-limit] reset failed", error.message);
+}

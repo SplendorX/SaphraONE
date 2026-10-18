@@ -30,6 +30,7 @@ import { useT } from "@/components/locale-provider";
 import { AccountProfileSettings } from "@/components/settings/account-profile-settings";
 import { AccountTypeSettings } from "@/components/settings/account-type-settings";
 import { AlertsSettings } from "@/components/settings/alerts-settings";
+import { IdentitySettings } from "@/components/settings/identity-settings";
 import { PaymentSecuritySettings } from "@/components/settings/payment-security-settings";
 import { DeleteAccountSettings } from "@/components/settings/delete-account-settings";
 import { TwoFactorSettings } from "@/components/settings/two-factor-settings";
@@ -80,6 +81,14 @@ export function SettingsHub() {
         title: t("settings.profileTitle"),
         blurb: isBusiness ? t("settings.profileBodyBusiness") : t("settings.profileBody"),
         render: () => <AccountProfileSettings />,
+      },
+      {
+        id: "identity",
+        group: "Account",
+        icon: ShieldCheck,
+        title: "Identity verification",
+        blurb: "Verify your identity for Naira deposits and withdrawals, and raise your daily limits.",
+        render: () => <IdentitySettings />,
       },
       {
         id: "appearance",

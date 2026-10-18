@@ -307,6 +307,7 @@ export function availableRegistryKeys() {
   return {
     abnLookup: Boolean(process.env.ABN_LOOKUP_GUID?.trim()),
     companiesHouse: Boolean(process.env.COMPANIES_HOUSE_API_KEY?.trim()),
+    prembly: Boolean(process.env.PREMBLY_API_KEY?.trim()),
   };
 }
 

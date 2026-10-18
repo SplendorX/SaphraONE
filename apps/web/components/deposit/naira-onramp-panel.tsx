@@ -3,12 +3,13 @@
 import { AlertTriangle, ArrowUpRight, Check, CheckCircle2, Clock, Copy, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { KycSheet } from "@/components/kyc/kyc-sheet";
 import { Button } from "@/components/ui/button";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { explorerTxUrl } from "@/lib/onchain-facts";
-import { createOrder, getOrder, readOpenOrderId, rememberOpenOrderId, requestQuote } from "@/lib/ramp/client";
+import { createOrder, fetchRampStatus, getOrder, RampApiError, readOpenOrderId, rememberOpenOrderId, requestQuote } from "@/lib/ramp/client";
 import { parseNgnAmount } from "@/lib/ramp/rules";
-import type { RampOrderView, RampQuote } from "@/lib/ramp/types";
+import type { RampKycInfo, RampOrderView, RampQuote } from "@/lib/ramp/types";
 import { formatCountdown, isFinished, useDebounced, useRampOrder, useSecondsLeft } from "@/lib/ramp/use-ramp-order";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { cn } from "@/lib/utils";
@@ -51,9 +52,23 @@ export function NairaOnrampPanel() {
   const [idempotencyKey, setIdempotencyKey] = useState(newKey);
   const [started, setStarted] = useState<RampOrderView | null>(null);
   const [order, setOrder] = useRampOrder(wallet, started);
+  const [kyc, setKyc] = useState<RampKycInfo | null>(null);
+  const [kycOpen, setKycOpen] = useState(false);
+  const [kycMode, setKycMode] = useState<"tier1" | "selfie">("tier1");
 
   const parsed = useMemo(() => (amount ? parseNgnAmount(amount) : null), [amount]);
   const quoteAmount = useDebounced(parsed?.ok ? parsed.value : null);
+
+  useEffect(() => {
+    if (!wallet) return;
+    let cancelled = false;
+    void fetchRampStatus(wallet).then((status) => {
+      if (!cancelled) setKyc(status?.kyc ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [wallet]);
 
   // Resume an order left open on this device.
   useEffect(() => {
@@ -110,6 +125,11 @@ export function NairaOnrampPanel() {
 
   async function start() {
     if (!wallet || !parsed?.ok) return;
+    if (kyc?.required && kyc.tier < 1) {
+      setKycMode("tier1");
+      setKycOpen(true);
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
@@ -122,7 +142,16 @@ export function NairaOnrampPanel() {
       rememberOpenOrderId("ONRAMP", wallet, created.id);
       setStarted(created);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Couldn't start the deposit.");
+      if (cause instanceof RampApiError && cause.code === "KYC_REQUIRED") {
+        setKycMode("tier1");
+        setKycOpen(true);
+      } else if (cause instanceof RampApiError && cause.code === "KYC_LIMIT") {
+        setKycMode("selfie");
+        setKycOpen(true);
+        setError(cause.message);
+      } else {
+        setError(cause instanceof Error ? cause.message : "Couldn't start the deposit.");
+      }
     } finally {
       setCreating(false);
     }
@@ -181,6 +210,9 @@ export function NairaOnrampPanel() {
             </button>
           ))}
         </div>
+        {kyc?.tier ? (
+          <p className="ramp-note">Verified · {formatNaira(kyc.remainingToday.onrampNgn)} left today</p>
+        ) : null}
 
         {parsed && !parsed.ok ? <p className="ramp-error">{parsed.message}</p> : null}
 
@@ -218,6 +250,27 @@ export function NairaOnrampPanel() {
         You&apos;ll get a one-time account to pay into from any Nigerian bank. USDC arrives in your SaphraONE wallet
         on Arc once the transfer lands.
       </p>
+      {wallet ? (
+        <KycSheet
+          mode={kycMode}
+          onOpenChange={setKycOpen}
+          onVerified={(next) => {
+            setKyc({
+              available: next.available,
+              limits: next.limits,
+              nextTier: next.nextTier,
+              remainingToday: next.remainingToday,
+              required: next.required,
+              status: next.status,
+              tier: next.tier,
+            });
+            setKycOpen(false);
+            void start();
+          }}
+          open={kycOpen}
+          wallet={wallet}
+        />
+      ) : null}
     </div>
   );
 }

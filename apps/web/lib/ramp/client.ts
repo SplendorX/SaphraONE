@@ -12,6 +12,31 @@ import type {
 
 /** Browser calls to /api/ramp. Each throws the server's message on failure. */
 
+export class RampApiError extends Error {
+  readonly code: string;
+  readonly reason?: string;
+  readonly remaining?: string;
+  readonly nextTier?: number | null;
+  readonly requiredTier?: number;
+
+  constructor(input: {
+    message: string;
+    code?: string;
+    reason?: string;
+    remaining?: string;
+    nextTier?: number | null;
+    requiredTier?: number;
+  }) {
+    super(input.message);
+    this.name = "RampApiError";
+    this.code = input.code ?? "ERROR";
+    this.reason = input.reason;
+    this.remaining = input.remaining;
+    this.nextTier = input.nextTier;
+    this.requiredTier = input.requiredTier;
+  }
+}
+
 async function call<T>(path: string, init: RequestInit = {}): Promise<{ status: number; data: T }> {
   const response = await fetch(path, {
     ...init,
@@ -22,9 +47,23 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<{ status: 
       ...(init.headers ?? {}),
     },
   });
-  const payload = (await response.json().catch(() => null)) as (T & { message?: string }) | null;
+  const payload = (await response.json().catch(() => null)) as (T & {
+    message?: string;
+    code?: string;
+    reason?: string;
+    remaining?: string;
+    nextTier?: number | null;
+    requiredTier?: number;
+  }) | null;
   if (!response.ok) {
-    throw new Error(payload?.message ?? "Something went wrong. Try again in a moment.");
+    throw new RampApiError({
+      code: payload?.code,
+      message: payload?.message ?? "Something went wrong. Try again in a moment.",
+      nextTier: payload?.nextTier,
+      reason: payload?.reason,
+      remaining: payload?.remaining,
+      requiredTier: payload?.requiredTier,
+    });
   }
   return { status: response.status, data: payload as T };
 }
@@ -33,9 +72,10 @@ function walletQuery(wallet: string) {
   return `wallet=${encodeURIComponent(wallet)}`;
 }
 
-export async function fetchRampStatus(): Promise<RampStatusInfo | null> {
+export async function fetchRampStatus(wallet?: string): Promise<RampStatusInfo | null> {
   try {
-    return (await call<RampStatusInfo>("/api/ramp/status")).data;
+    const query = wallet ? `?${walletQuery(wallet)}` : "";
+    return (await call<RampStatusInfo>(`/api/ramp/status${query}`)).data;
   } catch {
     return null;
   }

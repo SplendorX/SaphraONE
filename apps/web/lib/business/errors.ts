@@ -2,18 +2,21 @@ export class BusinessHttpError extends Error {
   readonly status: number;
   readonly code: string;
   readonly userMessage: string;
+  readonly details?: Record<string, unknown>;
 
   constructor(input: {
     code: string;
     status: number;
     userMessage: string;
     cause?: string;
+    details?: Record<string, unknown>;
   }) {
     super(input.cause ?? input.userMessage);
     this.name = "BusinessHttpError";
     this.code = input.code;
     this.status = input.status;
     this.userMessage = input.userMessage;
+    this.details = input.details;
   }
 }
 

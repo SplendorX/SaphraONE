@@ -204,7 +204,7 @@ export const supportArticles: SupportArticle[] = [
     title: "How do I get my business verified?",
     keywords: ["verify", "verification", "verified badge", "kyb", "registration number", "tax id", "tin", "vat", "cac", "rc number", "lei", "documents", "under review"],
     answer:
-      "Complete your business profile (logo, name, description, category, website, contact email and country). Business verification then unlocks: submit your registration number or tax ID. EU VAT numbers and French, Norwegian, UK and Australian company numbers are checked instantly; others are reviewed by our team, usually within two business days.",
+      "Complete your business profile (logo, name, description, category, website, contact email and country). Business verification then unlocks: submit your registration number or tax ID. EU VAT numbers and French, Norwegian, UK and Australian company numbers are checked instantly; others are reviewed by our team, usually within two business days. Nigerian businesses can also verify through Settings → Identity verification (CAC via Prembly) for higher Naira ramp limits.",
     steps: [
       "Open Business → Profile and fill in every required field.",
       "Save, then scroll to Business verification.",

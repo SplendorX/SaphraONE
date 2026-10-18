@@ -25,7 +25,11 @@ export function jsonOk(body: unknown, status = 200) {
 export function jsonBusinessError(error: unknown) {
   if (isBusinessHttpError(error) || error instanceof CircleHttpError || isPayrollError(error)) {
     return NextResponse.json(
-      { message: error.userMessage, code: error.code },
+      {
+        message: error.userMessage,
+        code: error.code,
+        ...(isBusinessHttpError(error) && error.details ? error.details : {}),
+      },
       { status: error.status },
     );
   }

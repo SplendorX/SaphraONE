@@ -18,6 +18,7 @@ import { erc20Abi, formatUnits } from "viem";
 import { useAccount, useReadContract, useSwitchChain } from "wagmi";
 
 import { formatNaira, formatUsdc } from "@/components/deposit/naira-onramp-panel";
+import { KycSheet } from "@/components/kyc/kyc-sheet";
 import { Button } from "@/components/ui/button";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { switchToArc } from "@/lib/arc-network";
@@ -27,6 +28,7 @@ import {
   createOrder,
   deleteBeneficiary,
   fetchRampStatus,
+  RampApiError,
   getOrder,
   listBanks,
   listBeneficiaries,
@@ -42,7 +44,7 @@ import {
 } from "@/lib/ramp/client";
 import { EXPIRY_MARGIN_MS, expiresSoon, parseUsdcAmount, readNuban, usdcUnits } from "@/lib/ramp/rules";
 import { sendUsdcOnArc } from "@/lib/ramp/send-usdc";
-import type { RampBank, RampBeneficiary, RampOrderView, RampQuote, ResolvedBankAccount } from "@/lib/ramp/types";
+import type { RampBank, RampBeneficiary, RampKycInfo, RampOrderView, RampQuote, ResolvedBankAccount } from "@/lib/ramp/types";
 import { formatCountdown, isFinished, useDebounced, useRampOrder, useSecondsLeft } from "@/lib/ramp/use-ramp-order";
 import { arcTokens } from "@/lib/tokens";
 import { TxApprovalCancelled } from "@/lib/tx-approval/client";
@@ -77,6 +79,9 @@ export function WithdrawHub() {
   const { switchChainAsync } = useSwitchChain();
 
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [kyc, setKyc] = useState<RampKycInfo | null>(null);
+  const [kycOpen, setKycOpen] = useState(false);
+  const [kycMode, setKycMode] = useState<"tier1" | "selfie">("tier1");
   const [step, setStep] = useState<Step>("account");
   const [beneficiaries, setBeneficiaries] = useState<RampBeneficiary[] | null>(null);
   const [selected, setSelected] = useState<RampBeneficiary | null>(null);
@@ -108,13 +113,15 @@ export function WithdrawHub() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetchRampStatus().then((status) => {
-      if (!cancelled) setEnabled(status?.enabled === true && status.currencies.includes("NGN"));
+    void fetchRampStatus(wallet ?? undefined).then((status) => {
+      if (cancelled) return;
+      setEnabled(status?.enabled === true && status.currencies.includes("NGN"));
+      setKyc(status?.kyc ?? null);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [wallet]);
 
   const loadBeneficiaries = useCallback(async () => {
     if (!wallet) return;
@@ -295,7 +302,16 @@ export function WithdrawHub() {
       });
     } catch (cause) {
       setBusy(null);
-      setError(message(cause, "Couldn't start the withdrawal."));
+      if (cause instanceof RampApiError && cause.code === "KYC_REQUIRED") {
+        setKycMode("tier1");
+        setKycOpen(true);
+      } else if (cause instanceof RampApiError && cause.code === "KYC_LIMIT") {
+        setKycMode("selfie");
+        setKycOpen(true);
+        setError(cause.message);
+      } else {
+        setError(message(cause, "Couldn't start the withdrawal."));
+      }
       return;
     }
     rememberOpenOrderId("OFFRAMP", wallet, created.id);
@@ -371,6 +387,14 @@ export function WithdrawHub() {
         </div>
       ) : order ? (
         <OfframpOrder busy={busy} error={error} onSend={() => void send(order)} onStartAgain={startAgain} order={order} />
+      ) : kyc?.required && kyc.tier < 1 ? (
+        <div className="ramp-card ramp-status">
+          <h3>Verify your identity</h3>
+          <p>Withdrawals go only to an account in your verified name.</p>
+          <Button className="mt-2" onClick={() => { setKycMode("tier1"); setKycOpen(true); }} type="button">
+            Verify identity
+          </Button>
+        </div>
       ) : step === "account" ? (
         <AccountStep
           adding={adding}
@@ -493,6 +517,26 @@ export function WithdrawHub() {
           </div>
         </div>
       )}
+      {wallet ? (
+        <KycSheet
+          mode={kycMode}
+          onOpenChange={setKycOpen}
+          onVerified={(next) => {
+            setKyc({
+              available: next.available,
+              limits: next.limits,
+              nextTier: next.nextTier,
+              remainingToday: next.remainingToday,
+              required: next.required,
+              status: next.status,
+              tier: next.tier,
+            });
+            setKycOpen(false);
+          }}
+          open={kycOpen}
+          wallet={wallet}
+        />
+      ) : null}
     </div>
   );
 }

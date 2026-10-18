@@ -100,6 +100,7 @@ export function isAdminToolId(value: unknown): value is AdminToolId {
 
 /** The tool a path belongs to (/admin/users/… → users), or null for the overview. */
 export function adminToolForPath(pathname: string): AdminToolId | null {
+  if (pathname === "/admin/kyc" || pathname.startsWith("/admin/kyc/")) return "verifications";
   const tool = adminTools.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );

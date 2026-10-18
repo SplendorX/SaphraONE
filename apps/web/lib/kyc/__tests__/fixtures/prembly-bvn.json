@@ -1,0 +1,50 @@
+{
+  "status": true,
+  "response_code": "00",
+  "message": "Bank Verification Number (BVN) verification successful - You are in sandbox mode. Switch to production mode for live data.",
+  "detail": "Bank Verification Number (BVN) verification successful - You are in sandbox mode. Switch to production mode for live data.",
+  "data": {
+    "bvn": "00000000000",
+    "nin": "",
+    "email": "redacted@example.com",
+    "title": "Mr",
+    "gender": "Male",
+    "lastName": "EKOM",
+    "firstName": "RONALD",
+    "middleName": "DONATIUS",
+    "nameOnCard": "EKOM RONALD DONATIUS",
+    "base64Image": "<redacted>",
+    "dateOfBirth": "11-May-2004",
+    "lgaOfOrigin": "Inyem Ekpo",
+    "nationality": "Nigeria",
+    "watchListed": "False",
+    "phoneNumber1": "00000000000",
+    "phoneNumber2": "",
+    "maritalStatus": "Single",
+    "stateOfOrigin": "Akwa Ibom State",
+    "enrollmentBank": "070",
+    "levelOfAccount": "Level 1 - Low Level Accounts",
+    "lgaOfResidence": "Inyem Ekpo",
+    "enrollmentBranch": "UNIPORT",
+    "registrationDate": "01-Apr-2015",
+    "stateOfResidence": "Akwa Ibom State",
+    "residentialAddress": "C/O OTORO NEW P.A, IYEMT OBIOMA, EYIM EKPO"
+  },
+  "meta": {},
+  "billing_info": {
+    "was_charged": false,
+    "amount": 0,
+    "currency": "NGN",
+    "note": "No charges in sandbox mode"
+  },
+  "verification": {
+    "status": "VERIFIED",
+    "reference": "b7ef4c22-0a9a-47b0-9289-2b2f5572d7ca",
+    "verification_id": "8255dd7e-14c1-44ed-9285-cdecfd4760ef"
+  },
+  "reference_id": "SBX-BVN-JR3AG2FQVV",
+  "is_sandbox": true,
+  "account_verified": true,
+  "verification_status": "verified",
+  "metadata": {}
+}
