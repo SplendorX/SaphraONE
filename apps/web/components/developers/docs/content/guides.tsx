@@ -442,6 +442,34 @@ export function TestingDoc({ ctx }: Props) {
         Card and bank use Circle Onramp&rsquo;s sandbox; cross-chain uses test networks such as Base Sepolia. Both
         take a few minutes: retrieve the session to see them land.
       </Callout>
+
+      <h2 id="example-server">Example server</h2>
+      <p>
+        <a download href="/examples/checkout-demo.mjs">checkout-demo.mjs</a> is a complete shop in one file (Node 18+,
+        no dependencies). It creates a session, redirects to the hosted page, retrieves the session on the success
+        page, and verifies and logs every webhook.
+      </p>
+      <CodeTabs
+        samples={[
+          {
+            code: `curl -O ${ctx.sandboxPortal}/examples/checkout-demo.mjs
+SAPHRA_SECRET_KEY=sk_test_… node checkout-demo.mjs
+# open http://localhost:4242
+
+# Webhooks need a public https URL. In another terminal:
+cloudflared tunnel --url http://localhost:4242
+# Add <tunnel URL>/webhooks as an endpoint in the console, then restart with
+SAPHRA_WEBHOOK_SECRET=whsec_… SAPHRA_SECRET_KEY=sk_test_… node checkout-demo.mjs`,
+            label: "Terminal",
+            language: "bash",
+          },
+        ]}
+      />
+      <Callout title="Testing webhooks without a server" tone="info">
+        A request bin such as <a href="https://webhook.site" rel="noreferrer" target="_blank">webhook.site</a> works too:
+        use the unique URL it gives you (<code>https://webhook.site/&lt;your-id&gt;</code>), not a path you make up, or
+        it answers 404 and the delivery is retried.
+      </Callout>
     </>
   );
 }

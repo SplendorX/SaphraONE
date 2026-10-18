@@ -529,7 +529,7 @@
           },
           "customer_email": {
             "type": "string",
-            "description": "Kept for your records.",
+            "description": "The buyer's email. They get a receipt when the session completes.",
             "maxLength": 254,
             "format": "email"
           },

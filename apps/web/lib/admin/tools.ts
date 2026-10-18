@@ -48,6 +48,12 @@ export const adminTools = [
     label: "Partners",
   },
   {
+    description: "Businesses using the Checkout API: keys, volume, failing webhooks.",
+    href: "/admin/merchant-api",
+    id: "merchant-api",
+    label: "Checkout API",
+  },
+  {
     description: "Earn vaults and yields.",
     href: "/admin/earn",
     id: "earn",

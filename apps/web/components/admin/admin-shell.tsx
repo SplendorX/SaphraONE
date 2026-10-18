@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   UserRoundSearch,
   UsersRound,
+  Webhook,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -53,6 +54,7 @@ const toolIcons: Record<AdminToolId, LucideIcon> = {
   audit: FileClock,
   campaigns: Megaphone,
   earn: Coins,
+  "merchant-api": Webhook,
   partners: Handshake,
   rewards: Gift,
   support: LifeBuoy,

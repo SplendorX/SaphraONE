@@ -20,14 +20,14 @@ const resendEndpoint = "https://api.resend.com/emails";
  * delivers to the Resend account owner, so every real customer would bounce
  * while the setup looked configured.
  */
-function sender() {
+export function sender() {
   const explicit = process.env.INVOICE_EMAIL_FROM?.trim();
   if (explicit) return explicit;
   const domain = process.env.RESEND_EMAIL_DOMAIN?.trim();
   return domain ? `SaphraONE <noreply@${domain}>` : null;
 }
 
-function money(value: string, currency: string) {
+export function money(value: string, currency: string) {
   const amount = Number(value);
   const shown = Number.isFinite(amount)
     ? amount.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 2 })
@@ -44,7 +44,7 @@ function longDate(value: string | null) {
 }
 
 /** The business's contact email, when it is a usable reply-to address. */
-function replyAddress(value: string | null | undefined) {
+export function replyAddress(value: string | null | undefined) {
   const email = value?.trim().toLowerCase();
   return email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 160 ? email : null;
 }

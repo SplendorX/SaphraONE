@@ -9,6 +9,19 @@ export function ChangelogDoc({ ctx }: Props) {
     <>
       <p className="dp-lead">Changes to the Checkout API, newest first. v1 only ever changes additively.</p>
 
+      <h2 id="2026-10-18-receipts">
+        18 October 2026 · Receipts and example server <Badge tone="new">New</Badge>
+      </h2>
+      <ul>
+        <li>
+          Buyers get an email receipt when a session completes, if you passed <code>customer_email</code>.
+        </li>
+        <li>
+          An <PortalLink href="/docs/testing#example-server">example server</PortalLink> in one file: create a
+          session, redirect, verify webhooks.
+        </li>
+      </ul>
+
       <h2 id="2026-10-18-refunds">
         18 October 2026 · Refunds <Badge tone="new">New</Badge>
       </h2>

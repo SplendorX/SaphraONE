@@ -3,18 +3,21 @@
 // problem must not fail a payment or an expiry.
 import { accountDb, accountTables } from "@/lib/account/db";
 import { roundMoney } from "@/lib/account/money";
+import { loadBusinessProfile } from "@/lib/account/service";
 import { loadChargeById } from "@/lib/checkout/service";
 import type { ChargeRecord, ChargeRefundRecord } from "@/lib/checkout/types";
+import { sendCheckoutReceiptEmail } from "@/lib/email/checkout-receipt-email";
 import { configuredAppOrigin } from "@/lib/merchant-api/http";
 import { toRefundObject } from "@/lib/merchant-api/serialize";
 import { sessionObjectForCharge } from "@/lib/merchant-api/sessions";
 import { explorerTxUrl } from "@/lib/onchain-facts";
-import { emitMerchantEvent } from "@/lib/webhooks/events";
+import { emitMerchantEvent, runAfterResponse } from "@/lib/webhooks/events";
 
 /**
  * After a transfer is attached to a charge (lib/checkout/settlement):
  * `payment_received` for every new transfer, `completed` once when the charge
- * turns PAID (even after it had expired).
+ * turns PAID (even after it had expired). The buyer's receipt email goes out
+ * with the first `completed`, when the site gave a customer_email.
  */
 export async function emitChargeEvents(input: {
   charge: ChargeRecord;
@@ -44,12 +47,22 @@ export async function emitChargeEvents(input: {
       });
     }
     if (input.becamePaid) {
-      await emitMerchantEvent({
+      const completed = await emitMerchantEvent({
         data: { object: session },
         dedupeKey: `completed:${input.charge.id}`,
         type: "checkout.session.completed",
         wallet: input.charge.wallet_address,
       });
+      if (completed && session.customer_email) {
+        runAfterResponse(async () => {
+          const profile = await loadBusinessProfile(input.charge.wallet_address).catch(() => null);
+          await sendCheckoutReceiptEmail({
+            businessName: profile?.business_name?.trim() || "A SaphraONE business",
+            replyTo: profile?.contact_email,
+            session,
+          });
+        });
+      }
     }
   } catch (error) {
     console.error("[merchant-api] could not emit charge events", input.charge.id, error);
