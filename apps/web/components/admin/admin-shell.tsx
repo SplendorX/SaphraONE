@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import "./admin.css";
+import "../layout/windows-surfaces.css";
 
 // The same key the older admin pages read (components/admin/use-admin-key.ts).
 const ownerKeyStorage = "saphra.admin-key";
@@ -184,7 +185,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <AdminContext.Provider value={value}>
-      <div className="adm-shell">
+      <div className="win-surface adm-shell">
         <aside className="adm-side">
           <Link className="adm-brand" href="/admin">
             <ShieldCheck className="h-5 w-5" />

@@ -23,6 +23,7 @@ import { fetchOnrampEnabled, fetchPublicCharge, updateChargeTip } from "@/lib/ch
 import type { PublicChargePayload } from "@/lib/checkout/types";
 import { trackTractionEvent } from "@/lib/traction/client";
 import { cn } from "@/lib/utils";
+import "@/components/layout/windows-surfaces.css";
 
 type Method = "card" | "chain" | "saphra" | "wallet";
 
@@ -152,13 +153,14 @@ export function PayChargePage({ code }: { code: string }) {
       ? [{ icon: Link2, id: "chain" as const, label: "Other chain" }]
       : []),
   ];
+  const payable = charge.status !== "PAID" && charge.status !== "CANCELLED" && charge.status !== "EXPIRED";
   const slowPaymentPending =
     charge.pendingMethod === "ONRAMP" || charge.pendingMethod === "BRIDGE";
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="win-surface win-pay min-h-screen bg-background">
       <header className="border-b border-border/70">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-4 px-4 py-4">
+        <div className="win-pay-bar mx-auto flex max-w-lg items-center justify-between gap-4 px-4 py-4">
           <div className="flex min-w-0 items-center gap-3">
             <PayerBackButton />
             <PlatformBrand />
@@ -170,95 +172,103 @@ export function PayChargePage({ code }: { code: string }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-lg px-4 py-6 sm:py-10">
-        <section className="section-panel space-y-5 p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            {business.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt=""
-                className="h-12 w-12 rounded-xl border border-border object-cover"
-                src={business.logoUrl}
-              />
-            ) : (
-              <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
-                <Store className="h-6 w-6" />
-              </span>
-            )}
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{business.name}</p>
-              {business.username ? (
-                <p className="truncate text-sm text-muted-foreground">
-                  {business.username}.one
-                  {online?.siteHost ? ` · ${online.siteHost}` : ""}
-                </p>
-              ) : online?.siteHost ? (
-                <p className="truncate text-sm text-muted-foreground">{online.siteHost}</p>
-              ) : null}
+      <div className="win-pay-body mx-auto max-w-lg px-4 py-6 sm:py-10">
+        {/* Desktop (components/layout/windows-surfaces.css): an open charge
+            splits into the order on the left and paying on the right. */}
+        <section className={cn("win-pay-panel section-panel space-y-5 p-5 sm:p-6", payable && "win-pay-split")}>
+          <div className="win-pay-summary space-y-5">
+            <div className="flex items-center gap-3">
+              {business.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  className="h-12 w-12 rounded-xl border border-border object-cover"
+                  src={business.logoUrl}
+                />
+              ) : (
+                <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <Store className="h-6 w-6" />
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold">{business.name}</p>
+                {business.username ? (
+                  <p className="truncate text-sm text-muted-foreground">
+                    {business.username}.one
+                    {online?.siteHost ? ` · ${online.siteHost}` : ""}
+                  </p>
+                ) : online?.siteHost ? (
+                  <p className="truncate text-sm text-muted-foreground">{online.siteHost}</p>
+                ) : null}
+              </div>
             </div>
+
+            {charge.status === "PAID" ? (
+              <>
+                <ChargeReceiptCard payload={payload} />
+                {online ? <OnlineReturnToStore online={online} /> : null}
+              </>
+            ) : charge.status === "CANCELLED" || charge.status === "EXPIRED" ? (
+              <div className="space-y-2">
+                <p className="font-heading text-2xl">
+                  {charge.status === "CANCELLED" ? "Cancelled" : "Expired"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {online
+                    ? `This checkout can\u2019t be paid any more. Go back to ${online.siteHost || business.name} to start again.`
+                    : `This charge can\u2019t be paid any more. Ask ${business.name} for a new one.`}
+                </p>
+                {online && storeHomeUrl(online) ? (
+                  <Button asChild className="mt-2 w-full" variant="outline">
+                    <a href={storeHomeUrl(online) ?? undefined}>Back to {online.siteHost || business.name}</a>
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <div className="text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {received > 0 ? "Left to pay" : "Amount due"}
+                  </p>
+                  <p className="mt-1 font-heading text-5xl tabular-nums">
+                    {formatMoney(total, charge.currency)}
+                  </p>
+                  {received > 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Received {formatMoney(received, charge.currency)} of{" "}
+                      {formatMoney(charge.amount, charge.currency)}
+                    </p>
+                  ) : moneyNumber(tip || "0") > 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {formatMoney(charge.amount, charge.currency)} +{" "}
+                      {formatMoney(tip, charge.currency)} tip
+                    </p>
+                  ) : null}
+                  {charge.note ? <p className="mt-2 text-sm">{charge.note}</p> : null}
+                </div>
+
+                {online ? (
+                  <OnlineOrderSummary currency={charge.currency} expiresAt={charge.expiresAt} online={online} />
+                ) : (
+                  <>
+                    <TipPicker
+                      amount={charge.amount}
+                      currency={charge.currency}
+                      onChange={(next) => {
+                        tipTouched.current = true;
+                        setTip(next);
+                      }}
+                      value={tip}
+                    />
+                    {tipError ? <p className="text-sm text-destructive">{tipError}</p> : null}
+                  </>
+                )}
+              </>
+            )}
           </div>
 
-          {charge.status === "PAID" ? (
-            <>
-              <ChargeReceiptCard payload={payload} />
-              {online ? <OnlineReturnToStore online={online} /> : null}
-            </>
-          ) : charge.status === "CANCELLED" || charge.status === "EXPIRED" ? (
-            <div className="space-y-2">
-              <p className="font-heading text-2xl">
-                {charge.status === "CANCELLED" ? "Cancelled" : "Expired"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {online
-                  ? `This checkout can\u2019t be paid any more. Go back to ${online.siteHost || business.name} to start again.`
-                  : `This charge can\u2019t be paid any more. Ask ${business.name} for a new one.`}
-              </p>
-              {online && storeHomeUrl(online) ? (
-                <Button asChild className="mt-2 w-full" variant="outline">
-                  <a href={storeHomeUrl(online) ?? undefined}>Back to {online.siteHost || business.name}</a>
-                </Button>
-              ) : null}
-            </div>
-          ) : (
-            <>
-              <div className="text-center">
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {received > 0 ? "Left to pay" : "Amount due"}
-                </p>
-                <p className="mt-1 font-heading text-5xl tabular-nums">
-                  {formatMoney(total, charge.currency)}
-                </p>
-                {received > 0 ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Received {formatMoney(received, charge.currency)} of{" "}
-                    {formatMoney(charge.amount, charge.currency)}
-                  </p>
-                ) : moneyNumber(tip || "0") > 0 ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatMoney(charge.amount, charge.currency)} +{" "}
-                    {formatMoney(tip, charge.currency)} tip
-                  </p>
-                ) : null}
-                {charge.note ? <p className="mt-2 text-sm">{charge.note}</p> : null}
-              </div>
-
-              {online ? (
-                <OnlineOrderSummary currency={charge.currency} expiresAt={charge.expiresAt} online={online} />
-              ) : (
-                <>
-                  <TipPicker
-                    amount={charge.amount}
-                    currency={charge.currency}
-                    onChange={(next) => {
-                      tipTouched.current = true;
-                      setTip(next);
-                    }}
-                    value={tip}
-                  />
-                  {tipError ? <p className="text-sm text-destructive">{tipError}</p> : null}
-                </>
-              )}
-
+          {payable ? (
+            <div className="win-pay-action space-y-5">
               {slowPaymentPending && method !== "card" ? (
                 <p className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
                   A {charge.pendingMethod === "ONRAMP" ? "card or bank" : "cross-chain"} payment for
@@ -306,8 +316,8 @@ export function PayChargePage({ code }: { code: string }) {
                   <OnlineCancelLink online={online} />
                 </div>
               ) : null}
-            </>
-          )}
+            </div>
+          ) : null}
         </section>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">

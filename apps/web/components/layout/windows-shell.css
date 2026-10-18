@@ -31,47 +31,7 @@
 }
 
 @media (min-width: 1024px) {
-  /* ── Surfaces per theme ───────────────────────────────────────────── */
-  .platform-shell {
-    --win-mica:
-      radial-gradient(70% 55% at 0% 0%, rgb(91 33 182 / 0.16), transparent 62%),
-      radial-gradient(55% 45% at 100% 0%, rgb(31 95 224 / 0.1), transparent 60%),
-      #0a080c;
-    --win-layer: #0e0b11;
-    --win-layer-border: rgb(244 235 221 / 0.07);
-    --win-layer-shadow: 0 0 0 1px rgb(0 0 0 / 0.35), 0 18px 50px -30px rgb(0 0 0 / 0.9);
-    --win-hover: rgb(244 235 221 / 0.05);
-    --win-scroll: rgb(244 235 221 / 0.18);
-    --win-scroll-hover: rgb(244 235 221 / 0.32);
-  }
-
-  /* Liquid Glass: a cool lilac Mica, the white layer lifted on it with the
-     faint lilac glow at the top of the iOS app. */
-  html[data-light-surface="glass"]:not(.dark) .platform-shell {
-    --win-mica:
-      radial-gradient(70% 60% at 0% 0%, rgb(124 58 237 / 0.12), transparent 62%),
-      radial-gradient(55% 50% at 100% 0%, rgb(37 99 235 / 0.08), transparent 60%),
-      #eef0f6;
-    --win-layer: radial-gradient(130% 38% at 50% 0%, #f3efff 0%, #f8f9fc 55%, #ffffff 85%);
-    --win-layer-border: rgb(18 20 26 / 0.07);
-    --win-layer-shadow: 0 1px 2px rgb(18 20 26 / 0.04), 0 18px 50px -32px rgb(91 33 182 / 0.35);
-    --win-hover: rgb(18 20 26 / 0.04);
-    --win-scroll: rgb(18 20 26 / 0.2);
-    --win-scroll-hover: rgb(18 20 26 / 0.36);
-  }
-
-  /* Cashmere: warm paper Mica, a cream layer. */
-  html[data-light-surface="cream"]:not(.dark) .platform-shell {
-    --win-mica:
-      radial-gradient(70% 60% at 0% 0%, rgb(91 33 182 / 0.07), transparent 62%),
-      #ebe0d0;
-    --win-layer: #f4ebdd;
-    --win-layer-border: rgb(23 17 28 / 0.08);
-    --win-layer-shadow: 0 1px 2px rgb(23 17 28 / 0.05), 0 18px 50px -32px rgb(23 17 28 / 0.35);
-    --win-hover: rgb(23 17 28 / 0.045);
-    --win-scroll: rgb(23 17 28 / 0.22);
-    --win-scroll-hover: rgb(23 17 28 / 0.38);
-  }
+  /* The Mica and layer colours (--win-*) are in windows-surfaces.css. */
 
   /* ── Mica: the window's backdrop ──────────────────────────────────── */
   .platform-shell {

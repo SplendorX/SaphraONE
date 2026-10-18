@@ -13,6 +13,7 @@ import { moneyNumber } from "@/lib/account/money";
 import { createStorefrontChargeClient, fetchPublicStorefront } from "@/lib/checkout/client";
 import { CHARGE_MAX_AMOUNT, CHARGE_MIN_AMOUNT } from "@/lib/checkout/money-rules";
 import type { PublicStorefrontPayload } from "@/lib/checkout/types";
+import "@/components/layout/windows-surfaces.css";
 
 /** A business's permanent pay page: the customer types the amount. */
 export function StorefrontPage({ username }: { username: string }) {
@@ -82,9 +83,9 @@ export function StorefrontPage({ username }: { username: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="win-surface win-pay min-h-screen bg-background">
       <header className="border-b border-border/70">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-4 px-4 py-4">
+        <div className="win-pay-bar mx-auto flex max-w-lg items-center justify-between gap-4 px-4 py-4">
           <div className="flex min-w-0 items-center gap-3">
             <PayerBackButton />
             <PlatformBrand />
@@ -96,8 +97,8 @@ export function StorefrontPage({ username }: { username: string }) {
         </div>
       </header>
 
-      <div className="mx-auto max-w-lg px-4 py-6 sm:py-10">
-        <section className="section-panel space-y-5 p-5 sm:p-6">
+      <div className="win-pay-body mx-auto max-w-lg px-4 py-6 sm:py-10">
+        <section className="win-pay-panel section-panel space-y-5 p-5 sm:p-6">
           <div className="flex items-center gap-3">
             {business.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element

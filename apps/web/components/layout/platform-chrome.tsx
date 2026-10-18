@@ -16,6 +16,7 @@ import { pageCopyForPath } from "@/lib/i18n";
 
 import "./ios-skin.css";
 import "./windows-shell.css";
+import "./windows-surfaces.css";
 
 /** Pages that keep their own design instead of the iPhone-app look. */
 const ownDesign = /^\/(?:referral|rewards|swap)(?:\/|$)/;

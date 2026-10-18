@@ -14,6 +14,7 @@ import { signOutForAppLock } from "@/lib/app-lock/client";
 import { cn } from "@/lib/utils";
 
 import "./portal.css";
+import "../../layout/windows-surfaces.css";
 
 const navItems = [
   { href: "/docs", label: "Docs", match: (path: string) => path.startsWith("/docs") && !path.startsWith("/docs/api") },
@@ -50,7 +51,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const signOutIcon = signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />;
 
   return (
-    <div className="dp-root" data-mode={mode}>
+    <div className="win-surface dp-root" data-mode={mode}>
       {mode === "sandbox" ? (
         <div className="dp-sandbox-banner" role="status">
           <FlaskConical aria-hidden className="h-3.5 w-3.5" />

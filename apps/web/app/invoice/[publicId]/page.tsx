@@ -39,6 +39,7 @@ import { recordPlatformTransactionActivity } from "@/lib/referral/activity-clien
 import { arcTokens } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 import { fetchWalletSessionForAddress } from "@/lib/wallet-auth-client";
+import "@/components/layout/windows-surfaces.css";
 
 type PublicInvoice = Awaited<ReturnType<typeof fetchPublicInvoice>>;
 
@@ -321,9 +322,9 @@ export default function PublicInvoicePage() {
               : `Pay ${formatMoney(payAmount || "0", invoice.currency)}`;
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="win-surface win-pay min-h-screen bg-background">
       <header className="border-b border-border/70">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="win-pay-bar mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <PlatformBrand />
           <p className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Lock className="h-3.5 w-3.5" />
@@ -332,10 +333,10 @@ export default function PublicInvoicePage() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-8">
+      <div className="win-pay-body mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-8">
         {/* The pay card leads on phones; the invoice sits beside it on desktop. */}
         <aside className="lg:order-2">
-          <section className="section-panel space-y-5 p-5 sm:p-6 lg:sticky lg:top-6">
+          <section className="win-pay-panel section-panel space-y-5 p-5 sm:p-6 lg:sticky lg:top-6">
             <div>
               <p className="text-sm text-muted-foreground">
                 {payload.business.name} · {invoice.invoice_number}
@@ -577,7 +578,7 @@ export default function PublicInvoicePage() {
           </section>
         </aside>
 
-        <div className="min-w-0 lg:order-1">
+        <div className="win-pay-doc min-w-0 lg:order-1">
           <InvoiceDocument
             invoice={{
               amountReceived: invoice.amount_received,
