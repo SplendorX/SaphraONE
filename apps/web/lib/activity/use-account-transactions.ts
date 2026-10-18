@@ -7,7 +7,7 @@ import { accountActivityChangedEventName, fetchAccountActivity } from "@/lib/act
 import { mergeAccountActivity, shortAddress, type AccountActivityItem } from "@/lib/activity/merge";
 import type { WalletTransfer } from "@/lib/arcscan-history";
 import { activityWindowStart, type AccountActivityEntry } from "@/lib/activity/types";
-import { allieSenderLabel, useWalletUsernames } from "@/lib/activity/usernames";
+import { allieSenderLabel, isOwnAgentWallet, useWalletUsernames } from "@/lib/activity/usernames";
 import { useWalletTransfers } from "@/lib/use-wallet-transfers";
 
 /**
@@ -121,6 +121,11 @@ export function useAccountTransactions(ownerWallet: string | null | undefined, d
         return `Batch payment to ${shown}${names.length > 2 ? ` +${names.length - 2}` : ""}`;
       }
       const wallet = item.transfer?.counterparty ?? item.counterparty;
+      // Topping up your own Agent Wallet is a deposit to ALLIE, not a payment.
+      if (isOwnAgentWallet(wallet, ownerWallet)) {
+        if (item.direction === "out") return "Deposited to ALLIE";
+        if (item.direction === "in") return "Withdrawn from ALLIE";
+      }
       // Money ALLIE sent comes from the sender's Agent Wallet: name the owner.
       const viaAllie = item.source === "wallet" && item.direction === "in" ? allieSenderLabel(wallet) : null;
       if (viaAllie) return `Received from ${viaAllie}`;
@@ -128,7 +133,7 @@ export function useAccountTransactions(ownerWallet: string | null | undefined, d
       if (!wallet || !username || !item.title) return item.title;
       return item.title.replace(shortAddress(wallet), `${username}.one`);
     },
-    [usernameFor],
+    [ownerWallet, usernameFor],
   );
 
   return {

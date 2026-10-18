@@ -53,6 +53,17 @@ export function allieSenderLabel(wallet?: string | null) {
 }
 
 /**
+ * Whether `wallet` is `owner`'s own ALLIE Agent Wallet: money moved to it is
+ * a deposit to ALLIE, money back from it a withdrawal. Resolved by the same
+ * lookup as useWalletUsernames, so call it from a component that passed this
+ * wallet to that hook.
+ */
+export function isOwnAgentWallet(wallet?: string | null, owner?: string | null) {
+  if (!wallet || !owner) return false;
+  return agentOwnerCache.get(wallet.toLowerCase())?.owner.toLowerCase() === owner.toLowerCase();
+}
+
+/**
  * Public SaphraONE @usernames for the given wallets. Wallets without an
  * account (or not yet resolved) are absent, so callers fall back to the
  * address.

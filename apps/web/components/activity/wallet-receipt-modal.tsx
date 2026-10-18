@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useT } from "@/components/locale-provider";
 import { TransactionReceipt } from "@/components/dashboard/transaction-receipt";
-import { allieSenderLabel, useWalletUsernames } from "@/lib/activity/usernames";
+import { allieSenderLabel, isOwnAgentWallet, useWalletUsernames } from "@/lib/activity/usernames";
 import type { WalletTransfer } from "@/lib/arcscan-history";
 import { arcChain } from "@/lib/chains";
 import {
@@ -34,8 +34,13 @@ export function WalletReceiptModal({
   const [error, setError] = useState<string | null>(null);
   // Money ALLIE sent comes from the sender's Agent Wallet: name the owner,
   // on screen and in the downloaded or shared copy alike.
-  const viaAllie =
-    transfer.direction === "in" ? allieSenderLabel(transfer.counterparty) : null;
+  // Your own Agent Wallet is ALLIE: a top-up or a withdrawal, not a person.
+  const ownAgent = isOwnAgentWallet(transfer.counterparty, walletAddress);
+  const viaAllie = ownAgent
+    ? "ALLIE · Agent Wallet"
+    : transfer.direction === "in"
+      ? allieSenderLabel(transfer.counterparty)
+      : null;
   const username = viaAllie ? null : usernameFor(transfer.counterparty);
   const receiptTransfer = viaAllie
     ? { ...transfer, counterpartyLabel: viaAllie }

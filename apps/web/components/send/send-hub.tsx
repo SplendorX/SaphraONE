@@ -46,7 +46,7 @@ import { useAccountTransactions } from "@/lib/activity/use-account-transactions"
 import type { BeneficiaryRecord } from "@/lib/beneficiaries";
 import { fetchDirectoryProfile, searchPeople } from "@/lib/business/client";
 import type { DirectoryHit } from "@/lib/business/types";
-import { useWalletUsernames } from "@/lib/activity/usernames";
+import { isOwnAgentWallet, useWalletUsernames } from "@/lib/activity/usernames";
 import { multichainEnabled } from "@/lib/multichain/flag";
 import { fetchProfile } from "@/lib/profile";
 import { UsernameField, type ResolvedPerson } from "@/components/username-field";
@@ -314,6 +314,8 @@ export function SendHub(props: SendHubProps) {
       if (!["send", "wallet", "agent"].includes(item.source)) continue;
       const wallet = counterpartyOf(item);
       if (!wallet || !isAddress(wallet) || seen.has(wallet)) continue;
+      // Topping up your own Agent Wallet isn't paying someone.
+      if (isOwnAgentWallet(wallet, walletAddress)) continue;
       seen.add(wallet);
       const saved = beneficiaryByWallet.get(wallet);
       const titled = (titleFor(item) ?? "").replace(/^Sent to /, "");
@@ -333,7 +335,7 @@ export function SendHub(props: SendHubProps) {
       if (out.length >= 8) break;
     }
     return out;
-  }, [beneficiaryByWallet, items, shortenAddress, titleFor, usernameFor]);
+  }, [beneficiaryByWallet, items, shortenAddress, titleFor, usernameFor, walletAddress]);
 
   const beneficiaryPeople: Person[] = savedBeneficiaries.map((entry) => ({
     name: entry.name,

@@ -4,6 +4,7 @@ import { loadAccount } from "@/lib/account/auth";
 import { loadBusinessProfile } from "@/lib/account/service";
 import type { AccountActivityItem } from "@/lib/activity/merge";
 import { loadActivityItems } from "@/lib/activity/report";
+import { agentWalletOwners } from "@/lib/agent-wallet/config";
 import { usernamesForWallets } from "@/lib/business/service";
 import { jsonError, jsonOk } from "@/lib/http";
 import { isArcMainnet } from "@/lib/network";
@@ -38,7 +39,7 @@ function escapeRegExp(value: string) {
  * wallet: each row's counterparty, full or shortened in the title, is
  * swapped for the name. Wallets without an account keep the address.
  */
-async function withUsernames(items: AccountActivityItem[]) {
+async function withUsernames(items: AccountActivityItem[], ownerWallet: string) {
   const wallets = [
     ...new Set(
       items
@@ -46,6 +47,18 @@ async function withUsernames(items: AccountActivityItem[]) {
         .filter((wallet) => /^0x[0-9a-f]{40}$/.test(wallet)),
     ),
   ];
+  // Topping up (or emptying) your own Agent Wallet reads as ALLIE, not an address.
+  const owners = await agentWalletOwners(wallets).catch(() => ({}) as Record<string, string>);
+  const own = new Set(
+    Object.entries(owners)
+      .filter(([, owner]) => owner.toLowerCase() === ownerWallet.toLowerCase())
+      .map(([agent]) => agent.toLowerCase()),
+  );
+  items = items.map((item) => {
+    const wallet = (item.transfer?.counterparty ?? item.counterparty ?? "").toLowerCase();
+    if (!own.has(wallet) || (item.direction !== "out" && item.direction !== "in")) return item;
+    return { ...item, title: item.direction === "out" ? "Deposited to ALLIE" : "Withdrawn from ALLIE" };
+  });
   const usernames: Record<string, string> = {};
   // The lookup takes up to 100 wallets at a time.
   for (let index = 0; index < wallets.length; index += 100) {
@@ -56,7 +69,7 @@ async function withUsernames(items: AccountActivityItem[]) {
   return items.map((item) => {
     const wallet = (item.transfer?.counterparty ?? item.counterparty ?? "").toLowerCase();
     const username = usernames[wallet];
-    if (!username) return item;
+    if (!username || own.has(wallet)) return item;
     const handle = `${username}.one`;
     const short = `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
     const title = item.title
@@ -113,7 +126,7 @@ export async function GET(request: NextRequest) {
       // this time; SaphraONE's own records cover the whole range.
       onchainCoverageFrom: coverage,
       generatedAt: new Date().toISOString(),
-      items: await withUsernames(items),
+      items: await withUsernames(items, ownerWallet),
       period: { from: from.toISOString(), to: to.toISOString() },
     });
   } catch (error) {
