@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { formatUnits, isAddress, parseUnits } from "viem";
 
+import { PlatformLogoMark } from "@/components/brand/platform-logo-mark";
 import { BeneficiaryContacts } from "@/components/dashboard/beneficiary-contacts";
 import type { SendPaymentWizardProps } from "@/components/dashboard/send-payment-wizard";
 import { RecipientStatus } from "@/components/recipient-status";
@@ -48,7 +49,7 @@ import type { DirectoryHit } from "@/lib/business/types";
 import { useWalletUsernames } from "@/lib/activity/usernames";
 import { multichainEnabled } from "@/lib/multichain/flag";
 import { fetchProfile } from "@/lib/profile";
-import { OneIdSuggestions } from "@/components/one-id-suggestions";
+import { UsernameField, type ResolvedPerson } from "@/components/username-field";
 import { formatUsernameLabel } from "@/lib/profile-utils";
 import { calculateTransactionCashback } from "@/lib/referral/cashback-service";
 import { cashbackPointsFor, rewardsV2Enabled } from "@/lib/rewards/config";
@@ -84,10 +85,6 @@ type Person = {
 
 /** Kept back on MAX when an external wallet pays in USDC, which is also Arc's gas. */
 const EXTERNAL_GAS_RESERVE_USDC = "0.02";
-
-function initialOf(name: string) {
-  return name.replace(/^@/, "").trim().charAt(0).toUpperCase() || "?";
-}
 
 function timeAgo(value: string | null) {
   if (!value) return "just now";
@@ -134,11 +131,49 @@ function InviteBanner() {
   );
 }
 
-/** A round avatar: a photo when there is one, else the first letter. */
-function Avatar({ name, size = "md", url }: { name: string; size?: "md" | "lg" | "sm"; url?: string | null }) {
+/** Soft hues for photo-less avatars: lilac, violet, blue, pink, teal, peach, mint, indigo. */
+const orbHues = [268, 285, 222, 322, 178, 24, 152, 245];
+
+/** Two hues picked from `seed` (a wallet or ONE ID), the same every time. */
+function orbColors(seed: string) {
+  let hash = 2166136261;
+  for (const char of seed.toLowerCase()) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  const first = orbHues[Math.abs(hash) % orbHues.length];
+  const second = orbHues[Math.abs(hash >> 8) % orbHues.length];
+  return { "--orb-a": first, "--orb-b": second === first ? (first + 40) % 360 : second } as React.CSSProperties;
+}
+
+/** What an orb's colours come from: the ONE ID when there is one, else the wallet. */
+function orbSeed(value: string, wallet?: string | null) {
+  return /\.one$/i.test(value) ? value.toLowerCase() : (wallet ?? value).toLowerCase();
+}
+
+/**
+ * A round avatar: the photo when there is one, else a soft blurred orb in
+ * colours of its own (from `seed`, the wallet or ONE ID), so people without a
+ * photo still look like someone.
+ */
+function Avatar({
+  name,
+  seed,
+  size = "md",
+  url,
+}: {
+  name: string;
+  seed?: string | null;
+  size?: "md" | "lg" | "sm";
+  url?: string | null;
+}) {
+  if (url) {
+    return (
+      <span aria-hidden className={cn("sx-avatar", `is-${size}`)}>
+        <img alt="" src={url} />
+      </span>
+    );
+  }
   return (
-    <span aria-hidden className={cn("sx-avatar", `is-${size}`)}>
-      {url ? <img alt="" src={url} /> : initialOf(name)}
+    <span aria-hidden className={cn("sx-avatar is-orb", `is-${size}`)} style={orbColors(seed || name)}>
+      <span className="sx-orb" />
     </span>
   );
 }
@@ -338,8 +373,10 @@ export function SendHub(props: SendHubProps) {
       )
     : [];
 
-  // The "To" field has focus: people are suggested under it as you type.
-  const [toFocused, setToFocused] = useState(true);
+  // Pay to: picking (search, tiles, recents), or typing a ONE ID or a wallet.
+  const [toMode, setToMode] = useState<"pick" | "oneid" | "wallet">("pick");
+  const [oneId, setOneId] = useState("");
+  const [oneIdPerson, setOneIdPerson] = useState<ResolvedPerson | null>(null);
 
   function openChat(person: Person) {
     navigated.current = true;
@@ -354,6 +391,9 @@ export function SendHub(props: SendHubProps) {
     navigated.current = true;
     onRecipientChange("");
     onBeneficiaryNameChange("");
+    setQuery("");
+    setToMode("pick");
+    setOneId("");
     setView("to");
   }
 
@@ -474,7 +514,7 @@ export function SendHub(props: SendHubProps) {
                 <div className="sx-people-row">
                   {beneficiaryPeople.map((person) => (
                     <button className="sx-person" key={person.value} onClick={() => openChat(person)} type="button">
-                      <Avatar name={person.name} />
+                      <Avatar name={person.name} seed={orbSeed(person.value, person.wallet)} />
                       <span>{person.name}</span>
                     </button>
                   ))}
@@ -588,113 +628,231 @@ export function SendHub(props: SendHubProps) {
   }
 
   // ── Pay to ──────────────────────────────────────────────────────────────
+  // Search anyone, or pick how to pay: a ONE ID (the same field as Request's
+  // "Who's paying?") or an Arc wallet (paste or scan). Recents underneath.
   if (view === "to") {
+    const back = () => {
+      if (toMode !== "pick") {
+        setToMode("pick");
+        onRecipientChange("");
+        setOneId("");
+        return;
+      }
+      setQuery("");
+      setView("home");
+    };
+    const people = [...recents, ...beneficiaryPeople].filter(
+      (person, index, all) => all.findIndex((other) => other.value === person.value) === index,
+    );
+    const directoryHits = directory.filter(
+      (hit) => !localMatches.some((person) => person.value === `${hit.username}.one`),
+    );
+    const directoryPerson = (hit: DirectoryHit): Person => ({
+      avatarUrl: hit.avatarUrl,
+      name: hit.displayName || hit.username,
+      sub: `${hit.username}.one${hit.kind === "business" ? " · Business" : ""}`,
+      value: `${hit.username}.one`,
+      wallet: null,
+    });
+
     return (
       <div className="sx-page">
         <header className="sx-bar">
-          <button aria-label="Back" className="sx-round" onClick={() => setView("home")} type="button">
+          <button aria-label="Back" className="sx-round" onClick={back} type="button">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="sx-title">Pay to</h1>
-          <button
-            className="sx-next"
-            disabled={!isRecipientValid}
-            onClick={() => setView("chat")}
-            type="button"
-          >
-            Next
-          </button>
+          <h1 className="sx-title">
+            {toMode === "oneid" ? "Pay a ONE ID" : toMode === "wallet" ? "Pay a wallet" : "Pay to"}
+          </h1>
+          <span aria-hidden />
         </header>
 
-        {[...beneficiaryPeople, ...recents].length > 0 ? (
-          <section className="sx-section">
-            <div className="sx-section-head">
-              <h2>Recent</h2>
-            </div>
-            <div className="sx-people-row">
-              {[...recents, ...beneficiaryPeople]
-                .filter((person, index, all) => all.findIndex((other) => other.value === person.value) === index)
-                .slice(0, 12)
-                .map((person) => (
-                  <button className="sx-person" key={person.value} onClick={() => openChat(person)} type="button">
-                    <Avatar name={person.name} />
-                    <span>{person.name}</span>
-                  </button>
-                ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="sx-section">
-          <label className="sx-label" htmlFor="send-to">
-            ONE ID or Arc wallet
-          </label>
-          <div className="sx-to sx-to-suggesting">
-            <OneIdSuggestions
-              onPick={(hit) =>
-                openChat({
-                  avatarUrl: hit.avatarUrl,
-                  name: hit.displayName || formatUsernameLabel(hit.username),
-                  sub: formatUsernameLabel(hit.username),
-                  value: formatUsernameLabel(hit.username),
-                  wallet: null,
-                })
-              }
-              open={toFocused}
-              query={recipientAddress}
-            />
-            <div className="sx-to-field">
+        {toMode === "pick" ? (
+          <>
+            <label className="sx-search">
+              <Search className="h-4 w-4 shrink-0" />
               <input
-                aria-describedby="send-recipient-status"
-                autoCapitalize="off"
+                aria-label="Search people"
                 autoComplete="off"
-                autoFocus
-                id="send-to"
-                onBlur={() => window.setTimeout(() => setToFocused(false), 150)}
-                onChange={(event) => onRecipientChange(event.target.value.replace(/\s/g, ""))}
-                onFocus={() => setToFocused(true)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && isRecipientValid) setView("chat");
-                }}
-                placeholder="ONE ID or 0x…"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Name, ONE ID or wallet address"
                 spellCheck={false}
-                value={recipientAddress}
+                value={query}
               />
-              {isRecipientResolving ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" /> : null}
-              <button
-                className="sx-paste"
-                onClick={() => {
-                  void navigator.clipboard
-                    ?.readText()
-                    .then((text) => onRecipientChange(text.trim()))
-                    .catch(() => undefined);
-                }}
-                type="button"
-              >
-                Paste
-                <ClipboardPaste className="h-4 w-4" />
+            </label>
+
+            {needle ? (
+              <>
+                {isAddress(needle) ? (
+                  <section className="sx-card">
+                    <p className="sx-group-title">Arc wallet</p>
+                    <ul className="sx-list">
+                      <li>
+                        <PersonRow
+                          kind="wallet"
+                          onClick={() => openChat({ name: shortenAddress(needle), value: needle, wallet: needle })}
+                          person={{ name: shortenAddress(needle), sub: "Pay this Arc wallet", value: needle, wallet: needle }}
+                        />
+                      </li>
+                    </ul>
+                  </section>
+                ) : null}
+                {localMatches.length > 0 ? (
+                  <section className="sx-card">
+                    <p className="sx-group-title">
+                      Your people <span>· {localMatches.length}</span>
+                    </p>
+                    <ul className="sx-list">
+                      {localMatches.map((person) => (
+                        <li key={`local-${person.value}`}>
+                          <PersonRow onClick={() => openChat(person)} person={person} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+                {directoryHits.length > 0 ? (
+                  <section className="sx-card">
+                    <p className="sx-group-title">
+                      On SaphraONE <span>· {directoryHits.length}</span>
+                    </p>
+                    <ul className="sx-list">
+                      {directoryHits.map((hit) => (
+                        <li key={`dir-${hit.username}`}>
+                          <PersonRow onClick={() => openChat(directoryPerson(hit))} person={directoryPerson(hit)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+                {!isAddress(needle) && localMatches.length === 0 && directory.length === 0 ? (
+                  <section className="sx-card">
+                    <p className="sx-empty">No one found for &ldquo;{query.trim()}&rdquo;.</p>
+                  </section>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <div className="sx-to-tiles">
+                  <button className="sx-to-tile" onClick={() => setToMode("oneid")} type="button">
+                    <OneIdArt />
+                    <span>ONE ID</span>
+                  </button>
+                  <button className="sx-to-tile" onClick={() => setToMode("wallet")} type="button">
+                    <WalletArt />
+                    <span>Wallet</span>
+                  </button>
+                </div>
+
+                <section className="sx-card sx-to-recents">
+                  <p className="sx-group-title">Recents</p>
+                  {people.length === 0 ? (
+                    <p className="sx-empty">People you pay show up here.</p>
+                  ) : (
+                    <ul className="sx-list">
+                      {people.slice(0, 12).map((person) => (
+                        <li key={person.value}>
+                          <PersonRow
+                            onClick={() => openChat(person)}
+                            person={{
+                              ...person,
+                              sub: /\.one$/i.test(person.value)
+                                ? person.value
+                                : shortenAddress(person.wallet ?? person.value),
+                            }}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </>
+            )}
+          </>
+        ) : toMode === "oneid" ? (
+          <section className="sx-to-panel">
+            <h2 className="sx-to-panel-title">Who are you paying?</h2>
+            <UsernameField
+              autoFocus
+              id="send-one-id"
+              onChange={setOneId}
+              onResolved={setOneIdPerson}
+              value={oneId}
+            />
+            <Button
+              className="sx-to-continue"
+              disabled={!oneIdPerson?.username}
+              onClick={() => {
+                if (!oneIdPerson?.username) return;
+                openChat({
+                  avatarUrl: oneIdPerson.avatarUrl,
+                  name: oneIdPerson.displayName || formatUsernameLabel(oneIdPerson.username),
+                  value: `${oneIdPerson.username}.one`,
+                  wallet: oneIdPerson.address,
+                });
+              }}
+              type="button"
+            >
+              {oneIdPerson?.username ? `Pay ${oneIdPerson.username}.one` : "Continue"}
+            </Button>
+          </section>
+        ) : (
+          <section className="sx-to-panel">
+            <h2 className="sx-to-panel-title">Which Arc wallet?</h2>
+            <div className="sx-to">
+              <div className="sx-to-field">
+                <input
+                  aria-describedby="send-recipient-status"
+                  aria-label="Arc wallet address"
+                  autoCapitalize="off"
+                  autoComplete="off"
+                  autoFocus
+                  onChange={(event) => onRecipientChange(event.target.value.replace(/\s/g, ""))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && isRecipientValid) setView("chat");
+                  }}
+                  placeholder="0x…"
+                  spellCheck={false}
+                  value={recipientAddress}
+                />
+                {isRecipientResolving ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" /> : null}
+                <button
+                  className="sx-paste"
+                  onClick={() => {
+                    void navigator.clipboard
+                      ?.readText()
+                      .then((text) => onRecipientChange(text.trim()))
+                      .catch(() => undefined);
+                  }}
+                  type="button"
+                >
+                  Paste
+                  <ClipboardPaste className="h-4 w-4" />
+                </button>
+              </div>
+              <button aria-label="Scan a QR code" className="sx-scan-button" onClick={() => setScanOpen(true)} type="button">
+                <ScanQrCode className="h-6 w-6" />
               </button>
             </div>
-            <button aria-label="Scan a QR code" className="sx-scan-button" onClick={() => setScanOpen(true)} type="button">
-              <ScanQrCode className="h-6 w-6" />
-            </button>
-          </div>
-          {recipientAddress.trim() ? (
-            <RecipientStatus
-              className="mt-2"
-              id="send-recipient-status"
-              resolution={{
-                error: recipientResolveError,
-                isResolving: isRecipientResolving,
-                isValid: isRecipientValid,
-                resolvedAddress: isRecipientValid ? trimmedRecipientAddress : null,
-                resolvedUsername: resolvedRecipientUsername,
-              }}
-            />
-          ) : (
-            <p className="sx-muted mt-2">Payments on SaphraONE settle on Arc in seconds.</p>
-          )}
-        </section>
+            {recipientAddress.trim() ? (
+              <RecipientStatus
+                id="send-recipient-status"
+                resolution={{
+                  error: recipientResolveError,
+                  isResolving: isRecipientResolving,
+                  isValid: isRecipientValid,
+                  resolvedAddress: isRecipientValid ? trimmedRecipientAddress : null,
+                  resolvedUsername: resolvedRecipientUsername,
+                }}
+              />
+            ) : (
+              <p className="sx-muted">Any wallet on Arc. Payments settle in seconds.</p>
+            )}
+            <Button className="sx-to-continue" disabled={!isRecipientValid} onClick={() => setView("chat")} type="button">
+              Continue
+            </Button>
+          </section>
+        )}
 
         <QrScanSheet
           onClose={() => setScanOpen(false)}
@@ -702,7 +860,10 @@ export function SendHub(props: SendHubProps) {
             setScanOpen(false);
             const scanned = readScannedRecipient(text);
             if (scanned.link) router.push(scanned.link);
-            else if (scanned.recipient) onRecipientChange(scanned.recipient);
+            else if (scanned.recipient) {
+              onRecipientChange(scanned.recipient);
+              setToMode("wallet");
+            }
           }}
           open={scanOpen}
         />
@@ -766,10 +927,27 @@ export function SendHub(props: SendHubProps) {
   );
 }
 
-function PersonRow({ onClick, person }: { onClick: () => void; person: Person }) {
+function PersonRow({
+  kind,
+  onClick,
+  person,
+}: {
+  /** The small badge on the photo: a ONE ID or a plain wallet. Read from the value when left out. */
+  kind?: "oneid" | "wallet";
+  onClick: () => void;
+  person: Person;
+}) {
+  const badge = kind ?? (/\.one$/i.test(person.value) ? "oneid" : isAddress(person.value) ? "wallet" : null);
   return (
     <button className="sx-row" onClick={onClick} type="button">
-      <Avatar name={person.name} url={person.avatarUrl} />
+      <span className="sx-avatar-wrap">
+        <Avatar name={person.name} seed={orbSeed(person.value, person.wallet)} url={person.avatarUrl} />
+        {badge ? (
+          <span aria-hidden className={cn("sx-avatar-badge", `is-${badge}`)}>
+            {badge === "oneid" ? <OneBadgeGlyph /> : <Wallet className="h-2.5 w-2.5" />}
+          </span>
+        ) : null}
+      </span>
       <span className="sx-row-main">
         <span className="sx-row-title">{person.name}</span>
         {person.sub ? <span className="sx-row-sub">{person.sub}</span> : null}
@@ -929,6 +1107,9 @@ function ChatView(
     trimmedRecipientAddress,
     walletAddress,
   } = props;
+  const recipientSeed = props.resolvedRecipientUsername
+    ? `${props.resolvedRecipientUsername}.one`
+    : trimmedRecipientAddress;
   const side = useSheetSide();
   const logRef = useRef<HTMLDivElement>(null);
   const [amountOpen, setAmountOpen] = useState(false);
@@ -1076,7 +1257,7 @@ function ChatView(
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="sx-chat-who">
-          <Avatar name={recipientName} size="sm" url={recipientAvatar} />
+          <Avatar name={recipientName} seed={recipientSeed} size="sm" url={recipientAvatar} />
           <span className="sx-chat-name">{recipientName}</span>
           {isRecipientValid ? (
             <span className="sx-chat-wallet">{shortenAddress(trimmedRecipientAddress)}</span>
@@ -1111,7 +1292,7 @@ function ChatView(
           </div>
         ) : bubbles.length === 0 ? (
           <div className="sx-center sx-log-empty">
-            <Avatar name={recipientName} size="lg" url={recipientAvatar} />
+            <Avatar name={recipientName} seed={recipientSeed} size="lg" url={recipientAvatar} />
             <p>
               Your first payment to <strong>{recipientName}</strong>. Tap Send money to start.
             </p>
@@ -1312,7 +1493,7 @@ function ChatView(
         onDone={finish}
         state={transactionConfirmed ? "done" : "running"}
         steps={["Confirming the payment", "Sending on Arc"]}
-        to={<Avatar name={recipientName} size="sm" url={recipientAvatar} />}
+        to={<Avatar name={recipientName} seed={recipientSeed} size="sm" url={recipientAvatar} />}
       />
 
       {/* Save as a beneficiary */}
@@ -1377,7 +1558,7 @@ function ChatView(
             {(
               <>
                 <div className="sx-confirm-head">
-                  <Avatar name={recipientName} url={recipientAvatar} />
+                  <Avatar name={recipientName} seed={recipientSeed} url={recipientAvatar} />
                   <div className="min-w-0">
                     <SheetTitle className="truncate text-base font-bold">{recipientName}</SheetTitle>
                     <SheetDescription className="truncate font-mono text-xs text-muted-foreground">
@@ -1483,5 +1664,82 @@ function ChatView(
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+/** The ONE logo, tiny, on the photo of someone paid by ONE ID. */
+function OneBadgeGlyph() {
+  return <PlatformLogoMark className="sx-avatar-badge-mark" />;
+}
+
+/** Pay to › ONE ID: a chrome ID card with a photo, a name and the ".one" tag. */
+function OneIdArt() {
+  return (
+    <svg aria-hidden className="sx-to-art" viewBox="0 0 96 96">
+      <defs>
+        <linearGradient id="sx-chrome" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#fdfdff" />
+          <stop offset="0.45" stopColor="#d7d9e2" />
+          <stop offset="0.7" stopColor="#f4f5f9" />
+          <stop offset="1" stopColor="#a9adbb" />
+        </linearGradient>
+        <linearGradient id="sx-chrome-edge" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#8d91a0" />
+        </linearGradient>
+        <linearGradient id="sx-one" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#7c3aed" />
+          <stop offset="1" stopColor="#2563eb" />
+        </linearGradient>
+        <filter id="sx-art-shadow" height="140%" width="140%" x="-20%" y="-10%">
+          <feDropShadow dx="0" dy="4" floodColor="#1e1b2e" floodOpacity="0.22" stdDeviation="3.5" />
+        </filter>
+      </defs>
+      <g filter="url(#sx-art-shadow)" transform="rotate(-8 48 48)">
+        <rect fill="url(#sx-chrome-edge)" height="50" rx="9" width="70" x="13" y="25" />
+        <rect fill="url(#sx-chrome)" height="47" rx="8" width="67" x="14.5" y="26.5" />
+        <circle cx="32" cy="45" fill="#c3c6d1" r="9" />
+        <circle cx="32" cy="42.5" fill="#f6f7fb" r="3.6" />
+        <path d="M24.8 51.5a8 8 0 0 1 14.4 0 9 9 0 0 1-14.4 0Z" fill="#f6f7fb" />
+        <rect fill="#b4b8c5" height="4" rx="2" width="26" x="46" y="38" />
+        <rect fill="#c9ccd6" height="3.5" rx="1.75" width="18" x="46" y="46" />
+        <rect fill="url(#sx-one)" height="12" rx="6" width="30" x="44" y="56" />
+        <text fill="#ffffff" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="8.5" fontWeight="800" x="49.5" y="64.6">
+          .one
+        </text>
+      </g>
+    </svg>
+  );
+}
+
+/** Pay to › Wallet: a chrome wallet with its clasp. */
+function WalletArt() {
+  return (
+    <svg aria-hidden className="sx-to-art" viewBox="0 0 96 96">
+      <defs>
+        <linearGradient id="sx-wallet" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#fbfbfd" />
+          <stop offset="0.5" stopColor="#cfd2dc" />
+          <stop offset="1" stopColor="#9a9eac" />
+        </linearGradient>
+        <linearGradient id="sx-wallet-flap" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#b9bcc8" />
+        </linearGradient>
+        <filter id="sx-wallet-shadow" height="140%" width="140%" x="-20%" y="-10%">
+          <feDropShadow dx="0" dy="4" floodColor="#1e1b2e" floodOpacity="0.22" stdDeviation="3.5" />
+        </filter>
+      </defs>
+      <g filter="url(#sx-wallet-shadow)">
+        <rect fill="#8e92a1" height="46" rx="8" width="62" x="15" y="28" />
+        <rect fill="url(#sx-wallet)" height="44" rx="7.5" width="60" x="16" y="28" />
+        <path d="M16 36c0-4 3-7 7-7h46c3 0 5 2 5 5v2Z" fill="url(#sx-wallet-flap)" opacity="0.9" />
+        <rect fill="url(#sx-wallet-flap)" height="18" rx="6" width="22" x="58" y="41" />
+        <rect fill="#8e92a1" height="18" opacity="0.35" rx="6" width="22" x="58" y="41.6" />
+        <rect fill="url(#sx-wallet-flap)" height="17" rx="5.5" width="21.5" x="58.2" y="41" />
+        <circle cx="66" cy="49.5" fill="#6e7282" r="3.4" />
+        <circle cx="66" cy="49" fill="#e9eaf0" r="1.6" />
+      </g>
+    </svg>
   );
 }
