@@ -29,8 +29,9 @@ Prembly was formerly called Identitypass. Its docs host could not be fetched fro
 
 | Item | Value |
 |---|---|
-| Base URL | `https://api.prembly.com` (current docs). The older SDK uses `https://api.myidentitypass.com` live and `https://sandbox.myidentitypass.com` sandbox. |
-| Auth | Header `x-api-key: <secret>`. The older SDK also sends `app-id: <app id>`. Send both until the sandbox proves `app-id` is unused. |
+| Base URL | `https://api.prembly.com/verification/`, **confirmed by Prembly support (Oct 2026)**. The older SDK uses `https://api.myidentitypass.com` live and `https://sandbox.myidentitypass.com` sandbox. |
+| Auth | Header `x-api-key: <secret>`, **confirmed by Prembly support**. The older SDK also sends `app-id: <app id>`. Support could not say whether it is still needed, so send both until the sandbox proves `app-id` is unused. |
+| Indicative prices | BVN ₦50 and NIN ₦100 per check, given by Prembly support as sample figures only. Liveness, face match, CAC and TIN prices still need a quote. |
 | Body | JSON, `content-type: application/json`. |
 | Success | HTTP 200 **and** `status: true` **and** `response_code: "00"` **and** `verification.status: "VERIFIED"`. A failure can arrive with HTTP 200. |
 | Codes | `00` success. `01` ID not found. `02` provider unavailable. `03` insufficient wallet balance. `07` BVN blocked: never retry the same BVN. |
@@ -51,7 +52,7 @@ Prembly was formerly called Identitypass. Its docs host could not be fetched fro
 | CAC company (KYB) | `POST /verification/cac/advance` | `{ "rc_number", "company_type": "RC"\|"BN"\|"IT", "company_name" }` |
 | TIN (KYB) | `POST /verification/tin` | `{ "number", "channel" }` |
 
-The paths for BVN with face, NIN with face and iGree are taken from the older SDK (`/bvn_w_face`, `/nin`, `/bvn/igree`) and mapped to the new `/verification/` prefix. Confirm each in the sandbox and record the real path.
+Prembly support confirmed only the BVN path. The other paths must be checked in the sandbox. The paths for BVN with face, NIN with face and iGree are taken from the older SDK (`/bvn_w_face`, `/nin`, `/bvn/igree`) and mapped to the new `/verification/` prefix. Confirm each in the sandbox and record the real path.
 
 ### What Prembly does not do
 
