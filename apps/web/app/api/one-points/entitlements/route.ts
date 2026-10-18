@@ -19,6 +19,7 @@ import {
   releasePremiumPayment,
 } from "@/lib/rewards/premium";
 import { platformFeeRecipient } from "@/lib/fees";
+import { offerView, quotePremium } from "@/lib/premium-offers/service";
 
 export const runtime = "nodejs";
 
@@ -53,9 +54,20 @@ export async function GET(request: NextRequest) {
       ownerWallet: request.nextUrl.searchParams.get("wallet"),
     });
 
+    const [entitlements, autoDepositQuote, payrollQuote] = await Promise.all([
+      listEntitlements(actorWallet),
+      quotePremium({ basePriceUsdc: featureUnlockPriceUsdc("EARN_AUTO_DEPOSIT"), product: "EARN_AUTO_DEPOSIT", wallet: actorWallet }),
+      quotePremium({
+        basePriceUsdc: featureUnlockPriceUsdc("PAYROLL_AUTO_SCHEDULE"),
+        product: "PAYROLL_AUTO_SCHEDULE",
+        wallet: actorWallet,
+      }),
+    ]);
     return jsonOk({
       costs: FEATURE_UNLOCK_COST,
-      entitlements: await listEntitlements(actorWallet),
+      entitlements,
+      // A live premium offer per feature: the price to pay and any bonus days.
+      offers: { EARN_AUTO_DEPOSIT: offerView(autoDepositQuote), PAYROLL_AUTO_SCHEDULE: offerView(payrollQuote) },
       // Rewards v2: features are paid in USDC to the platform fee wallet.
       ...(rewardsV2Enabled()
         ? {
@@ -100,16 +112,27 @@ export async function POST(request: NextRequest) {
     // purchase (which points discounts are later claimed against).
     if (rewardsV2Enabled()) {
       const feature = body.feature;
+      // A live premium offer lowers the price checked on chain and may add days.
+      const quote = await quotePremium({
+        basePriceUsdc: featureUnlockPriceUsdc(feature),
+        forPayment: true,
+        product: feature,
+        wallet: actorWallet,
+      });
       const paid = await recordPremiumPayment({
-        amountUsdc: featureUnlockPriceUsdc(feature),
-        description: `${premiumProductLabels[feature]}, ${FEATURE_UNLOCK_TERM_LABEL[feature]}`,
+        amountUsdc: quote.priceUsdc,
+        description: `${premiumProductLabels[feature]}, ${FEATURE_UNLOCK_TERM_LABEL[feature]}${
+          quote.bonusDays ? ` + ${quote.bonusDays} bonus days` : ""
+        }`,
         ownerWallet: actorWallet,
         product: feature,
+        quote,
         txHash: typeof body.txHash === "string" ? body.txHash : "",
       });
       if (!paid.ok) return jsonError(paid.reason, paid.status);
       try {
         const entitlement = await grantPaidEntitlement({
+          bonusDays: quote.bonusDays,
           feature,
           purchaseId: paid.purchase.id,
           walletAddress: actorWallet,

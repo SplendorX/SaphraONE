@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { adminLoadError, useAdminKey } from "@/components/admin/use-admin-key";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
+import { PremiumOffersPanel } from "@/components/admin/premium-offers-panel";
 import { campaignSources, metricLabels, type CampaignMetric } from "@/lib/campaigns/rules";
 import { arcChain } from "@/lib/chains";
 import { cn } from "@/lib/utils";
@@ -176,7 +177,7 @@ export default function AdminCampaignsPage() {
 
   return (
     <div>
-      <AdminPageHeader subtitle="USDC campaigns, leaderboards and payouts" title="Campaigns" />
+      <AdminPageHeader subtitle="Premium offers, USDC campaigns, leaderboards and payouts" title="Campaigns" />
       <div className="ar-page">
         <div className="ar-auth">
           <button className="ar-btn is-primary" disabled={loading} onClick={() => void load()} type="button">
@@ -186,6 +187,9 @@ export default function AdminCampaignsPage() {
         </div>
 
         {message ? <p className={cn("ar-message", message.tone === "error" && "is-error")}>{message.text}</p> : null}
+
+        {/* Discounts and bonus days on premium purchases */}
+        <PremiumOffersPanel />
 
         {/* Ledger */}
         <section className="ar-section">

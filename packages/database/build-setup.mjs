@@ -61,6 +61,7 @@ const ORDER = [
   "creator-partners",
   "wallet-transfer-history",
   "team-announcements",
+  "premium-offers",
 ];
 
 /** Not part of a new database: one-off fixes to existing data, or unused. */

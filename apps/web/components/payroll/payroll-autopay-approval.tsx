@@ -34,6 +34,8 @@ import { onchainFacts } from "@/lib/onchain-facts";
 import { useSigningWallet } from "@/lib/use-signing-wallet";
 import { rewardsV2Enabled, USD_PER_POINT } from "@/lib/rewards/config";
 import { usePremiumPayment } from "@/lib/rewards/use-premium-payment";
+import { PremiumOfferNote } from "@/components/premium-offer-note";
+import { usePremiumOffer } from "@/lib/premium-offers/use-premium-offer";
 import {
   FEATURE_UNLOCK_COST,
   FEATURE_UNLOCK_TERM_LABEL,
@@ -70,6 +72,7 @@ export function PayrollAutopayApproval({
 }) {
   const wallet = useSigningWallet();
   const premium = usePremiumPayment();
+  const offer = usePremiumOffer({ circleSocialUuid, feature: "PAYROLL_AUTO_SCHEDULE", wallet: ownerWallet });
   const executor = executorAddress();
   const token = onchainFacts.usdcAddress;
 
@@ -162,8 +165,10 @@ export function PayrollAutopayApproval({
   // the wording and tells the business its settings survived.
   const lapsed = entitled === false && expiryLabel !== null;
   const unlockCost = FEATURE_UNLOCK_COST.PAYROLL_AUTO_SCHEDULE;
-  // Rewards v2: paid in USDC at the points' value (100 points = $1).
-  const usdcPrice = rewardsV2Enabled() ? unlockCost * USD_PER_POINT : null;
+  // Rewards v2: paid in USDC at the points' value (100 points = $1), less
+  // any live premium offer (Admin › Campaigns).
+  const basePrice = rewardsV2Enabled() ? unlockCost * USD_PER_POINT : null;
+  const usdcPrice = basePrice !== null ? (offer?.priceUsdc ?? basePrice) : null;
   const priceLabel = usdcPrice !== null ? `${usdcPrice.toFixed(2)} USDC` : `${unlockCost.toLocaleString()} points`;
 
   async function unlock(renew = false) {
@@ -322,10 +327,14 @@ export function PayrollAutopayApproval({
                   {unlockError}
                 </p>
               ) : null}
+              {offer ? <PremiumOfferNote offer={offer} /> : null}
             </div>
           </div>
 
           <div className="shrink-0 text-right">
+            {offer && basePrice !== null && offer.priceUsdc < basePrice ? (
+              <p className="text-xs text-muted-foreground line-through tabular-nums">{basePrice.toFixed(2)}</p>
+            ) : null}
             <p className="font-heading text-xl font-bold tabular-nums">
               {usdcPrice !== null ? usdcPrice.toFixed(2) : unlockCost.toLocaleString()}
             </p>

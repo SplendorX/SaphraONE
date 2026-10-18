@@ -46,6 +46,17 @@
   color: #1e1240;
 }
 
+/* A premium offer: coral. */
+.ann-card[data-kind="offer"] {
+  background: linear-gradient(180deg, #fff6f3 0%, #ffd9cf 100%);
+  color: #3d120a;
+}
+
+.dark .ann-card[data-kind="offer"] {
+  background: linear-gradient(160deg, #3d1a12 0%, #17111c 100%);
+  color: #ffe6de;
+}
+
 /* Team notices, by style: news blue, important rose, update indigo,
    maintenance slate. */
 .ann-card[data-kind="notice"] {

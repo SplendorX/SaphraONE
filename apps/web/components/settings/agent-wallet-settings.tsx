@@ -57,6 +57,7 @@ import {
 } from "@/lib/allie/client";
 import { usePlatformWallet } from "@/lib/use-platform-wallet";
 import { emitOnePointsUpdated, useOnePoints } from "@/lib/referral/use-one-points";
+import { PremiumOfferNote } from "@/components/premium-offer-note";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
 import { markAgentWalletActive } from "@/lib/wallet-mode";
 import { cn } from "@/lib/utils";
@@ -405,7 +406,8 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
         (await payAllieProFee({
           feeRecipient: plan.plan.feeRecipient,
           fromAddress: signingWallet.address,
-          monthlyFeeUsdc: plan.plan.monthlyFeeUsdc,
+          // A live premium offer's price, when the member has one.
+          monthlyFeeUsdc: plan.offer?.priceUsdc ?? plan.plan.monthlyFeeUsdc,
           resolveProvider: signingWallet.resolveProvider,
         }));
 
@@ -726,12 +728,23 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                   ALLIE Pro
                 </p>
               )}
+              {plan.offer && plan.offer.priceUsdc < plan.plan.monthlyFeeUsdc ? (
+                <p className="text-[0.8rem] text-muted-foreground line-through tabular-nums">
+                  ${plan.plan.monthlyFeeUsdc.toFixed(2)}
+                </p>
+              ) : null}
               <p className="font-mono text-2xl font-semibold tabular-nums">
-                ${plan.plan.monthlyFeeUsdc.toFixed(2)}
+                ${(plan.offer?.priceUsdc ?? plan.plan.monthlyFeeUsdc).toFixed(2)}
               </p>
-              <p className="text-[0.7rem] text-muted-foreground">per month</p>
+              <p className="text-[0.7rem] text-muted-foreground">
+                {plan.offer?.bonusDays
+                  ? `${plan.plan.termDays + plan.offer.bonusDays} days`
+                  : "per month"}
+              </p>
             </div>
           </div>
+
+          {plan.offer ? <PremiumOfferNote offer={plan.offer} /> : null}
 
           <p className="mt-4 text-[0.72rem] font-semibold uppercase tracking-wide text-muted-foreground">
             {plan.tier === "pro" ? "Your plan includes" : "Pro adds"}
@@ -774,7 +787,8 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                   variant="outline"
                 >
                   {busy === "upgrade" ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Add {plan.plan.termDays} days · ${plan.plan.monthlyFeeUsdc.toFixed(2)}
+                  Add {plan.plan.termDays + (plan.offer?.bonusDays ?? 0)} days · $
+                  {(plan.offer?.priceUsdc ?? plan.plan.monthlyFeeUsdc).toFixed(2)}
                 </Button>
               ) : (
                 <Button
@@ -808,7 +822,9 @@ export function AgentWalletSettings({ embedded = false }: { embedded?: boolean }
                 ) : null}
                 {busy === "upgrade"
                   ? "Confirm in wallet…"
-                  : `Upgrade — $${plan.plan.monthlyFeeUsdc.toFixed(2)}/mo`}
+                  : plan.offer
+                    ? `Upgrade — $${plan.offer.priceUsdc.toFixed(2)}`
+                    : `Upgrade — $${plan.plan.monthlyFeeUsdc.toFixed(2)}/mo`}
               </Button>
               {rewardsV2Enabled() ? (
                 <span className="text-[0.75rem] text-muted-foreground">

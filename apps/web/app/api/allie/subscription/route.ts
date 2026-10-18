@@ -24,6 +24,7 @@ import {
 import { verifyAllieProPayment } from "@/lib/allie/verify-pro-payment";
 import { rewardsV2Enabled } from "@/lib/rewards/config";
 import { recordPremiumPayment } from "@/lib/rewards/premium";
+import { offerView, quotePremium } from "@/lib/premium-offers/service";
 
 export const runtime = "nodejs";
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [tier, subscription, usage] = await Promise.all([
+    const [tier, subscription, usage, quote] = await Promise.all([
       getAllieTier(ownerWallet),
       loadAllieSubscription(ownerWallet),
       loadLlmUsageSummary(ownerWallet).catch(() => ({
@@ -80,9 +81,12 @@ export async function GET(request: NextRequest) {
         outputTokens: 0,
         costEstimateUsdc: 0,
       })),
+      quotePremium({ basePriceUsdc: allieProMonthlyFeeUsdc(), product: "ALLIE_PRO", wallet: ownerWallet }),
     ]);
 
     return NextResponse.json({
+      // A live premium offer for this member: the price to pay and any bonus days.
+      offer: offerView(quote),
       plan: plan(),
       subscription,
       tier,
@@ -162,9 +166,16 @@ export async function POST(request: NextRequest) {
     return jsonError("A payment transaction hash is required.", 400);
   }
 
+  // A live premium offer lowers the price checked on chain and may add days.
+  const quote = await quotePremium({
+    basePriceUsdc: allieProMonthlyFeeUsdc(),
+    forPayment: true,
+    product: "ALLIE_PRO",
+    wallet: ownerWallet,
+  });
   const check = await verifyAllieProPayment({
     feeRecipient: allieProFeeRecipient(),
-    feeUsdc: allieProMonthlyFeeUsdc(),
+    feeUsdc: quote.priceUsdc,
     ownerWallet,
     txHash,
   });
@@ -178,11 +189,12 @@ export async function POST(request: NextRequest) {
   // activating Pro twice.
   if (rewardsV2Enabled()) {
     const recorded = await recordPremiumPayment({
-      amountUsdc: allieProMonthlyFeeUsdc(),
-      description: `ALLIE Pro, ${proTermDays} days`,
+      amountUsdc: quote.priceUsdc,
+      description: `ALLIE Pro, ${proTermDays + quote.bonusDays} days${quote.offer ? ` (${quote.offer.title})` : ""}`,
       feeRecipient: allieProFeeRecipient(),
       ownerWallet,
       product: "ALLIE_PRO",
+      quote,
       txHash,
     });
     if (!recorded.ok) return jsonError(recorded.reason, recorded.status);
@@ -205,7 +217,7 @@ export async function POST(request: NextRequest) {
         ? new Date(current.expiresAt).getTime()
         : 0;
     const expiresAt = new Date(
-      Math.max(activeUntil, Date.now()) + proTermDays * 24 * 60 * 60 * 1000,
+      Math.max(activeUntil, Date.now()) + (proTermDays + quote.bonusDays) * 24 * 60 * 60 * 1000,
     ).toISOString();
 
     await saveAllieSubscription({

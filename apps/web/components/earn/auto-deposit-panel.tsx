@@ -27,6 +27,8 @@ import { FEATURE_UNLOCK_TERM_LABEL } from "@/lib/referral/types";
 import { useSigningWallet } from "@/lib/use-signing-wallet";
 import { rewardsV2Enabled, USD_PER_POINT } from "@/lib/rewards/config";
 import { usePremiumPayment } from "@/lib/rewards/use-premium-payment";
+import { PremiumOfferNote } from "@/components/premium-offer-note";
+import { usePremiumOffer } from "@/lib/premium-offers/use-premium-offer";
 import { cn } from "@/lib/utils";
 
 const FREQUENCIES: Array<{ id: AutoDepositFrequency; label: string }> = [
@@ -49,8 +51,11 @@ export function AutoDepositPanel({
   const state = useAutoDeposit({ circleSocialUuid, walletAddress });
   const signingWallet = useSigningWallet();
   const premium = usePremiumPayment();
-  // Rewards v2: paid in USDC at the points' value (100 points = $1).
-  const usdcPrice = rewardsV2Enabled() ? state.unlockCost * USD_PER_POINT : null;
+  // Rewards v2: paid in USDC at the points' value (100 points = $1), less
+  // any live premium offer (Admin › Campaigns).
+  const offer = usePremiumOffer({ circleSocialUuid, feature: "EARN_AUTO_DEPOSIT", wallet: walletAddress });
+  const basePrice = rewardsV2Enabled() ? state.unlockCost * USD_PER_POINT : null;
+  const usdcPrice = basePrice !== null ? (offer?.priceUsdc ?? basePrice) : null;
   const priceLabel = usdcPrice !== null ? `${usdcPrice.toFixed(2)} USDC` : `${state.unlockCost} points`;
   async function payAndUnlock() {
     const txHash =
@@ -144,9 +149,13 @@ export function AutoDepositPanel({
             : "Move a set amount into a vault on a schedule, while keeping a reserve you choose untouched."}
         </p>
         <div className="earn-auto-lock-price">
+          {offer && basePrice !== null && offer.priceUsdc < basePrice ? (
+            <span className="earn-auto-lock-unit line-through">{basePrice.toFixed(2)}</span>
+          ) : null}
           <span className="earn-auto-lock-points">{usdcPrice !== null ? usdcPrice.toFixed(2) : state.unlockCost}</span>
           <span className="earn-auto-lock-unit">{usdcPrice !== null ? "USDC" : "OnePoints"} / {FEATURE_UNLOCK_TERM_LABEL.EARN_AUTO_DEPOSIT}</span>
         </div>
+        {offer ? <PremiumOfferNote offer={offer} /> : null}
         {approvalError ? (
         <p className="earn-error mt-3">
           <AlertCircle className="h-4 w-4 shrink-0" />

@@ -187,6 +187,8 @@ export async function unlockFeature(input: {
  * running is extended, so nothing paid for is lost.
  */
 export async function grantPaidEntitlement(input: {
+  /** Extra days a premium offer adds to the term. */
+  bonusDays?: number;
   feature: OnePointsFeature;
   purchaseId: string;
   walletAddress: string;
@@ -201,7 +203,9 @@ export async function grantPaidEntitlement(input: {
     .from(referralTables.entitlements)
     .upsert(
       {
-        expires_at: addTerm(termStart, input.feature).toISOString(),
+        expires_at: new Date(
+          addTerm(termStart, input.feature).getTime() + Math.max(0, input.bonusDays ?? 0) * 86_400_000,
+        ).toISOString(),
         feature: input.feature,
         ledger_entry_id: null,
         points_spent: 0,

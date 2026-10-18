@@ -1,0 +1,40 @@
+/* A live premium offer beside a price (components/premium-offer-note.tsx). */
+.pon {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid color-mix(in oklch, #f59e0b 35%, transparent);
+  border-radius: 0.9rem;
+  background: linear-gradient(120deg, #fff8e8 0%, #fdecc8 100%);
+  color: #3d2a06;
+}
+
+.dark .pon {
+  border-color: rgb(245 158 11 / 0.3);
+  background: linear-gradient(120deg, #33260f 0%, #1c1510 100%);
+  color: #f7ead0;
+}
+
+.pon-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+.pon-text {
+  display: grid;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.pon-text strong {
+  font-size: 0.85rem;
+}
+
+.pon-text span {
+  opacity: 0.75;
+}

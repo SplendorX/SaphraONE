@@ -1,6 +1,8 @@
 // Server-only. Premium purchases paid in USDC (Rewards v2): what points
 // discounts are claimed against.
 import { verifyAllieProPayment } from "@/lib/allie/verify-pro-payment";
+import { isPremiumOfferProduct } from "@/lib/premium-offers/rules";
+import { recordOfferRedemption, type PremiumQuote } from "@/lib/premium-offers/service";
 import { platformFeeRecipient } from "@/lib/fees";
 import { referralDb } from "@/lib/referral/db";
 import { FEATURE_UNLOCK_COST, type OnePointsFeature } from "@/lib/referral/types";
@@ -56,6 +58,8 @@ export async function recordPremiumPayment(input: {
   feeRecipient?: string;
   ownerWallet: string;
   product: PremiumProduct;
+  /** A premium offer this purchase got (quotePremium): `amountUsdc` is its price. */
+  quote?: PremiumQuote;
   txHash: string;
 }): Promise<PremiumPaymentResult> {
   const txHash = input.txHash.toLowerCase();
@@ -90,6 +94,14 @@ export async function recordPremiumPayment(input: {
     throw new Error(`The purchase could not be recorded: ${error.message}`);
   }
   const purchase = data as PremiumPurchase;
+  if (input.quote?.offer && isPremiumOfferProduct(input.product)) {
+    await recordOfferRedemption({
+      product: input.product,
+      purchaseId: purchase.id,
+      quote: input.quote,
+      wallet: input.ownerWallet,
+    });
+  }
   // A creator partner's welcome discount comes back as USDC to claim.
   const { applyPremiumDiscount } = await import("@/lib/partners/perks");
   const rebate = await applyPremiumDiscount({

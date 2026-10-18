@@ -1,6 +1,7 @@
 "use client";
 
 import { officialArcExplorerUrl } from "@/lib/network";
+import type { PremiumOfferView } from "@/lib/premium-offers/rules";
 
 export type AllieActionPayload =
   | {
@@ -424,6 +425,8 @@ export type AllieSubscriptionState = {
     recurringScheduleId: string | null;
   } | null;
   tier: "free" | "pro";
+  /** A live premium offer on Pro for this member (Admin › Campaigns). */
+  offer?: PremiumOfferView;
   usageToday: {
     calls: number;
     inputTokens: number;

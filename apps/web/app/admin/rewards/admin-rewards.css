@@ -276,3 +276,90 @@
     flex-direction: column;
   }
 }
+
+/* Premium offers on Admin › Campaigns (components/admin/premium-offers-panel.tsx). */
+.po-panel {
+  gap: 1rem;
+}
+
+.po-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.po-workspace {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .po-workspace {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+}
+
+.po-preview {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 1.1rem;
+  background: color-mix(in oklch, var(--muted) 45%, transparent);
+}
+
+.po-preview .ann {
+  overflow: visible;
+  padding: 0;
+}
+
+.po-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.po-quick button {
+  padding: 0.15rem 0.55rem;
+  border: 1px dashed var(--border);
+  border-radius: 9999px;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.po-quick button:hover {
+  border-style: solid;
+  color: var(--foreground);
+}
+
+.po-rows {
+  display: grid;
+}
+
+.po-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.po-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 650;
+}
+
+.ar-tag.is-muted {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}

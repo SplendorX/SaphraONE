@@ -6,6 +6,12 @@ import { ENDING_NOTICE_DAYS } from "@/lib/partners/config";
 import { loadMember, loadOfferById } from "@/lib/partners/db";
 import { daysLeft, windowOpen } from "@/lib/partners/rules";
 import { liveTeamAnnouncements, type AnnouncementTone } from "@/lib/announcements/team";
+import {
+  offerSummary,
+  premiumOfferProductHrefs,
+  premiumOfferProductLabels,
+} from "@/lib/premium-offers/rules";
+import { livePremiumOffers } from "@/lib/premium-offers/service";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 
 export type Announcement = {
@@ -14,9 +20,9 @@ export type Announcement = {
   body: string;
   /** Where the card goes; empty for a notice with no link. */
   href: string;
-  /** "campaign:<id>", "quest:<id>", "welcome:<offer>" or "notice:<id>", so a dismissal sticks to one item. */
+  /** "campaign:<id>", "quest:<id>", "welcome:<offer>", "notice:<id>" or "offer:<id>", so a dismissal sticks to one item. */
   id: string;
-  kind: "campaign" | "quest" | "welcome" | "notice";
+  kind: "campaign" | "quest" | "welcome" | "notice" | "offer";
   publishedAt: string;
   title: string;
   /** A team notice: its style, and whether people can close it. */
@@ -119,12 +125,31 @@ export async function listAnnouncements(
     tone: row.tone,
   }));
 
+  // Premium offers (Admin › Campaigns): "Save 50% on ALLIE Pro".
+  const offers: Announcement[] = (await livePremiumOffers().catch(() => [])).map((offer) => {
+    const names = offer.products.map((product) => premiumOfferProductLabels[product]);
+    const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
+    const ends = new Date(offer.ends_at).toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    return {
+      badge: offer.discount_percent > 0 ? `Save ${offer.discount_percent}%` : `+${offer.bonus_days} days free`,
+      body: `${offerSummary(offer)} on ${list}. Ends ${ends}.`,
+      href: premiumOfferProductHrefs[offer.products[0]],
+      id: `offer:${offer.id}`,
+      kind: "offer",
+      publishedAt: offer.starts_at,
+      title:
+        offer.headline ||
+        (offer.discount_percent > 0 ? `Save ${offer.discount_percent}% on ${list}` : `Bonus days on ${list}`),
+    };
+  });
+
   // The team's notices lead (pinned first), then a creator partner's welcome
   // package: it's the member's own.
   const welcome = wallet ? await welcomeAnnouncement(wallet, now).catch(() => null) : null;
   return [
     ...notices,
     ...(welcome ? [welcome] : []),
+    ...offers,
     ...[...fromCampaigns, ...fromQuests].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)),
   ].slice(0, limit);
 }

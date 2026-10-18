@@ -108,6 +108,7 @@ function AnnouncementArt({ item }: { item: Announcement }) {
   if (item.kind === "campaign") return <TrophyArt />;
   if (item.kind === "welcome") return <GiftArt />;
   if (item.kind === "quest") return <MedalArt />;
+  if (item.kind === "offer") return <PriceTagArt />;
   if (item.tone === "important") return <AlertArt />;
   if (item.tone === "update") return <SparkArt />;
   if (item.tone === "maintenance") return <WrenchArt />;
@@ -173,6 +174,21 @@ function MedalArt() {
         d="m48 46 3 6.2 6.8 1-4.9 4.8 1.2 6.8-6.1-3.2-6.1 3.2 1.2-6.8-4.9-4.8 6.8-1Z"
         fill="#ffffff"
       />
+    </svg>
+  );
+}
+
+/** A flat price tag with a percent sign: a premium offer. */
+function PriceTagArt() {
+  return (
+    <svg aria-hidden className="ann-art" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" fill="#ffe4dc" r="44" />
+      <path d="M24 46V28a4 4 0 0 1 4-4h18l26 26-22 22Z" fill="#f97362" />
+      <path d="M46 24l26 26-11 11-26-26Z" fill="#ea5545" />
+      <circle cx="34" cy="34" fill="#ffe4dc" r="4" />
+      <path d="M42 58l16-16" stroke="#ffffff" strokeLinecap="round" strokeWidth="4" />
+      <circle cx="44" cy="45" fill="#ffffff" r="3.2" />
+      <circle cx="56" cy="56" fill="#ffffff" r="3.2" />
     </svg>
   );
 }
