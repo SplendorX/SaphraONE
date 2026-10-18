@@ -166,128 +166,134 @@ export function InviteEarnV2() {
         </Link>
       </header>
 
-      <h1 className="ie-title">Invite friends &amp; earn up to {percent(topRate)} of their fees</h1>
+      {/* Two columns on a desktop (components/layout/windows-shell.css);
+          on a phone the wrappers vanish and the cards keep this order. */}
+      <div className="ie-col ie-col-main">
+        <h1 className="ie-title">Invite friends &amp; earn up to {percent(topRate)} of their fees</h1>
 
-      {/* Code */}
-      <section className="ie-code-card">
-        <span className="ie-code-label">Your referral code</span>
-        <span className="ie-code">{data.referralCode}</span>
-      </section>
-      <button className="ie-copy" onClick={() => void copyCode()} type="button">
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        {copied ? "Copied" : "Copy code"}
-      </button>
+        {/* Code */}
+        <section className="ie-code-card">
+          <span className="ie-code-label">Your referral code</span>
+          <span className="ie-code">{data.referralCode}</span>
+        </section>
+        <button className="ie-copy" onClick={() => void copyCode()} type="button">
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? "Copied" : "Copy code"}
+        </button>
 
-      {/* Rewards and referrals */}
-      <section className="ie-stats">
-        <div>
-          <span>Rewards</span>
-          <strong>{usd(data.accruedUsdc)} USDC</strong>
-          <button className="ie-claim" disabled={!canClaim || claiming} onClick={() => void claim()} type="button">
-            {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Claim"}
-          </button>
-          {!canClaim ? <em>Claim from {usd(data.minClaimUsdc)}</em> : null}
-        </div>
-        <div>
-          <span>Referrals</span>
-          <strong>
-            {data.activeReferrals}/{data.totalReferrals}
-          </strong>
-          <em>active · total</em>
-        </div>
-      </section>
-      {data.heldUsdc > 0 ? (
-        <p className="ie-note">{usd(data.heldUsdc)} is held while we review some referral activity.</p>
-      ) : null}
-      {error ? <p className="ie-error">{error}</p> : null}
-
-      {/* Creator partners: their offer links and what they brought in */}
-      <PartnerDashboard circleSocialUuid={circleSocialUuid} wallet={wallet} />
-
-      {/* How it works */}
-      <section className="ie-card">
-        <ul className="ie-steps">
-          <li>
-            <span>
-              <Users className="h-4 w-4" />
-            </span>
-            <p>
-              <strong>Refer friends to SaphraONE</strong> and earn on the service fees they pay.
-            </p>
-          </li>
-          <li>
-            <span>
-              <Percent className="h-4 w-4" />
-            </span>
-            <p>
-              <strong>Earn {percent(data.tier.commissionBps)} in USDC</strong> as a {tierNames[data.tier.tier] ?? data.tier.tier},
-              rising to {percent(topRate)} as your referrals grow.
-            </p>
-          </li>
-          <li>
-            <span>
-              <Gift className="h-4 w-4" />
-            </span>
-            <p>
-              <strong>Claim to your wallet</strong> once you&apos;ve earned {usd(data.minClaimUsdc)}. Earnings land after
-              each transaction confirms.
-            </p>
-          </li>
-          <li>
-            <span>
-              <ShieldCheck className="h-4 w-4" />
-            </span>
-            <p>
-              <strong>Direct referrals only.</strong> A referral is active after{" "}
-              {data.tier.activeMinTransactions} payments in 30 days.
-            </p>
-          </li>
-        </ul>
-      </section>
-
-      {/* Tiers */}
-      <section className="ie-card">
-        <h2 className="ie-card-title">Your tier</h2>
-        <div className="ie-tiers" role="table">
-          {[...data.policy]
-            .sort((a, b) => a.sort - b.sort)
-            .map((row) => (
-              <div className={cn("ie-tier", row.tier === data.tier.tier && "is-current")} key={row.tier} role="row">
-                <strong>{tierNames[row.tier] ?? row.tier}</strong>
-                <span>{row.minActiveReferrals ? `${row.minActiveReferrals}+ active` : "Any"}</span>
-                <span>{row.minMonthlyVolumeUsd ? `${usd(row.minMonthlyVolumeUsd, 0)}/mo` : "No minimum"}</span>
-                <em>{percent(row.commissionBps)}</em>
-              </div>
-            ))}
-        </div>
-        {data.nextTier ? (
-          <p className="ie-note">
-            Next: {tierNames[data.nextTier.tier] ?? data.nextTier.tier} at {data.nextTier.minActiveReferrals} active
-            referrals and {usd(data.nextTier.minMonthlyVolumeUsd, 0)} monthly volume. You have {data.activeReferrals}{" "}
-            and {usd(data.monthlyVolumeUsd, 0)}.
-          </p>
+        {/* Rewards and referrals */}
+        <section className="ie-stats">
+          <div>
+            <span>Rewards</span>
+            <strong>{usd(data.accruedUsdc)} USDC</strong>
+            <button className="ie-claim" disabled={!canClaim || claiming} onClick={() => void claim()} type="button">
+              {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : "Claim"}
+            </button>
+            {!canClaim ? <em>Claim from {usd(data.minClaimUsdc)}</em> : null}
+          </div>
+          <div>
+            <span>Referrals</span>
+            <strong>
+              {data.activeReferrals}/{data.totalReferrals}
+            </strong>
+            <em>active · total</em>
+          </div>
+        </section>
+        {data.heldUsdc > 0 ? (
+          <p className="ie-note">{usd(data.heldUsdc)} is held while we review some referral activity.</p>
         ) : null}
-      </section>
+        {error ? <p className="ie-error">{error}</p> : null}
+      </div>
 
-      {/* Recent earnings */}
-      {data.recent.length > 0 ? (
+      <div className="ie-col ie-col-side">
+        {/* Creator partners: their offer links and what they brought in */}
+        <PartnerDashboard circleSocialUuid={circleSocialUuid} wallet={wallet} />
+
+        {/* How it works */}
         <section className="ie-card">
-          <h2 className="ie-card-title">Recent earnings</h2>
-          <ul className="ie-recent">
-            {data.recent.map((row, index) => (
-              <li key={`${row.createdAt}-${index}`}>
-                <div>
-                  <strong>{short(row.referredWallet)}</strong>
-                  <span>
-                    {new Date(row.createdAt).toLocaleDateString()} · {row.status.toLowerCase()}
-                  </span>
-                </div>
-                <em>+{usd(row.amountUsdc, 6)}</em>
-              </li>
-            ))}
+          <ul className="ie-steps">
+            <li>
+              <span>
+                <Users className="h-4 w-4" />
+              </span>
+              <p>
+                <strong>Refer friends to SaphraONE</strong> and earn on the service fees they pay.
+              </p>
+            </li>
+            <li>
+              <span>
+                <Percent className="h-4 w-4" />
+              </span>
+              <p>
+                <strong>Earn {percent(data.tier.commissionBps)} in USDC</strong> as a {tierNames[data.tier.tier] ?? data.tier.tier},
+                rising to {percent(topRate)} as your referrals grow.
+              </p>
+            </li>
+            <li>
+              <span>
+                <Gift className="h-4 w-4" />
+              </span>
+              <p>
+                <strong>Claim to your wallet</strong> once you&apos;ve earned {usd(data.minClaimUsdc)}. Earnings land after
+                each transaction confirms.
+              </p>
+            </li>
+            <li>
+              <span>
+                <ShieldCheck className="h-4 w-4" />
+              </span>
+              <p>
+                <strong>Direct referrals only.</strong> A referral is active after{" "}
+                {data.tier.activeMinTransactions} payments in 30 days.
+              </p>
+            </li>
           </ul>
         </section>
-      ) : null}
+
+        {/* Tiers */}
+        <section className="ie-card">
+          <h2 className="ie-card-title">Your tier</h2>
+          <div className="ie-tiers" role="table">
+            {[...data.policy]
+              .sort((a, b) => a.sort - b.sort)
+              .map((row) => (
+                <div className={cn("ie-tier", row.tier === data.tier.tier && "is-current")} key={row.tier} role="row">
+                  <strong>{tierNames[row.tier] ?? row.tier}</strong>
+                  <span>{row.minActiveReferrals ? `${row.minActiveReferrals}+ active` : "Any"}</span>
+                  <span>{row.minMonthlyVolumeUsd ? `${usd(row.minMonthlyVolumeUsd, 0)}/mo` : "No minimum"}</span>
+                  <em>{percent(row.commissionBps)}</em>
+                </div>
+              ))}
+          </div>
+          {data.nextTier ? (
+            <p className="ie-note">
+              Next: {tierNames[data.nextTier.tier] ?? data.nextTier.tier} at {data.nextTier.minActiveReferrals} active
+              referrals and {usd(data.nextTier.minMonthlyVolumeUsd, 0)} monthly volume. You have {data.activeReferrals}{" "}
+              and {usd(data.monthlyVolumeUsd, 0)}.
+            </p>
+          ) : null}
+        </section>
+
+        {/* Recent earnings */}
+        {data.recent.length > 0 ? (
+          <section className="ie-card">
+            <h2 className="ie-card-title">Recent earnings</h2>
+            <ul className="ie-recent">
+              {data.recent.map((row, index) => (
+                <li key={`${row.createdAt}-${index}`}>
+                  <div>
+                    <strong>{short(row.referredWallet)}</strong>
+                    <span>
+                      {new Date(row.createdAt).toLocaleDateString()} · {row.status.toLowerCase()}
+                    </span>
+                  </div>
+                  <em>+{usd(row.amountUsdc, 6)}</em>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
 
       <div className="ie-sticky">
         <ShareModal

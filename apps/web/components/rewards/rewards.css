@@ -8,6 +8,12 @@
   padding-bottom: 2rem;
 }
 
+/* Column wrappers: two columns on a desktop (layout/windows-shell.css);
+   on a phone they vanish and the cards keep their order. */
+.rw-col {
+  display: contents;
+}
+
 .rw-center {
   min-height: 40vh;
   place-items: center;

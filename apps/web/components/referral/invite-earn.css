@@ -8,6 +8,12 @@
   padding-bottom: 6rem;
 }
 
+/* Column wrappers: two columns on a desktop (layout/windows-shell.css);
+   on a phone they vanish and the cards keep their order. */
+.ie-col {
+  display: contents;
+}
+
 .ie-center {
   min-height: 40vh;
   place-items: center;

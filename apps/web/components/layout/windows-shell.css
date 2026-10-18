@@ -230,6 +230,84 @@
   }
 }
 
+/* ── Swap: a focused card, as a Windows flyout ─────────────────────────── */
+@media (min-width: 1024px) {
+  .platform-shell .swap3-page {
+    max-width: 30rem;
+    min-height: 0;
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem 1.5rem;
+    border: 1px solid var(--win-layer-border);
+    border-radius: 1.5rem;
+    background: var(--card);
+    box-shadow:
+      0 1px 2px rgb(18 20 26 / 0.04),
+      0 28px 60px -36px rgb(59 20 120 / 0.5);
+  }
+
+  .platform-shell .swap3-display {
+    min-height: 12rem;
+  }
+}
+
+/* ── Rewards and Invite & Earn: two columns ────────────────────────────
+   The column wrappers (.rw-col, .ie-col) are display: contents on a phone. */
+@media (min-width: 1280px) {
+  .platform-shell :is(.rw-page, .ie-page):not(.rw-center, .ie-center) {
+    max-width: 70rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 1.5rem;
+  }
+
+  .platform-shell :is(.rw-col, .ie-col) {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 1rem;
+  }
+
+  .platform-shell .rw-page > .rw-head {
+    grid-column: 1 / -1;
+  }
+
+  /* A sidebar place: no back button (as the app's other tab roots). */
+  .platform-shell[data-nav-root] .rw-head .rw-round,
+  .platform-shell[data-nav-root] .ie-bar {
+    display: none;
+  }
+
+  /* Invite & Earn: code, totals and the invite button on the left, how it
+     works, tiers and earnings on the right. The last row takes the slack, so
+     the button sits right under the totals. */
+  .platform-shell .ie-page:not(.ie-center) {
+    grid-template-rows: auto auto 1fr;
+    padding-bottom: 3rem;
+  }
+
+  .platform-shell .ie-col-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .platform-shell .ie-col-side {
+    grid-column: 2;
+    grid-row: 1 / 4;
+  }
+
+  /* The code card keeps its phone size instead of filling the column. */
+  .platform-shell .ie-col-main .ie-code-card {
+    width: min(100%, 28rem);
+    justify-self: center;
+  }
+
+  .platform-shell .ie-sticky {
+    position: static;
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
 /* ── Installed on Windows: the title bar is the window's ───────────────
    env(titlebar-area-*) is the strip left free beside the window buttons. */
 @media (min-width: 1024px) and (display-mode: window-controls-overlay) {
