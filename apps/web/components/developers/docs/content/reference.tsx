@@ -1,4 +1,4 @@
-import { Badge, Callout, CodeTabs, Endpoint, type Param, ParamList, Table } from "@/components/developers/docs/blocks";
+import { Badge, Callout, CodeTabs, Endpoint, type Param, ParamList, Step, Steps, Table } from "@/components/developers/docs/blocks";
 import { createSessionSamples, type DocContext, sampleSession } from "@/components/developers/docs/context";
 import { PortalLink } from "@/components/developers/portal/portal-context";
 
@@ -29,6 +29,9 @@ export function ApiOverviewDoc({ ctx }: Props) {
           [<Badge key="m">GET</Badge>, <PortalLink href="/docs/api/checkout-sessions#retrieve" key="p"><code>/v1/checkout/sessions/{"{id}"}</code></PortalLink>, "Retrieve a session"],
           [<Badge key="m">GET</Badge>, <PortalLink href="/docs/api/checkout-sessions#list" key="p"><code>/v1/checkout/sessions</code></PortalLink>, "List sessions"],
           [<Badge key="m">POST</Badge>, <PortalLink href="/docs/api/checkout-sessions#expire" key="p"><code>/v1/checkout/sessions/{"{id}"}/expire</code></PortalLink>, "Expire an unpaid session"],
+          [<Badge key="m">POST</Badge>, <PortalLink href="/docs/api/refunds#create" key="p"><code>/v1/refunds</code></PortalLink>, "Request a refund"],
+          [<Badge key="m">GET</Badge>, <PortalLink href="/docs/api/refunds#retrieve" key="p"><code>/v1/refunds/{"{id}"}</code></PortalLink>, "Retrieve a refund"],
+          [<Badge key="m">GET</Badge>, <PortalLink href="/docs/api/refunds#list" key="p"><code>/v1/refunds?session=</code></PortalLink>, "List a session's refunds"],
         ]}
       />
 
@@ -545,6 +548,143 @@ if (session.status === "complete") await fulfil(session);`,
   );
 }
 
+const refundFields: Param[] = [
+  { children: <>Unique id, <code>re_live_…</code> or <code>re_test_…</code>.</>, name: "id", type: "string" },
+  { children: <>Always <code>refund</code>.</>, name: "object", type: "string" },
+  { children: "The checkout session refunded.", name: "session", type: "string" },
+  { children: "Decimal string in the session currency.", name: "amount", type: "string" },
+  { children: <><code>USDC</code> or <code>EURC</code>.</>, name: "currency", type: "string" },
+  {
+    children: (
+      <>
+        <code>requested</code> (waiting for the merchant), <code>succeeded</code> (sent and verified on chain) or{" "}
+        <code>cancelled</code> (declined by the merchant).
+      </>
+    ),
+    name: "status",
+    type: "enum",
+  },
+  { children: "The Arc wallet the refund goes to.", name: "destination_wallet", type: "string" },
+  { children: <>The refund transaction once <code>succeeded</code>, else null.</>, name: "tx_hash", type: "string | null" },
+  { children: "Why, up to 200 characters, or null.", name: "reason", type: "string | null" },
+  { children: "ISO 8601 timestamps.", name: "created_at, succeeded_at", type: "string | null" },
+];
+
+export function RefundsDoc({ ctx }: Props) {
+  const auth = `-H "Authorization: Bearer ${ctx.keyPrefix}…"`;
+  const refund = JSON.stringify(
+    {
+      amount: "10",
+      created_at: "2026-10-18T10:02:11.000Z",
+      currency: "USDC",
+      destination_wallet: "0x8f3c…a21d",
+      id: `re_${ctx.mode === "live" ? "live" : "test"}_4h7k2m9q8x3c5vtn1rj6bdwz`,
+      object: "refund",
+      reason: "Item out of stock",
+      session: ctx.sampleSessionId,
+      status: "requested",
+      succeeded_at: null,
+      tx_hash: null,
+    },
+    null,
+    2,
+  );
+  return (
+    <>
+      <p className="dp-lead">
+        Refund a session in full or in part, as many times as needed, up to what it received. SaphraONE is
+        non-custodial and never moves a merchant&rsquo;s money, so your server <em>requests</em> a refund and the
+        merchant approves and sends it in SaphraONE.
+      </p>
+
+      <h2 id="lifecycle">How a refund works</h2>
+      <Steps>
+        <Step title="Request it">
+          <code>POST /v1/refunds</code> returns a refund with status <code>requested</code>. Its amount is reserved at
+          once, so refunds can never add up to more than the session received.
+        </Step>
+        <Step title="The merchant sends it">
+          The business gets a notification and a Refund request in Checkout. They send it from their business wallet,
+          or decline it (<code>cancelled</code>). Merchants can also start refunds themselves in SaphraONE.
+        </Step>
+        <Step title="It succeeds">
+          Once the transfer is verified on chain the refund becomes <code>succeeded</code> with its{" "}
+          <code>tx_hash</code>, the session&rsquo;s <code>amount_refunded</code> goes up, and a{" "}
+          <PortalLink href="/docs/api/webhooks">refund.succeeded</PortalLink> webhook is sent.
+        </Step>
+      </Steps>
+
+      <h2 id="object">The refund object</h2>
+      <ParamList params={refundFields} title="Fields" />
+      <CodeTabs samples={[{ code: refund, label: "A requested refund", language: "json" }]} />
+
+      <h2 id="create">Request a refund</h2>
+      <Endpoint method="POST" path="/v1/refunds" />
+      <ParamList
+        params={[
+          { children: "The checkout session to refund.", name: "session", required: true, type: "string" },
+          {
+            children: "Decimal string. Defaults to everything still refundable; at least 0.01.",
+            name: "amount",
+            type: "string",
+          },
+          {
+            children: (
+              <>
+                The buyer&rsquo;s Arc wallet. Optional when the buyer paid from a wallet or a SaphraONE account (the
+                refund goes back to it). <strong>Required</strong> when they paid by card, bank or from another chain,
+                because then the paying wallet isn&rsquo;t the buyer&rsquo;s.
+              </>
+            ),
+            name: "destination_wallet",
+            type: "string",
+          },
+          { children: "Shown to the merchant, up to 200 characters.", name: "reason", type: "string" },
+        ]}
+        title="Body parameters"
+      />
+      <CodeTabs
+        samples={[
+          {
+            code: `curl ${ctx.apiBase}/refunds \\\n  ${auth} \\\n  -H "Content-Type: application/json" \\\n  -d '{"session": "${ctx.sampleSessionId}", "amount": "10", "reason": "Item out of stock"}'`,
+            label: "cURL",
+            language: "bash",
+          },
+          {
+            code: `const refund = await saphra("/refunds", {
+  method: "POST",
+  body: { session: order.saphraSessionId, amount: "10", reason: "Item out of stock" },
+});
+await db.refunds.insert({ orderId: order.id, refundId: refund.id, status: refund.status });`,
+            label: "Node.js",
+            language: "javascript",
+          },
+        ]}
+      />
+      <Callout title="Retries" tone="info">
+        A retried request creates a second <code>requested</code> refund only while there is still money to refund;
+        the merchant can decline a duplicate. Record the refund id you get back and check before requesting again.
+      </Callout>
+
+      <h2 id="retrieve">Retrieve a refund</h2>
+      <Endpoint method="GET" path="/v1/refunds/{id}" />
+      <CodeTabs samples={[{ code: `curl ${ctx.apiBase}/refunds/re_… \\\n  ${auth}`, label: "cURL", language: "bash" }]} />
+
+      <h2 id="list">List a session&rsquo;s refunds</h2>
+      <Endpoint method="GET" path="/v1/refunds?session={id}" />
+      <p>
+        Returns <code>{"{object: \"list\", data, has_more}"}</code>, oldest first. Every refund also appears in the
+        session&rsquo;s own <code>refunds</code> array.
+      </p>
+      <CodeTabs
+        samples={[
+          { code: `curl "${ctx.apiBase}/refunds?session=${ctx.sampleSessionId}" \\\n  ${auth}`, label: "cURL", language: "bash" },
+        ]}
+      />
+    </>
+  );
+}
+
 const verifyNode = `// npm install standardwebhooks
 import express from "express";
 import { Webhook } from "standardwebhooks";
@@ -650,7 +790,7 @@ export function WebhooksDoc({ ctx }: Props) {
           [
             <code key="e">refund.succeeded</code>,
             <span key="w">
-              A refund was sent and verified on chain. <Badge tone="soon">With the Refunds API</Badge>
+              A refund was sent and verified on chain.
             </span>,
             <code key="d">object</code>,
           ],

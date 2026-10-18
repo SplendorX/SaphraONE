@@ -381,12 +381,13 @@ for (const order of pending) {
         key.
       </p>
 
-      <h2 id="refunds">Refunds today</h2>
+      <h2 id="refunds">Refunds</h2>
       <p>
-        Refunds through the API are on the <PortalLink href="/docs/changelog#roadmap">roadmap</PortalLink>. Until
-        then, refund a buyer by sending USDC back from your SaphraONE business account. Each payment in{" "}
-        <code>payments</code> links to its transaction, which shows the sending wallet. Card and cross-chain payments
-        arrive from Circle&rsquo;s systems, not the buyer&rsquo;s wallet, so ask the buyer for their address.
+        Request a refund with <PortalLink href="/docs/api/refunds">POST /v1/refunds</PortalLink>, or let the merchant
+        start one in SaphraONE (Checkout → Refund). Either way the merchant sends it from their business wallet, and
+        you get <code>refund.succeeded</code> once it is verified. Card and cross-chain payments arrive from
+        Circle&rsquo;s systems, not the buyer&rsquo;s wallet, so for those ask the buyer for their Arc address and
+        pass it as <code>destination_wallet</code>.
       </p>
     </>
   );
@@ -594,7 +595,8 @@ export function BusinessGuideDoc({ ctx }: Props) {
       <ul>
         <li>
           <strong>Refunds</strong> are sent by you from your business account; SaphraONE can&rsquo;t pull money back
-          from your wallet. Refunds through the API are coming.
+          from your wallet. Start one from the payment in Checkout, or approve one your website requested through
+          the API. The usual Send fee applies.
         </li>
         <li>
           <strong>Card payments</strong> depend on Circle Onramp coverage (mainly the US and EU) and ask the buyer to

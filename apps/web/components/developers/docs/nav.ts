@@ -127,6 +127,13 @@ export const docEntries: DocEntry[] = [
     title: "Checkout Sessions",
   },
   {
+    description: "Request full or partial refunds; the merchant approves and sends them.",
+    group: "API reference",
+    keywords: "refund requested succeeded cancelled destination wallet partial",
+    slug: "api/refunds",
+    title: "Refunds",
+  },
+  {
     description: "Signed event notifications to your server: events, signatures, retries.",
     group: "API reference",
     keywords: "webhook events signature standard webhooks svix retries resend verify hmac",

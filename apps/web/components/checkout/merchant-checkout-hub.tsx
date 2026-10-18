@@ -12,6 +12,7 @@ import {
   Plus,
   QrCode,
   Receipt,
+  RotateCcw,
   Share2,
   Store,
   X,
@@ -23,6 +24,7 @@ import { toast } from "sonner";
 import { useAccountContext } from "@/components/account/account-provider";
 import { pressAmountKey } from "@/components/checkout/amount-keypad";
 import { OnlinePaymentsPanel } from "@/components/checkout/online-payments-panel";
+import { chargeRefundable, RefundSheet } from "@/components/checkout/refund-sheet";
 import { LazyQRCodeSVG } from "@/components/lazy-qr-code";
 import { showSuccess } from "@/components/success-popup";
 import { Button } from "@/components/ui/button";
@@ -115,6 +117,7 @@ export function MerchantCheckoutHub() {
   const [reconcileOpen, setReconcileOpen] = useState(false);
   const [reconcileHash, setReconcileHash] = useState("");
   const [reconciling, setReconciling] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
   const [origin, setOrigin] = useState("");
   const idempotencyKey = useRef(newIdempotencyKey());
   const celebrated = useRef<Set<string>>(new Set());
@@ -252,6 +255,7 @@ export function MerchantCheckoutHub() {
 
   function resetCharge() {
     setReconcileOpen(false);
+    setRefundOpen(false);
     setReconcileHash("");
     setActive(null);
     setAmount("");
@@ -450,6 +454,19 @@ export function MerchantCheckoutHub() {
               </button>
             )
           ) : null}
+          {moneyNumber(active.amount_refunded ?? "0") > 0 ? (
+            <p className="ck-refunded">Refunded {formatMoney(active.amount_refunded ?? "0", active.currency)}</p>
+          ) : null}
+          {chargeRefundable(active) > 0 ? (
+            refundOpen ? (
+              <RefundSheet auth={auth} charge={active} onClose={() => setRefundOpen(false)} />
+            ) : (
+              <button className="ck-quiet-link" onClick={() => setRefundOpen(true)} type="button">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Refund
+              </button>
+            )
+          ) : null}
           <div className="ck-row">
             {active.status === "OPEN" && active.payments.length === 0 ? (
               <Button
@@ -552,6 +569,7 @@ export function MerchantCheckoutHub() {
                   className="ck-item-main"
                   onClick={() => {
                     setTab("charge");
+                    setRefundOpen(false);
                     setActive(charge);
                     window.scrollTo({ behavior: "smooth", top: 0 });
                   }}

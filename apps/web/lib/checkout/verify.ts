@@ -8,6 +8,7 @@ import {
   NATIVE_USDC_EVENT_ADDRESS,
   createArcRpcClient,
 } from "@/lib/arc-transfers";
+import { refundTransferProven, sentByWallet } from "@/lib/checkout/refund-rules";
 import type { ChargeCurrency } from "@/lib/checkout/types";
 import { arcTokens } from "@/lib/tokens";
 
@@ -79,6 +80,40 @@ export function receivedChargeAmount(input: {
   return {
     amount: Number(formatUnits(total, NATIVE_USDC_DECIMALS)),
     from: firstSender(input.logs, NATIVE_USDC_EVENT_ADDRESS, input.destination),
+  };
+}
+
+/**
+ * Whether a confirmed transaction refunded `amount` of `currency` from the
+ * merchant wallet to `destination` (directly or through the SaphraSend
+ * router). The block time comes back so the caller can refuse a transfer
+ * older than the refund. Null when it failed or isn't mined yet.
+ */
+export async function verifyRefundTransfer(input: {
+  txHash: Hash;
+  currency: ChargeCurrency;
+  merchantWallet: string;
+  destination: string;
+  amount: string;
+}): Promise<{ proven: boolean; received: number | null; blockTime: Date } | null> {
+  const client = createArcRpcClient();
+  let receipt;
+  try {
+    receipt = await client.getTransactionReceipt({ hash: input.txHash });
+  } catch {
+    return null;
+  }
+  if (receipt.status !== "success") return null;
+  const received =
+    receivedChargeAmount({ currency: input.currency, destination: input.destination, logs: receipt.logs })?.amount ??
+    null;
+  const emitters = [arcTokens[input.currency].address, ...(input.currency === "USDC" ? [NATIVE_USDC_EVENT_ADDRESS] : [])];
+  const sentByMerchant = sentByWallet({ emitters, logs: receipt.logs, wallet: input.merchantWallet });
+  const block = await client.getBlock({ blockNumber: receipt.blockNumber });
+  return {
+    blockTime: new Date(Number(block.timestamp) * 1000),
+    proven: refundTransferProven({ amount: input.amount, received, sentByMerchant }),
+    received,
   };
 }
 
