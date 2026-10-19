@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  BadgeCheck,
   Building2,
   CalendarDays,
   Globe,
@@ -19,6 +18,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { PlatformBrand } from "@/components/brand/platform-brand";
 import { Button } from "@/components/ui/button";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { fetchDirectoryProfile } from "@/lib/business/client";
 import type { PublicProfile } from "@/lib/business/types";
 import { countryFlag, findCountry } from "@/lib/countries";
@@ -117,15 +117,13 @@ export default function PublicProfilePage() {
               {isBusiness ? <Building2 className="h-3.5 w-3.5" /> : <UserRound className="h-3.5 w-3.5" />}
               {isBusiness ? "Business" : "Personal"}
             </span>
-            {profile.verificationStatus === "VERIFIED" ? (
-              <span className="public-profile-verified">
-                <BadgeCheck className="h-3.5 w-3.5" />
-                Verified
-              </span>
-            ) : null}
+            <VerifiedBadge hit={profile} withLabel />
           </div>
 
-          <h1 className="public-profile-name">{profile.displayName}</h1>
+          <h1 className="public-profile-name">
+            {profile.displayName}
+            <VerifiedBadge hit={profile} />
+          </h1>
           <p className="public-profile-handle">{profile.username}.one</p>
 
           {profile.bio ? <p className="public-profile-bio">{profile.bio}</p> : null}

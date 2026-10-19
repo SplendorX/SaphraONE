@@ -27,6 +27,7 @@ import { isAddress, type Address } from "viem";
 
 import { TokenIcon } from "@/components/token-icon";
 import { Input } from "@/components/ui/input";
+import { VerifiedBadge } from "@/components/verified-badge";
 import {
   parseAmountUnits,
   parseBatchImportText,
@@ -460,8 +461,9 @@ export const BatchPeopleComposer = forwardRef<
                             )}
                           </span>
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold">
-                              {hit.displayName}
+                            <span className="flex min-w-0 items-center text-sm font-semibold">
+                              <span className="truncate">{hit.displayName}</span>
+                              <VerifiedBadge hit={hit} />
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
                               {formatUsernameLabel(hit.username)}

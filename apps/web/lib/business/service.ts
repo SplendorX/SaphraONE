@@ -23,6 +23,7 @@ import {
   normalizeUsername,
   validateUsername,
 } from "@/lib/profile-utils";
+import { listVerifiedTiers } from "@/lib/kyc/db";
 import { isAppLocale } from "@/lib/locales";
 
 const profileSelect =
@@ -868,6 +869,11 @@ export async function searchDirectory(query: string): Promise<DirectoryHit[]> {
     }>).map((row) => [row.workspace_id, row]),
   );
 
+  // Only people carry a KYC tier; a business shows its own verification.
+  const kycTiers = await listVerifiedTiers(
+    hits.filter((hit) => hit.kind !== "business").map((hit) => hit.profile_wallet).filter((value): value is string => Boolean(value)),
+  );
+
   return hits.map((hit) => {
     const person = hit.profile_wallet
       ? profileMap.get(hit.profile_wallet)
@@ -906,6 +912,10 @@ export async function searchDirectory(query: string): Promise<DirectoryHit[]> {
           ? hit.display_name || person?.display_name
           : person?.display_name || hit.display_name) || hit.username,
       kind: hit.kind,
+      kycTier:
+        hit.kind !== "business" && hit.profile_wallet
+          ? (kycTiers.get(hit.profile_wallet.toLowerCase()) ?? null)
+          : null,
       username: hit.username,
       verificationStatus: business?.verification_status ?? null,
       workspaceId: hit.workspace_id,

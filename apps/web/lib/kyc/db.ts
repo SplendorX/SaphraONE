@@ -93,6 +93,31 @@ export async function loadKycProfile(wallet: string) {
   return { ready: true as const, row: (data as KycProfileRow | null) ?? null };
 }
 
+/**
+ * Verified personal tiers for a set of wallets (lowercased keys), for the
+ * public badge. Only the tier leaves this function, never identity details.
+ * A missing table or failed read means no badges, not an error.
+ */
+export async function listVerifiedTiers(wallets: string[]) {
+  const tiers = new Map<string, number>();
+  const owners = [...new Set(wallets.map((wallet) => wallet.toLowerCase()))];
+  if (owners.length === 0) return tiers;
+  const { data, error } = await db()
+    .from(kycTables.profiles)
+    .select("wallet_address,tier")
+    .in("wallet_address", owners)
+    .eq("status", "VERIFIED")
+    .gte("tier", 1);
+  if (error) {
+    if (!missingKycTable(error)) console.warn("[kyc] verified tiers", error.message);
+    return tiers;
+  }
+  for (const row of (data ?? []) as Array<{ wallet_address: string; tier: number }>) {
+    tiers.set(row.wallet_address.toLowerCase(), row.tier);
+  }
+  return tiers;
+}
+
 export async function upsertKycProfile(wallet: string, patch: Partial<KycProfileRow>) {
   const owner = wallet.toLowerCase();
   const existing = await loadKycProfile(owner);

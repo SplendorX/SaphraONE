@@ -14928,7 +14928,7 @@ html[data-light-surface="glass"]:not(.dark):not([data-theme="dark"]) .fx-board {
 }
 
 .public-profile-kind,
-.public-profile-verified {
+.verified-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -14944,15 +14944,77 @@ html[data-light-surface="glass"]:not(.dark):not([data-theme="dark"]) .fx-board {
   color: var(--primary);
 }
 
-.public-profile-verified {
-  border: 1px solid color-mix(in oklch, #16a34a 30%, var(--border));
-  background: color-mix(in oklch, #16a34a 10%, transparent);
-  color: #15803d;
+/* Verified seal: Tier 1 outlined green, Tier 2 solid green, business solid gold. */
+.verified-badge,
+.verified-pill {
+  --verified-tone: #16a34a;
+  --verified-ink: #15803d;
 }
 
-html.dark .public-profile-verified,
-.dark .public-profile-verified {
-  color: #4ade80;
+.verified-badge.is-business,
+.verified-pill.is-business {
+  --verified-tone: #d97706;
+  --verified-ink: #b45309;
+}
+
+html.dark .verified-badge,
+html.dark .verified-pill,
+.dark .verified-badge,
+.dark .verified-pill {
+  --verified-tone: #22c55e;
+  --verified-ink: #4ade80;
+}
+
+html.dark .verified-badge.is-business,
+html.dark .verified-pill.is-business,
+.dark .verified-badge.is-business,
+.dark .verified-pill.is-business {
+  --verified-tone: #f59e0b;
+  --verified-ink: #fbbf24;
+}
+
+.verified-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  vertical-align: -0.15em;
+  margin-inline-start: 0.25em;
+  line-height: 0;
+}
+
+.verified-badge .verified-seal {
+  height: 1.05em;
+  width: 1.05em;
+  min-height: 14px;
+  min-width: 14px;
+}
+
+.verified-badge .verified-seal,
+.verified-pill .verified-seal {
+  color: var(--verified-tone);
+}
+
+/* Solid seal with a white check for Tier 2 and businesses. */
+.verified-badge.is-tier2 .verified-seal,
+.verified-badge.is-business .verified-seal,
+.verified-pill.is-tier2 .verified-seal,
+.verified-pill.is-business .verified-seal {
+  fill: var(--verified-tone);
+  stroke: var(--verified-tone);
+}
+
+.verified-badge.is-tier2 .verified-seal path + path,
+.verified-badge.is-business .verified-seal path + path,
+.verified-pill.is-tier2 .verified-seal path + path,
+.verified-pill.is-business .verified-seal path + path {
+  fill: none;
+  stroke: #fff;
+}
+
+.verified-pill {
+  border: 1px solid color-mix(in oklch, var(--verified-tone) 30%, var(--border));
+  background: color-mix(in oklch, var(--verified-tone) 10%, transparent);
+  color: var(--verified-ink);
 }
 
 .public-profile-name {

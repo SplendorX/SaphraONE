@@ -1,8 +1,9 @@
 "use client";
 
-import { BadgeCheck, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { VerifiedBadge } from "@/components/verified-badge";
 import { searchPeople } from "@/lib/business/client";
 import type { DirectoryHit } from "@/lib/business/types";
 import { formatUsernameLabel, normalizeUsername } from "@/lib/profile-utils";
@@ -147,7 +148,7 @@ export function OneIdSuggestions({
           <span className="oid-suggest-text">
             <span className="oid-suggest-id">
               {formatUsernameLabel(hit.username)}
-              {hit.verificationStatus === "VERIFIED" ? <BadgeCheck className="h-3.5 w-3.5 text-primary" /> : null}
+              <VerifiedBadge hit={hit} />
             </span>
             <span className="oid-suggest-name">
               {hit.displayName}

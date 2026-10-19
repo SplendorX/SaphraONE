@@ -225,6 +225,8 @@ export type DirectoryHit = {
   bio: string | null;
   displayName: string;
   kind: WorkspaceKind;
+  /** A person's verified KYC tier (1 or 2); null when unverified or a business. */
+  kycTier?: number | null;
   username: string;
   verificationStatus?: VerificationStatus | null;
   workspaceId?: string | null;

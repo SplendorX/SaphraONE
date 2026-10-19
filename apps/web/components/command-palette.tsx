@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { cn } from "@/lib/utils";
 
 const navIcons: Record<string, typeof Command> = {
@@ -126,6 +127,8 @@ type PaletteEntry = {
   id: string;
   group: string;
   label: string;
+  /** Shown right after the label, e.g. a verified badge. */
+  labelAdornment?: ReactNode;
   hint?: string;
   icon: ReactNode;
   run: () => void;
@@ -188,6 +191,7 @@ export function CommandPalette({
       ),
       id: `person-${person.kind}-${person.username}`,
       label: person.displayName,
+      labelAdornment: <VerifiedBadge hit={person} />,
       run: () => navigate(`/u/${person.username}`),
     }));
 
@@ -298,7 +302,10 @@ export function CommandPalette({
                 type="button"
               >
                 {entry.icon}
-                <span className="min-w-0 truncate">{entry.label}</span>
+                <span className="flex min-w-0 items-center">
+                  <span className="truncate">{entry.label}</span>
+                  {entry.labelAdornment}
+                </span>
                 {entry.hint ? <span className="text-xs text-muted-foreground">{entry.hint}</span> : null}
                 {index === activeIndex ? (
                   <CornerDownLeft aria-hidden className="ml-auto hidden h-3.5 w-3.5 text-muted-foreground sm:block" />

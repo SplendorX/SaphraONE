@@ -40,6 +40,7 @@ import { TokenIcon } from "@/components/token-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetGrabber, SheetTitle } from "@/components/ui/sheet";
+import { VerifiedBadge } from "@/components/verified-badge";
 import type { AccountActivityItem } from "@/lib/activity/merge";
 import { transactionHistoryDays } from "@/lib/activity/types";
 import { useAccountTransactions } from "@/lib/activity/use-account-transactions";
@@ -81,6 +82,8 @@ type Person = {
   name: string;
   avatarUrl?: string | null;
   sub?: string;
+  /** A directory hit's verification, for the badge after the name. */
+  verified?: Pick<DirectoryHit, "kind" | "kycTier" | "verificationStatus">;
 };
 
 /** Kept back on MAX when an external wallet pays in USDC, which is also Arc's gas. */
@@ -654,6 +657,7 @@ export function SendHub(props: SendHubProps) {
       name: hit.displayName || hit.username,
       sub: `${hit.username}.one${hit.kind === "business" ? " · Business" : ""}`,
       value: `${hit.username}.one`,
+      verified: hit,
       wallet: null,
     });
 
@@ -951,7 +955,10 @@ function PersonRow({
         ) : null}
       </span>
       <span className="sx-row-main">
-        <span className="sx-row-title">{person.name}</span>
+        <span className="sx-row-title">
+          {person.name}
+          {person.verified ? <VerifiedBadge hit={person.verified} /> : null}
+        </span>
         {person.sub ? <span className="sx-row-sub">{person.sub}</span> : null}
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
