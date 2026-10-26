@@ -40,13 +40,13 @@ const instrumentSerif = localFont({
 
 // The same line the share banner leads with, so a link preview that falls
 // back to the page title still reads right.
-const siteTitle = "SaphraONE | One account. One identity. Anywhere.";
+const siteTitle = "Saphra | Infrastructure for the next era of money";
 const siteDescription =
-  `Money movement infrastructure for the internet. Send, batch, request, swap, and settle stablecoins on ${arcChain.name}.`;
+  `Saphra Systems Limited builds the infrastructure that helps people, businesses and builders move value with more clarity, speed and possibility.`;
 const brandMark = "/brand/saphra-mark.png";
-const shareTitle = "SaphraONE | One account. One identity. Anywhere.";
+const shareTitle = "Saphra | Infrastructure for the next era of money";
 const shareDescription =
-  "Send, save and get paid in USDC with your ONE ID: a name, not a number. Settles on Arc in under a second.";
+  "Explore Saphra's connected platform for people, businesses and the developers building what moves next.";
 // Versioned so apps that cache link previews fetch the new banner.
 const shareImage = "/og/saphra-share.jpg?v=4";
 
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: siteTitle,
   description: siteDescription,
-  applicationName: "SaphraONE",
+  applicationName: "Saphra",
   // iPhone and iPad: "Add to Home Screen" opens SaphraONE as its own app.
   // The home-screen icon is /icons/apple-touch-icon.png, set in icons below.
   appleWebApp: {
