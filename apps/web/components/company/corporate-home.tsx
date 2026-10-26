@@ -40,7 +40,7 @@ const products = [
   { body: "Access a clearer way to exchange supported assets when the moment calls for it.", href: `${appUrl}/swap`, icon: Repeat2, label: "Exchange", title: "Stay in motion" },
   { body: "Run checkout, payroll, payments, and operations from tools that scale with your team.", href: `${appUrl}/business`, icon: Building2, label: "Business", title: "Operate with confidence" },
   { body: "Launch money movement into your own product with clear APIs and practical developer tools.", href: developerUrl, icon: Code2, label: "Developers", title: "Build what is next" },
-  { body: "Get thoughtful help from ALLIE, the guide built into the SaphraONE experience.", href: appUrl, icon: Sparkles, label: "ALLIE", title: "A clearer way forward" },
+  { body: "Meet ALLIE — the Autonomous Layer Linking Intelligent Execution — built into the SaphraONE experience.", href: appUrl, icon: Sparkles, label: "ALLIE", title: "A clearer way forward" },
 ];
 
 export function CorporateHome() {
@@ -168,6 +168,16 @@ export function CorporateHome() {
             </p>
           </div>
           <a className="corporate-secondary" href={appUrl}>Visit the platform <ArrowUpRight aria-hidden size={16} /></a>
+        </section>
+
+        <section className="corporate-ai" id="allie">
+          <div className="corporate-ai-mark"><Sparkles aria-hidden size={28} /></div>
+          <div>
+            <p className="corporate-eyebrow">Building with AI</p>
+            <h2>Meet ALLIE, our Autonomous Layer Linking Intelligent Execution.</h2>
+            <p>ALLIE is the intelligent layer we are building into SaphraONE to make complex financial tasks feel clearer, more guided, and ready for action.</p>
+          </div>
+          <div className="corporate-ai-steps"><span>Understand</span><span>Guide</span><span>Execute</span></div>
         </section>
 
         <section className="corporate-company" id="company">
