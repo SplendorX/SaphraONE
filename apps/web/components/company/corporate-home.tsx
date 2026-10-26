@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ArrowUpRight, Building2, Code2, Globe2, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BadgeCheck, Building2, Code2, Globe2, Landmark, Repeat2, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 
 import { PlatformBrand } from "@/components/brand/platform-brand";
 import { AmbientBackground } from "@/components/design/ambient-background";
@@ -32,6 +32,15 @@ const audiences = [
     link: "Explore developer tools",
     title: "For builders",
   },
+];
+
+const products = [
+  { body: "Send, request, and receive with a simpler everyday money experience.", href: `${appUrl}/pay`, icon: WalletCards, label: "Payments", title: "Move money simply" },
+  { body: "Put money to work with saving tools designed around your pace and priorities.", href: `${appUrl}/save`, icon: Landmark, label: "Savings", title: "Grow with intention" },
+  { body: "Access a clearer way to exchange supported assets when the moment calls for it.", href: `${appUrl}/swap`, icon: Repeat2, label: "Exchange", title: "Stay in motion" },
+  { body: "Run checkout, payroll, payments, and operations from tools that scale with your team.", href: `${appUrl}/business`, icon: Building2, label: "Business", title: "Operate with confidence" },
+  { body: "Launch money movement into your own product with clear APIs and practical developer tools.", href: developerUrl, icon: Code2, label: "Developers", title: "Build what is next" },
+  { body: "Get thoughtful help from ALLIE, the guide built into the SaphraONE experience.", href: appUrl, icon: Sparkles, label: "ALLIE", title: "A clearer way forward" },
 ];
 
 export function CorporateHome() {
@@ -129,6 +138,25 @@ export function CorporateHome() {
           </p>
         </section>
 
+        <section className="corporate-products" id="products">
+          <div className="corporate-products-heading">
+            <p className="corporate-eyebrow">Designed to connect</p>
+            <h2>Everything you need to move from an idea to action.</h2>
+            <p>Every product starts with the same promise: reduce the friction around money so more of your energy can go where it matters.</p>
+          </div>
+          <div className="corporate-product-grid">
+            {products.map(({ body, href, icon: Icon, label, title }) => (
+              <article className="corporate-product" key={label}>
+                <span className="corporate-product-icon"><Icon aria-hidden size={20} /></span>
+                <p>{label}</p>
+                <h3>{title}</h3>
+                <span>{body}</span>
+                <a href={href}>Learn more <ArrowUpRight aria-hidden size={15} /></a>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="corporate-security" id="security">
           <div className="corporate-security-icon"><ShieldCheck aria-hidden size={28} /></div>
           <div>
@@ -140,6 +168,19 @@ export function CorporateHome() {
             </p>
           </div>
           <a className="corporate-secondary" href={appUrl}>Visit the platform <ArrowUpRight aria-hidden size={16} /></a>
+        </section>
+
+        <section className="corporate-company" id="company">
+          <div className="corporate-company-intro">
+            <p className="corporate-eyebrow">The company</p>
+            <h2>Built by Saphra Systems Limited.</h2>
+            <p>SaphraONE is the platform we are building to make moving value feel more direct, more useful, and more open to possibility.</p>
+          </div>
+          <div className="corporate-company-notes">
+            <div><BadgeCheck aria-hidden size={20} /><p><strong>Registered company</strong><span>Saphra Systems Limited is the company behind the SaphraONE platform.</span></p></div>
+            <div><Globe2 aria-hidden size={20} /><p><strong>Built for connected markets</strong><span>We design for people, teams, and builders whose work and money move across borders.</span></p></div>
+            <div><ShieldCheck aria-hidden size={20} /><p><strong>Care in the details</strong><span>Product choices are made around clarity, control, and dependable experiences.</span></p></div>
+          </div>
         </section>
 
         <section className="corporate-cta">
