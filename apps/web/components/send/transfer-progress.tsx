@@ -278,10 +278,19 @@ export function TransferProgressOverlay({
   }, [shown, progress.state, waitsForDone]);
 
   if (!shown || typeof document === "undefined") return null;
+
+  // A Radix Sheet disables pointer events outside its content while it is
+  // open. Invest renders this overlay from inside such a sheet, so portalling
+  // to document.body makes a visible receipt that cannot receive Done or
+  // explorer taps. Keep the receipt in the active sheet's DOM subtree when
+  // there is one; standalone transfer flows still portal to the page body.
+  const portalTarget =
+    document.querySelector<HTMLElement>("[data-slot='sheet-content'][data-state='open']") ?? document.body;
+
   return createPortal(
     <div aria-modal="true" className="tp-overlay" role="dialog">
       <TransferProgress {...progress} onClose={waitsForDone ? close : progress.onClose} />
     </div>,
-    document.body,
+    portalTarget,
   );
 }
