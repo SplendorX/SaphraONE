@@ -45,6 +45,20 @@ export type CircleProviderConfig = {
   walletId: string;
 };
 
+/**
+ * Metadata carried by our EIP-1193 facade for products that need Circle's
+ * native challenge lifecycle instead of an RPC-shaped wallet interface.
+ */
+export type CircleUserWalletAdapterContext = {
+  executeChallenge: (
+    challengeId: string,
+    label?: string,
+  ) => Promise<{ transactionId?: string; txHash?: string }>;
+  userToken: string;
+  walletAddress: string;
+  walletId: string;
+};
+
 type RpcRequest = { method: string; params?: unknown[] | object };
 
 class ProviderRpcError extends Error {
@@ -174,6 +188,32 @@ function rememberHash(walletId: string, hash: string) {
 
 export function createCircleWalletProvider(config: CircleProviderConfig) {
   const accounts = [config.address.toLowerCase()];
+
+  async function executeChallenge(challengeId: string) {
+    const sdk = await config.getSdk();
+    if (!sdk) {
+      throw new ProviderRpcError(
+        4100,
+        "Circle wallet confirmation is not ready. Reload and try again.",
+      );
+    }
+
+    sdk.setAuthentication(currentCircleAuth(config));
+    return new Promise<{ transactionId?: string; txHash?: string }>(
+      (resolve, reject) => {
+        sdk.execute(challengeId, (error, result) => {
+          if (error) {
+            reject(challengeError(error));
+            return;
+          }
+          resolve({
+            transactionId: extractCircleTransactionId(result),
+            txHash: extractCircleTxHash(result),
+          });
+        });
+      },
+    );
+  }
 
   async function sendTransaction(params: unknown[]): Promise<string> {
     const tx = normalizeTx(params);
@@ -390,6 +430,15 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
     on: () => provider,
     removeListener: () => provider,
     request,
+    // The generic EIP-1193 route remains useful for libraries expecting a
+    // browser wallet. Earn and Swap instead consume this native context so
+    // Circle's asynchronous challenge and transaction lifecycle isn't lost.
+    saphraCircleUserWallet: {
+      executeChallenge,
+      userToken: config.userToken,
+      walletAddress: config.address,
+      walletId: config.walletId,
+    } satisfies CircleUserWalletAdapterContext,
   };
 
   return provider;

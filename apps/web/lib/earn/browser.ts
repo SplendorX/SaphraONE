@@ -3,6 +3,7 @@
 import { createViemAdapterFromProvider } from "@circle-fin/adapter-viem-v2";
 import { AppKit } from "@circle-fin/app-kit";
 import { createPublicClient, getAddress, isAddress } from "viem";
+import { createCircleUserWalletAdapter, type CircleUserWalletKitRequest } from "@/swap/browser";
 import { toJsonSafe } from "@/lib/earn/serialize";
 import type {
   EarnDepositQuote,
@@ -150,21 +151,23 @@ async function earnFrom(context: EarnWalletContext) {
   }
 
   const provider = await context.resolveProvider();
-  const adapter = await createViemAdapterFromProvider({
-    // App Kit otherwise selects its own single RPC endpoint. That bypasses the
-    // app's configured Arc RPC and its failover list, which can leave a valid
-    // Earn request failing during prepare/simulation with only the provider's
-    // opaque 5099 error. Keep every read, gas estimate, and receipt check on
-    // the same resilient Arc transport used by the rest of SaphraONE.
-    getPublicClient: () =>
-      createPublicClient({
-        chain: onchainFacts.chain,
-        transport: arcTransport(),
-      }),
-    provider: provider as Parameters<
-      typeof createViemAdapterFromProvider
-    >[0]["provider"],
-  });
+  const circleWallet = (
+    provider as { saphraCircleUserWallet?: CircleUserWalletKitRequest }
+  ).saphraCircleUserWallet;
+  const adapter = circleWallet
+    ? await createCircleUserWalletAdapter(circleWallet)
+    : await createViemAdapterFromProvider({
+        // App Kit otherwise selects its own single RPC endpoint. That bypasses
+        // the app's configured Arc RPC and its failover list.
+        getPublicClient: () =>
+          createPublicClient({
+            chain: onchainFacts.chain,
+            transport: arcTransport(),
+          }),
+        provider: provider as Parameters<
+          typeof createViemAdapterFromProvider
+        >[0]["provider"],
+      });
 
   return { adapter, chain: earnAppKitChain() };
 }

@@ -1484,6 +1484,30 @@ export async function createCircleUserWalletAdapter(
           );
         }
 
+        // Earn uses the same Circle adapter contract's execute ABI as Swap.
+        // Keeping this on the native Circle user-wallet adapter is essential:
+        // Circle SCAs approve and broadcast through challenges, not through a
+        // generic injected-wallet eth_sendTransaction implementation.
+        case "earn.deposit":
+        case "earn.withdraw":
+        case "earn.claimRewards": {
+          return createWriteRequest(
+            {
+              type: "evm",
+              address: getContextAdapterAddress(context),
+              abi: circleSwapAdapterAbi,
+              functionName: "execute",
+              args: [
+                params.executeParams,
+                Array.isArray(params.tokenInputs) ? params.tokenInputs : [],
+                params.signature,
+              ],
+            },
+            context,
+            action.replace("earn.", "Earn "),
+          );
+        }
+
         default:
           throw new Error(`Circle wallet does not support ${action}.`);
       }
