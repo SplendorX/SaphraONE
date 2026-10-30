@@ -355,6 +355,13 @@ export function userFacingErrorMessage(error: unknown, fallback: string) {
   if (/still confirming|did not return a hash in time/i.test(message)) {
     return "Your transfer was submitted and is still confirming. Your balance will update shortly — no need to send it again.";
   }
+  // Circle's EIP-1193 adapter uses 5099 for an Arc RPC / transaction
+  // preparation failure. It is not a customer-actionable explanation and it
+  // does not prove whether the wallet submitted a transaction, so never invite
+  // an immediate blind retry.
+  if (/\b5099\b|unknown blockchain error|an internal error was received/i.test(message)) {
+    return "Arc couldn't prepare this transaction. Check your wallet activity before trying again; if it isn't there, leave a little USDC for Arc network fees and retry.";
+  }
   if (/\b(?:user\s+)?(?:cancel+ed|canceled|rejected|denied|dismissed|closed)\b|user rejected|request rejected/i.test(message)) {
     return "You cancelled in your wallet — nothing was sent.";
   }

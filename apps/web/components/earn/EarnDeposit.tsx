@@ -20,6 +20,7 @@ import {
 } from "@/lib/earn/display";
 import { notifyEarnPositionUpdated } from "@/lib/earn/selected-vault";
 import type { EarnDepositQuote, EarnTxResult, EarnVault } from "@/lib/earn/types";
+import { userFacingErrorMessage } from "@/lib/circle-session";
 import { formatUsdc, isValidUsdcAmount, parseUsdc } from "@/lib/onchain-money";
 import { confirmFlow } from "@/lib/tx-approval/client";
 
@@ -51,7 +52,7 @@ export function EarnDeposit({
   const [amount, setAmount] = useState(initialAmount);
   const [quote, setQuote] = useState<EarnDepositQuote | null>(null);
   const [result, setResult] = useState<EarnTxResult | null>(null);
-  const [busy, setBusy] = useState<"preview" | "deposit" | null>(null);
+  const [busy, setBusy] = useState<"preview" | "checking" | "deposit" | null>(null);
   const [error, setError] = useState<string | null>(null);
   // The moving-coin animation: runs with the deposit, then plays its check.
   const [depositDone, setDepositDone] = useState(false);
@@ -75,7 +76,12 @@ export function EarnDeposit({
     } catch (cause) {
       setQuote(null);
       if (!(cause instanceof EarnRejectedError)) {
-        setError(cause instanceof Error ? cause.message : "Preview failed.");
+        setError(
+          userFacingErrorMessage(
+            cause,
+            "We couldn't prepare a deposit preview. Check your connection and try again.",
+          ),
+        );
       }
     } finally {
       setBusy(null);
@@ -84,10 +90,23 @@ export function EarnDeposit({
 
   async function handleDeposit() {
     if (!vaultAddress || !connectedAddress || !amountValid || busy) return;
-    setBusy("deposit");
+    // A quote performs the router's read-only validation (including a vault's
+    // current minimum and liquidity checks). Depositing without it used to send
+    // invalid requests straight to the wallet, where Arc could only return its
+    // generic 5099 error after the customer had already started confirmation.
+    setBusy("checking");
     setError(null);
     try {
       parseUsdc(amount);
+      const freshQuote = await browserDepositQuote({
+        amount,
+        currentChainId,
+        resolveProvider,
+        switchChainAsync,
+        vaultAddress,
+      });
+      setQuote(freshQuote);
+      setBusy("deposit");
       const nextResult = await confirmFlow(
         circleWalletId,
         { amount, maxUses: 4, recipients: [], title: "Invest USDC", token: "USDC" },
@@ -107,7 +126,12 @@ export function EarnDeposit({
       notifyEarnPositionUpdated();
     } catch (cause) {
       if (!(cause instanceof EarnRejectedError)) {
-        setError(cause instanceof Error ? cause.message : "Deposit failed.");
+        setError(
+          userFacingErrorMessage(
+            cause,
+            "We couldn't prepare this deposit. Check your wallet activity before trying again.",
+          ),
+        );
       }
     } finally {
       setBusy(null);
@@ -221,7 +245,7 @@ export function EarnDeposit({
           onClick={() => void handleDeposit()}
           type="button"
         >
-          {busy === "deposit" ? (
+          {busy === "checking" || busy === "deposit" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             "Deposit USDC"
