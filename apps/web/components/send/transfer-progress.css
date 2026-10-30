@@ -23,17 +23,25 @@
   height: 9rem;
 }
 
-/* Over the whole page (TransferProgressOverlay): under the confirmation
-   sheet (2147481000) and Circle's window (2147483647). */
+/* Over the whole page (TransferProgressOverlay): above the app confirmation
+   sheet (2147481000), but under Circle's window (2147483647). The receipt
+   must receive Done and explorer taps while the sheet is unmounting. */
 .tp-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2147480000;
+  z-index: 2147482000;
   display: grid;
   place-items: center;
   padding: 1rem;
   background: var(--background);
   animation: tp-overlay-in 200ms ease both;
+}
+
+/* iOS keeps the initial tap in a touch gesture unless the receipt owns it. */
+.tp-actions,
+.tp-link,
+.tp-done {
+  touch-action: manipulation;
 }
 
 @keyframes tp-overlay-in {

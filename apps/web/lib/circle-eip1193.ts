@@ -91,6 +91,17 @@ function challengeError(error: { code?: unknown; message?: string }) {
   return failure;
 }
 
+/**
+ * The Circle Web SDK normally removes its full-screen iframe after a
+ * challenge. On mobile Safari it can survive the completion callback as an
+ * invisible, tap-catching layer. The challenge is already settled here, so
+ * remove any leftover frame before the app renders its receipt.
+ */
+function removeCircleSdkIframe() {
+  if (typeof document === "undefined") return;
+  document.getElementById("sdkIframe")?.remove();
+}
+
 /** A Circle confirmation that failed before anything was sent (see challengeError). */
 export function isCircleChallengeError(error: unknown) {
   for (let cause = error, depth = 0; cause instanceof Error && depth < 6; depth += 1) {
@@ -199,20 +210,24 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
     }
 
     sdk.setAuthentication(currentCircleAuth(config));
-    return new Promise<{ transactionId?: string; txHash?: string }>(
-      (resolve, reject) => {
-        sdk.execute(challengeId, (error, result) => {
-          if (error) {
-            reject(challengeError(error));
-            return;
-          }
-          resolve({
-            transactionId: extractCircleTransactionId(result),
-            txHash: extractCircleTxHash(result),
+    try {
+      return await new Promise<{ transactionId?: string; txHash?: string }>(
+        (resolve, reject) => {
+          sdk.execute(challengeId, (error, result) => {
+            if (error) {
+              reject(challengeError(error));
+              return;
+            }
+            resolve({
+              transactionId: extractCircleTransactionId(result),
+              txHash: extractCircleTxHash(result),
+            });
           });
-        });
-      },
-    );
+        },
+      );
+    } finally {
+      removeCircleSdkIframe();
+    }
   }
 
   async function sendTransaction(params: unknown[]): Promise<string> {
@@ -255,21 +270,7 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
 
     sdk.setAuthentication(currentCircleAuth(config));
 
-    const executed = await new Promise<{
-      transactionId?: string;
-      txHash?: string;
-    }>((resolve, reject) => {
-      sdk.execute(challengeId, (error, result) => {
-        if (error) {
-          reject(challengeError(error));
-          return;
-        }
-        resolve({
-          transactionId: extractCircleTransactionId(result),
-          txHash: extractCircleTxHash(result),
-        });
-      });
-    });
+    const executed = await executeChallenge(challengeId);
 
     if (executed.txHash) {
       return rememberHash(config.walletId, executed.txHash);
@@ -341,15 +342,20 @@ export function createCircleWalletProvider(config: CircleProviderConfig) {
 
     sdk.setAuthentication(currentCircleAuth(config));
 
-    const signature = await new Promise<string | undefined>((resolve, reject) => {
-      sdk.execute(challengeId, (error, result) => {
-        if (error) {
-          reject(challengeError(error));
-          return;
-        }
-        resolve(extractSignature(result));
+    let signature: string | undefined;
+    try {
+      signature = await new Promise<string | undefined>((resolve, reject) => {
+        sdk.execute(challengeId, (error, result) => {
+          if (error) {
+            reject(challengeError(error));
+            return;
+          }
+          resolve(extractSignature(result));
+        });
       });
-    });
+    } finally {
+      removeCircleSdkIframe();
+    }
 
     if (!signature) {
       throw new ProviderRpcError(

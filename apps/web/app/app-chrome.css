@@ -9,13 +9,6 @@
   }
 }
 
-/* Circle's confirmation window must take clicks even while a sheet or dialog
- * underneath has made the rest of the page inert. */
-#sdkIframe {
-  z-index: 2147483647 !important;
-  pointer-events: auto !important;
-}
-
 /* Receipts (and the success card that shares their frame) slide in like the
  * app's other sheets: up from the bottom on phones and tablets, in from the
  * right on desktop. Contents are unchanged. */
