@@ -172,8 +172,24 @@ async function earnFrom(context: EarnWalletContext) {
   return { adapter, chain: earnAppKitChain() };
 }
 
-function earnKit() {
-  return new AppKit();
+type NativeEarnKit = {
+  earn: {
+    deposit: (params: unknown) => Promise<unknown>;
+    getDepositQuote: (params: unknown) => Promise<unknown>;
+    getPosition: (params: unknown) => Promise<unknown>;
+    getWithdrawalQuote: (params: unknown) => Promise<unknown>;
+    withdraw: (params: unknown) => Promise<unknown>;
+  };
+};
+
+/**
+ * Circle's native user-wallet adapter implements Earn's runtime contract via
+ * `prepareAction`, but it cannot extend App Kit's abstract Adapter class.
+ * Keep that compatibility boundary here: inputs and outputs are validated and
+ * narrowed by this module before they reach the rest of the app.
+ */
+function earnKit(): NativeEarnKit {
+  return new AppKit() as unknown as NativeEarnKit;
 }
 
 const ERC4626_DECIMALS_SELECTOR = "0x313ce567";
