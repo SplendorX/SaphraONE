@@ -2,7 +2,7 @@
 
 import { createViemAdapterFromProvider } from "@circle-fin/adapter-viem-v2";
 import { AppKit } from "@circle-fin/app-kit";
-import { getAddress, isAddress } from "viem";
+import { createPublicClient, getAddress, isAddress } from "viem";
 import { toJsonSafe } from "@/lib/earn/serialize";
 import type {
   EarnDepositQuote,
@@ -10,7 +10,7 @@ import type {
   EarnTxResult,
   EarnWithdrawQuote,
 } from "@/lib/earn/types";
-import { postArcRpc } from "@/lib/chains";
+import { arcTransport, postArcRpc } from "@/lib/chains";
 import { earnAppKitChain, explorerTxUrl, onchainFacts } from "@/lib/onchain-facts";
 import { formatUsdc, parseUsdc } from "@/lib/onchain-money";
 
@@ -151,6 +151,16 @@ async function earnFrom(context: EarnWalletContext) {
 
   const provider = await context.resolveProvider();
   const adapter = await createViemAdapterFromProvider({
+    // App Kit otherwise selects its own single RPC endpoint. That bypasses the
+    // app's configured Arc RPC and its failover list, which can leave a valid
+    // Earn request failing during prepare/simulation with only the provider's
+    // opaque 5099 error. Keep every read, gas estimate, and receipt check on
+    // the same resilient Arc transport used by the rest of SaphraONE.
+    getPublicClient: () =>
+      createPublicClient({
+        chain: onchainFacts.chain,
+        transport: arcTransport(),
+      }),
     provider: provider as Parameters<
       typeof createViemAdapterFromProvider
     >[0]["provider"],
